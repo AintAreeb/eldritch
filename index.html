@@ -2,593 +2,2417 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-<meta name="viewport" content="width=1024"> <!-- Set a fixed width for the viewport -->
-    <title>BloodLust</title>
-
-
-<link rel="icon" href="20240805_025435.ico" type="image/icon type">
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<style>
-        body {
-            background-color:#f5f5f5 ; /* Change to your desired color */
-        }
-    </style>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BloodLust: Revision Engine v3.2</title>
     <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
+        /* Linear.app Premium Dark Theme Matrix */
+        body { 
+            background: #080710; 
+            color: #f7f8f8; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif; 
+            padding: 24px; 
+            margin: 0; 
+            user-select: none;
+            -webkit-font-smoothing: antialiased;
         }
-        .header {
-            background-color: grey;
-            color: white;
-            display: flex;
-            justify-content: space-between;
+        
+        h1 { 
+            color: #ff3333; 
+            text-align: center; 
+            font-size: 22px; 
+            font-weight: 600;
+            margin: 0 0 4px 0; 
+            letter-spacing: -0.02em; 
+            text-shadow: 0 0 30px rgba(255, 51, 51, 0.15);
+        }
+        
+        .subtitle { 
+            text-align: center; 
+            font-size: 11px; 
+            color: #8a8f98; 
+            margin-bottom: 20px; 
+            text-transform: uppercase; 
+            letter-spacing: 0.08em;
+            font-weight: 500;
+        }
+        
+        .rotate-hint {
+            text-align: center;
+            font-size: 10px;
+            color: #5a5f68;
+            margin-top: 10px;
+            font-weight: 400;
+        }
+        
+        .log { 
+            background: #0d0c14; 
+            padding: 12px; 
+            height: 60px; 
+            overflow-y: auto; 
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace; 
+            font-size: 11px; 
+            border: 1px solid rgba(255, 255, 255, 0.08); 
+            border-radius: 8px; 
+            margin: 20px 0; 
+            color: #4af7a7; 
+            line-height: 1.4; 
+            box-shadow: inset 0 1px 12px rgba(0,0,0,0.5);
+        }
+        
+        .turn-display { 
+            text-align: center; 
+            font-weight: 600; 
+            font-size: 12px; 
+            color: #ffcc00; 
+            margin-bottom: 12px; 
+            text-transform: uppercase; 
+            letter-spacing: 0.06em; 
+        }
+        
+        .targeting-status { 
+            background: linear-gradient(135deg, #ffaa00 0%, #cc8800 100%); 
+            color: #000; 
+            text-align: center; 
+            font-weight: 600; 
+            padding: 8px; 
+            font-size: 11px; 
+            border-radius: 6px; 
+            margin-bottom: 12px; 
+            display: none; 
+            box-shadow: 0 4px 20px rgba(255, 170, 0, 0.15);
+        }
+        
+        .squad-title { 
+            font-size: 11px; 
+            text-transform: uppercase; 
+            letter-spacing: 0.06em; 
+            color: #ff5555; 
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08); 
+            padding-bottom: 6px; 
+            margin-top: 20px; 
+            font-weight: 600; 
+        }
+        
+        /* Locked to exactly 5 equal columns per row on every viewport/device.
+           minmax(0, 1fr) is required here — plain 1fr lets each column's
+           hidden "automatic minimum size" (its content's min-content width)
+           win, which overflows the row instead of shrinking evenly. */
+        .squad { 
+            display: grid; 
+            grid-template-columns: repeat(5, minmax(0, 1fr)); 
+            gap: 12px; 
+            margin-bottom: 16px; 
+            margin-top: 8px; 
+        }
+        
+        /* Premium Layered Metallic Card Design - Symmetrical Square Variant */
+        .card { 
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%); 
+            border: 1px solid rgba(255, 255, 255, 0.08); 
+            padding: 8px; 
+            border-radius: 8px; 
+            position: relative; 
+            transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease, opacity 0.25s ease; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: space-between; 
             align-items: center;
-            padding: 10px 20px;
+            text-align: center;
+            aspect-ratio: 1 / 1;
+            box-sizing: border-box;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
         }
-        .menu-icon {
-            font-size: 24px;
-            cursor: pointer;
+        
+        .card.active-turn { 
+            border-color: rgba(255, 51, 51, 0.6); 
+            box-shadow: 0 0 20px rgba(255, 51, 51, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.1); 
         }
-        .logo {
-            display: flex;
-            align-items: center;
+        
+        .card.valid-target { 
+            border-color: rgba(0, 255, 0, 0.5); 
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.1); 
         }
-        .logo img {
-            height: 40px;
-            margin-right: 10px;
+        
+        .card.selected-first { 
+            border-color: rgba(51, 204, 255, 0.6); 
+            box-shadow: 0 0 20px rgba(51, 204, 255, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.1); 
         }
-        .profile-settings {
-            display: flex;
-            align-items: center;
+        
+        .card.dead { 
+            opacity: 0.18; 
+            background: rgba(255, 255, 255, 0.005); 
+            border-color: rgba(255, 255, 255, 0.02); 
+            filter: grayscale(100%);
         }
-        .profile-settings img {
-            height: 24px;
-            margin-left: 10px;
-            cursor: pointer;
+        
+        .card.imprisoned { 
+            border-color: rgba(255, 170, 0, 0.3); 
+            background: linear-gradient(180deg, rgba(38, 28, 12, 0.3) 0%, rgba(20, 15, 8, 0.15) 100%); 
+            box-shadow: 0 0 15px rgba(255, 170, 0, 0.05); 
+            opacity: 0.50; 
         }
-        .sidebar {
-            height: 100%;
-            width: 200px;
-            position: fixed;
-            top: 0;
-            left: -250px; /* Hide sidebar initially */
-            background-color: grey;
-            padding-top: 20px;
-            transition: 0.3s; /* Smooth transition */
+        
+        .cooldown-badge { 
+            position: absolute; 
+            top: 6px; 
+            left: 6px; 
+            font-size: 10px; 
         }
-        .sidebar a {
-            padding: 10px 15px;
-            text-decoration: none;
-            font-size: 18px;
-            color: black;
-            display: block;
+        
+        .hearts { 
+            color: #ff3333; 
+            font-size: 10px; 
+            margin: 4px 0; 
+            letter-spacing: 1px; 
+            filter: drop-shadow(0 2px 4px rgba(255,51,51,0.2));
+            line-height: 1.1;
+            max-width: 100%;
         }
-        .sidebar a:hover {
-            background-color: #575757;
-        }
-        .close-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            font-size: 24px;
-            cursor: pointer;
-            color: black;
-        }
-        .main-content {
-            margin-left: 0; /* Adjust margin when sidebar is hidden */
-            padding: 20px;
-            transition: margin-left 0.3s; /* Smooth transition */
-        }
-    </style>
-</head>
-<body>
-
-<div class="header">
-
-    
-    <div class="logo">
-        <img src="20240805_025435.ico" alt="Collider Logo"> <!-- Replace with actual logo image path -->
-     
-    </div>
-
-    <div class="profile-settings">
-       
-
-
- 
-<style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
-            margin: 0;
-            padding: 0;
-        }
-        .settings-bar {
-            width: 200px;
-            background-color: grey;
-            color: white;
-            position: fixed;
-            top: 0;
-            right: -250px; /* Initially hidden */
-            height: 100%;
-            padding: 20px;
-        z-index: 2; /* Higher z-index to bring it to the front */
-            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
-            transition: right 0.3s;
-        }
-        .settings-bar h2 {
-            margin-top: 0;
-        }
-        .settings-bar a {
-            color: white;
-            text-decoration: none;
-            display: block;
-            padding: 10px 0;
-            border-bottom: 1px solid #444;
-        }
-        .settings-bar a:hover {
-            background-color: #5f5f5f5;<br><br><br><br><br><br>
-        }
-        .theme-options {
-            margin-top: 20px;
-        }
-        .theme-options button {
-            background-color: #4CAF50;
-            color: #f5f5f5;
-            border: none;
-            padding: 10px;
-            margin: 5px 0;
-            cursor: pointer;
+        
+        .action-panel { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 4px; 
+            margin-top: auto; 
             width: 100%;
         }
-        .theme-options button:hover {
-            background-color: #f5f5f5;
+        
+        /* Unified Modern Minimalist Buttons */
+        .btn { 
+            background: rgba(204, 34, 34, 0.85); 
+            color: #ffffff; 
+            border: 1px solid rgba(255, 255, 255, 0.05); 
+            padding: 4px 2px; 
+            border-radius: 5px; 
+            font-size: 8px; 
+            font-weight: 500; 
+            cursor: pointer; 
+            text-transform: uppercase; 
+            letter-spacing: 0.01em;
+            transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+            width: 100%;
+            box-sizing: border-box;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
-        img {
-            cursor: pointer;
-            width: 50px;
-            height: auto;
-        }
-         .close-btn {
-            background-color:grey ;
-            color: red;
-            border: none ;
-            padding: 10px 20px;
-            cursor: pointer;
-            font-size: 16px;
-            border-radius: ;
-           
+        .btn:hover {
+            background: rgba(204, 34, 34, 1);
+            border-color: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 2px 8px rgba(204, 34, 34, 0.2);
         }
         
-
-        .close-button-2 {
-            background-color:grey ;
-            color: white;
-            border:  ;
-            padding: 10px 20px;
-            cursor: pointer;
-            font-size: 16px;
-            border-radius: ;
+        .btn.target-btn { 
+            background: rgba(0, 170, 0, 0.85); 
+            font-size: 8px; 
+            width: 100%; 
+            margin-top: auto; 
+        }
+        .btn.target-btn:hover {
+            background: rgba(0, 170, 0, 1);
+        }
+        
+        .btn.free-btn { 
+            background: rgba(156, 39, 176, 0.2); 
+            color: #e040fb; 
+            font-size: 7px; 
+            margin-top: auto; 
+            border: 1px solid rgba(156, 39, 176, 0.3); 
+            padding: 2px; 
+            width: 100%;
+        }
+        .btn.free-btn:hover {
+            background: rgba(156, 39, 176, 0.4);
+            border-color: rgba(156, 39, 176, 0.6);
+        }
+        
+        .btn.waste-btn { 
+            background: rgba(255, 255, 255, 0.03); 
+            color: #8a8f98; 
+            font-size: 7px; 
+            margin-top: auto; 
+            border: 1px solid rgba(255, 255, 255, 0.06); 
+            padding: 2px; 
+            width: 100%;
+        }
+        .btn.waste-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #f7f8f8;
+        }
+        
+        .btn.cancel-btn { 
+            background: rgba(255, 255, 255, 0.05); 
+            color: #f7f8f8; 
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            margin-bottom: 12px; 
+            width: 100%; 
+            padding: 8px; 
+            font-size: 11px; 
+            border-radius: 6px;
+        }
+        .btn.cancel-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
         }
 
-        .close-btn:hover {
-            background-color:darkgrey ;
+        .btn.diff-btn.diff-active {
+            background: rgba(255, 51, 51, 1);
+            box-shadow: 0 0 16px rgba(255, 51, 51, 0.4);
         }
 
-        .close-button-2:hover {
-            background-color: darkgrey;
+        .setup-screen { 
+            text-align: center; 
+            padding: 60px 20px; 
+        }
+        
+        .start-btn { 
+            background: #ffffff; 
+            color: #000000; 
+            font-size: 13px; 
+            font-weight: 600; 
+            padding: 10px 20px; 
+            border: 1px solid #ffffff; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            letter-spacing: 0.02em;
+            box-shadow: 0 4px 24px rgba(255, 255, 255, 0.1);
+            transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+        }
+        .start-btn:hover {
+            background: #f1f1f1;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 30px rgba(255, 255, 255, 0.15);
+        }
+        
+        .reset-btn { 
+            background: rgba(255, 204, 0, 0.1); 
+            color: #ffcc00; 
+            font-size: 11px; 
+            font-weight: 600; 
+            padding: 8px; 
+            border: 1px solid rgba(255, 204, 0, 0.2); 
+            border-radius: 6px; 
+            display: block; 
+            margin: 8px auto 4px auto; 
+            width: 100%; 
+            text-transform: uppercase; 
+            cursor: pointer; 
+            letter-spacing: 0.04em;
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .reset-btn:hover {
+            background: rgba(255, 204, 0, 0.2);
+            border-color: rgba(255, 204, 0, 0.4);
+        }
+        
+        .rematch-btn { 
+            background: rgba(0, 170, 0, 0.1); 
+            color: #00ff00; 
+            font-size: 11px; 
+            font-weight: 600; 
+            padding: 8px; 
+            border: 1px solid rgba(0, 170, 0, 0.2); 
+            border-radius: 6px; 
+            display: block; 
+            margin: 4px auto 8px auto; 
+            width: 100%; 
+            text-transform: uppercase; 
+            cursor: pointer; 
+            letter-spacing: 0.04em;
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .rematch-btn:hover {
+            background: rgba(0, 170, 0, 0.2);
+            border-color: rgba(0, 170, 0, 0.4);
+        }
+
+        /* Glassmorphic Overlay Modals */
+        .bartender-modal {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: #111018; 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            padding: 18px; 
+            border-radius: 12px;
+            z-index: 1000; display: none; flex-direction: column; gap: 8px; max-width: 280px; width: 100%;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255,255,255,0.1);
+        }
+        .bartender-modal h3 { 
+            margin: 0 0 6px 0; 
+            font-size: 12px; 
+            font-weight: 600;
+            text-align: center; 
+            color: #f7f8f8; 
+            letter-spacing: 0.02em;
+        }
+
+        .card-title {
+            margin-top: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            line-height: 1.15;
+            width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .card-tag {
+            color: #aaa;
+            font-size: 7px;
+            text-transform: uppercase;
+            line-height: 1.2;
+            width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            display: block;
+        }
+
+        /* Landscape / horizontal mode: 10 equal columns per row */
+        @media (orientation: landscape) {
+            .squad {
+                grid-template-columns: repeat(10, minmax(0, 1fr));
+                gap: 8px;
+            }
+            .card {
+                padding: 5px;
+            }
+            .card-title {
+                font-size: 9px;
+            }
+            .card-tag {
+                font-size: 6px;
+            }
+            .hearts {
+                font-size: 8px;
+            }
+            .btn {
+                font-size: 7px;
+                padding: 3px 1px;
+            }
+            .btn.target-btn, .btn.free-btn, .btn.waste-btn {
+                font-size: 6px;
+            }
         }
     </style>
-
-
-<img src="th-removebg-preview.png" alt="Settings Icon" id="settingsIcon">
-
-<div class="settings-bar" id="settingsBar">
-        <h2></h2>
-    
-<h3>Blusters</h3>
-    <a href="index2.html">BloodBane</a>
-    <a href="index3.html">BloodBorne</a>
-    <a href="index4.html">SacredSouls</a> 
-    <a href="index5.html">CondemnedSouls</a>   <br><br> 
-    <div class="theme-options">
-        <h4>Change Theme</h4>
-        <button onclick="changeTheme('light')">Light Theme</button>
-        <button onclick="changeTheme('dark')">Dark Theme</button>
-    </div>
-
-<br><br>
-<h4>Follow Us</h4>
-
-<a href="https://discord.gg/NP2BWWp45M"><img src="download.png" style="width:8%" alt="Collider Logo"> ‎ ‎ ‎ ‎ Discord</a>
-<a href="https://www.facebook.com/orewaareeb"><img src="png-transparent-computer-icons-facebook-blog-facebook-logo-desktop-wallpaper-facebook-icon-thumbnail.png" style="width:8%" alt="Collider Logo"> ‎ ‎ ‎ ‎ Facebook</a>
-<a ✉ >areebahsan99@gmail.com</a>
-<a href="https://github.com/AintAreeb"><img src="download.jpg" style="width:8%" alt="Collider Logo"> ‎ ‎ ‎ ‎ Github</a>
-
-<a href="https://x.com/aint_areeb"><img src="download (1).jpg" style="width:8%" alt="Collider Logo">‎ ‎ ‎ ‎ ‎ Twitter</a>
-
-<a href="https://www.youtube.com/@_4rb_"><img src="download (1).png" style="width:8%" alt="Collider Logo"> ‎ ‎ ‎ ‎ Youtube</a>
-
-<a href="https://www.instagram.com/areeeeeeeeeeeeeeeeeeeeeb/"><img src="th.jpg" style="width:8%" alt="Collider Logo"> ‎ ‎ ‎ ‎ Instagram</a>
-
-
-
- <button class="close-btn" id="closeBtn">x</button>
-</div>
-
-<script>
-    document.getElementById('settingsIcon').addEventListener('click', function() {
-        document.getElementById('settingsBar').style.right = '0px';
-    });
-    document.getElementById('closeBtn').addEventListener('click', function() {
-        document.getElementById('settingsBar').style.right = '-250px';
-    });
- 
-
-    function changeTheme(theme) {
-        if (theme === 'light') {
-            document.body.style.backgroundColor = '#ffffff';
-            document.body.style.color = '#000000';
-        } else if (theme === 'dark') {
-            document.body.style.backgroundColor = '#333333';
-            document.body.style.color = '#ffffff';
-        }
-    }
-</script>
-
-
-</div>
-
-    </div>
-</div>
-
-
-
-<div class="main-content" id="mainContent">
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<marquee behavior="scroll" direction="left" scrollamount="0">
-
-<style>
-  .row {
-    display: flex;
-  }
-  .column {
-    float: left;
-    width: 100%;
-    padding: 0px;
-  }
-  .row::after {
-    content: "";
-    clear: both;
-    display: table;
-  }
-</style>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 </head>
 <body>
 
-<div class="row">
-  <div class="column">
-    <img src="Sacred_x_cards.png" style="width:100%">
-  </div>
-  <div class="column">
-    <img src="Bane_x_Back.png"  style="width:100%">
-  </div>
-
-
-  <div class="column">
-    <img src=" Condemned_x_back.png" style="width:100%">
-  </div>
-
-  <div class="column">
-    <img src=" Borne_x_back.png"  style="width:100%">
-  </div>
-
-
-
-
-  </div>
-
-
-
-
-
-  
-  </div>
-</div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-</marquee> 
-
-
-
-
-
-
-
-
-
-
-
-
-
-    <marquee><img src="20240805_025222.png" style="width:15%">
-
-
-    </marquee> 
-     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: ;
-            padding: ;
-        }
-        .section {
-            padding: 80px;
-            border: ;
-            margin: 
-        }
-        summary {
-            font-size: 1.5em;
-            cursor: pointer;
-        }
-        details[open] summary {
-            color: #00FFFF;
-        }
-    </style>
-</head>
-<body> 
-<br><br><h1 style="font-size: 30px; color: black; font-family:century gothic; text-align: center;">BloodLust is a fast-paced card game where two teams will be looking forward to eliminate each other. This is a strategy based game.</h1><br><br>
-<h2 style="font-size: 70px; color: purple; font-family:'Times New Roman', serif;text-align: center;">Basic Rules:<br><br>
-<p style="font-size: 25px; color: black; font-family:century gothic; text-align: center;"> 1.The game consists of 32 blusters, 12 from Blood Banes, 10 from Blood Bornes and 1 each from Condemned Souls and Sacred Souls each having unique abilities.<br><br>2.Each of the blusters will have a certain amount of bloods. These bloods can be used to play the bluster's ability.<br><br>3.Each team will get 11 blusters, 5 from Blood Banes, 4 from Blood Bornes and 1 each from Condemned Souls and Sacred Souls.<br><br>4.Using the abilities of these blusters, the team eliminating all the other blusters of the opponent team wins.<br><br>5.To eliminate a bluster, one can imprison or directly kill another bluster. There are also the concepts of blocking kill and imprison, time travelling, resurrecting and other exciting moves.<br><br>6.Signs you must know:<br><br>i.<img src="1000034494-removebg-preview.png" width="3%" height="1%">
-    - Hex Level. The team having less hex level after draft gets to play his bluster first.<br><br>
-ii.<img src="signature (3).png" width="3%" height="1%">   -  Blocked for next move. The bluster having <img src="signature (3).png" width="3%" height="1%">, can't play the card twice consecutively.<br><br>iii. <img src="signature (1).png" width="3%" height="1%">   - Blocked for 3 moves. A bluster having this will have a cooldown of 3 moves after playing once.<br><br>iv.<img src="signature.png" width="3%" height="1%">   - is blood. These are the bloods that the blusters use to play its ability.<p></h2><br><br>
-<br><br><h2 style="font-size: 70px; color: purple; font-family:'Times New Roman', serif;text-align: center;">Blusters:<br><br><p style="font-size: 25px; color: black; font-family:century gothic; text-align: center;">The bluster can be divided into 4 genres. They are:
-</h2>  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-       <summary style="font-size: 50px; color: maroon; font-family:'Times New Roman', serif;; text-align: center;"><a style="font-size: 50px; color: maroon; font-family:'Times New Roman', serif;; text-align: center;" href="index2.html"</a> <img src="20240805_025049.png" style="width:20%" alt="BloodBane"></summary> 
-
-
-
-
-
-       <summary style="font-size: 50px; color: darkblue; font-family:'Times New Roman', serif;; text-align: center;"><a style="font-size: 50px; color: darkblue; font-family:'Times New Roman', serif;; text-align: center;" href="index3.html"</a><img src="20240805_025327.png" style="width:20%" alt="BloodBorne"></summary>
-       
-
-       <summary style="font-size: 50px; color: cyan; font-family:'Times New Roman', serif;; text-align: center;"><a style="font-size: 50px; color: darkcyAN; font-family:'Times New Roman', serif;; text-align: center;" href="index4.html"</a><img src="20240805_025435.png" style="width:20%" alt="SacredSouls"></summary>
-
-
-
-       <summary style="font-size: 50px; color: grey; font-family:'Times New Roman', serif;; text-align: center;"><a style="font-size: 50px; color: grey; font-family:'Times New Roman', serif;; text-align: center;" href="index5.html"</a><img src="20240805_025222.png" style="width:20%" alt="CondemnedSouls"></summary>
+    <div id="setupView" class="setup-screen">
+        <h1>🩸 BLOODLUST</h1>
+        <div class="squad-title" style="margin-top:0; border-bottom:none;">Select Bot Difficulty</div>
+        <div id="difficultyPicker" style="display:flex; gap:8px; justify-content:center; margin:10px 0 18px 0;">
+            <button class="btn diff-btn" data-diff="easy" style="width:auto; padding:8px 14px; font-size:10px;" onclick="setDifficulty('easy', this)">EASY</button>
+            <button class="btn diff-btn" data-diff="mid" style="width:auto; padding:8px 14px; font-size:10px;" onclick="setDifficulty('mid', this)">MID</button>
+            <button class="btn diff-btn" data-diff="hard" style="width:auto; padding:8px 14px; font-size:10px;" onclick="setDifficulty('hard', this)">HARD</button>
+            <button class="btn diff-btn" data-diff="extreme" style="width:auto; padding:8px 14px; font-size:10px;" onclick="setDifficulty('extreme', this)">EXTREME</button>
+        </div>
+        <button class="start-btn" onclick="initializeMatch()">INITIALIZE BLOODLUST</button>
+        <p class="rotate-hint">Rotate your phone for the best experience</p>
+    </div>
+
+    <div id="gameView" style="display: none;">
+        <h1>🩸 BLOODLUST</h1>
+        <div class="turn-display" id="turnIndicator">YOUR TURN</div>
         
-</a>
+        <div class="targeting-status" id="targetBar"></div>
+        <button id="cancelActionBtn" class="btn cancel-btn" style="display:none;" onclick="abortTargetingSequence()">❌ ABORT ADVANCED MANEUVER</button>
+        
+        <button id="resetButton" class="reset-btn" style="display:none;" onclick="resetToSetup()">RETURN TO ROOT SCREEN</button>
+        <button id="rematchButton" class="rematch-btn" style="display:none;" onclick="initializeMatch()">🔁 INSTANT REMATCH</button>
 
-</body>
+        <div class="squad-title" id="p1Title">Your Squad</div>
+        <div class="squad" id="p1Field"></div>
+        
+        <div class="log" id="combatLog"></div>
 
-</div>
+        <div class="squad-title" id="p2Title">Bot's Squad</div>
+        <div class="squad" id="p2Field"></div>
+    </div>
+
+    <div id="bartenderChoiceModal" class="bartender-modal">
+        <h3>CHOOSE OPPONENT'S FORCED ACTION CARD</h3>
+        <div id="bartenderOptionsContainer" style="display:flex; flex-direction:column; gap:4px;"></div>
+    </div>
+
+    <div id="actorChoiceModal" class="bartender-modal">
+        <h3>CHOOSE CARD ROLE TO MIMIC</h3>
+        <div id="actorOptionsContainer" style="display:flex; flex-direction:column; gap:4px; max-height: 200px; overflow-y: auto;"></div>
+    </div>
+
+    <div id="dementorChoiceModal" class="bartender-modal">
+        <h3>CHOOSE DEAD ROLE TO MIMIC</h3>
+        <div id="dementorOptionsContainer" style="display:flex; flex-direction:column; gap:4px; max-height: 200px; overflow-y: auto;"></div>
+    </div>
+
+    <div id="sorcererChoiceModal" class="bartender-modal">
+        <h3>CHOOSE OPPONENT CARD TO HIJACK</h3>
+        <div id="sorcererOptionsContainer" style="display:flex; flex-direction:column; gap:4px; max-height: 200px; overflow-y: auto;"></div>
+    </div>
+
+    <div id="mechaChoiceModal" class="bartender-modal">
+        <h3>CHOOSE ALLY CARD TO FUSE</h3>
+        <div id="mechaOptionsContainer" style="display:flex; flex-direction:column; gap:4px; max-height: 200px; overflow-y: auto;"></div>
+    </div>
+
+    <div id="skinwalkerChoiceModal" class="bartender-modal">
+        <h3>CHOOSE FORM TO TRANSFORM INTO</h3>
+        <div id="skinwalkerOptionsContainer" style="display:flex; flex-direction:column; gap:4px; max-height: 200px; overflow-y: auto;"></div>
+    </div>
+
+    <div id="hackerOwnChoiceModal" class="bartender-modal">
+        <h3>CHOOSE YOUR CARD TO SWAP</h3>
+        <div id="hackerOwnOptionsContainer" style="display:flex; flex-direction:column; gap:4px; max-height: 200px; overflow-y: auto;"></div>
+    </div>
+
+    <div id="hackerEnemyChoiceModal" class="bartender-modal">
+        <h3>CHOOSE ENEMY CARD TO SWAP WITH</h3>
+        <div id="hackerEnemyOptionsContainer" style="display:flex; flex-direction:column; gap:4px; max-height: 200px; overflow-y: auto;"></div>
+    </div>
+
+    <div id="mergedActionModal" class="bartender-modal">
+        <h3 id="mergedActionModalTitle">CHOOSE ACTION</h3>
+        <div id="mergedActionOptionsContainer" style="display:flex; flex-direction:column; gap:4px; max-height: 240px; overflow-y: auto;"></div>
+    </div>
 
 <script>
-    function toggleSidebar() {
-        var sidebar = document.getElementById("mySidebar");
-        var mainContent = document.getElementById("mainContent");
-        if (sidebar.style.left === "-250px") {
-            sidebar.style.left = "0";
-            mainContent.style.marginLeft = "250px";
-        } else {
-            sidebar.style.left = "-250px";
-            mainContent.style.marginLeft = "0";
-        }
-    }
+const CARD_POOL = [
+    // Bloodbanes
+    { name: 'Killer', tag: 'Criminal', maxBlood: 2, hex: 2, cooldown: 'none', category: 'Bloodbane' },
+    { name: 'Robber', tag: 'Criminal', maxBlood: 3, hex: 1, cooldown: 'none', category: 'Bloodbane' },
+    { name: 'Cop', tag: 'Law & Order', maxBlood: 2, hex: 1, cooldown: 'none', category: 'Bloodbane' },
+    { name: 'Dementor', tag: 'Entity', maxBlood: 2, hex: 3, cooldown: 'consecutive', category: 'Bloodbane' },
+    { name: 'Dictator', tag: 'Law & Order', maxBlood: 2, hex: 3, cooldown: 'consecutive', category: 'Bloodbane' },
+    { name: 'Hood', tag: 'Assassin', maxBlood: 3, hex: 2, cooldown: 'none', category: 'Bloodbane' },
+    { name: 'Lawyer', tag: 'Law & Order', maxBlood: 3, hex: 1, cooldown: 'none', category: 'Bloodbane' },
+    { name: 'Ninja', tag: 'Assassin', maxBlood: 2, hex: 2, cooldown: 'consecutive', category: 'Bloodbane' },
+    { name: 'Spy', tag: 'Assassin', maxBlood: Infinity, hex: 3, cooldown: 'consecutive', category: 'Bloodbane' },
+    { name: 'Sorcerer', tag: 'Mystic', maxBlood: 2, hex: 3, cooldown: 'consecutive', category: 'Bloodbane' },
+    { name: 'Singer', tag: 'Artist', maxBlood: 2, hex: 2, cooldown: 'none', category: 'Bloodbane' },
+    { name: 'Witch', tag: 'Mystic', maxBlood: 2, hex: 2, cooldown: 'none', category: 'Bloodbane' },
 
-    // Swipe functionality
-    let touchstartX = 0;
-    let touchendX = 0;
+    // Bloodbornes
+    { name: 'Mecha', tag: 'Bloodsmith', maxBlood: 2, hex: 3, cooldown: 'none', category: 'Bloodborne' },
+    { name: 'Knight', tag: 'Law & Order', maxBlood: 2, hex: 2, cooldown: 'none', category: 'Bloodborne' },
+    { name: 'Imam', tag: 'Mystic', maxBlood: 2, hex: 3, cooldown: 'consecutive', category: 'Bloodborne' },
+    { name: 'Mage', tag: 'Mystic', maxBlood: 3, hex: 3, cooldown: 'consecutive', category: 'Bloodborne' },
+    { name: 'Doctor', tag: 'Medic', maxBlood: 3, hex: 1, cooldown: 'none', category: 'Bloodborne' },
+    { name: 'Bartender', tag: 'Criminal', maxBlood: 2, hex: 1, cooldown: 'consecutive', category: 'Bloodborne' },
+    { name: 'Jinn', tag: 'Entity', maxBlood: 2, hex: 1, cooldown: 'consecutive', category: 'Bloodborne' },
+    { name: 'Watchmaker', tag: 'Bloodsmith', maxBlood: 2, hex: 3, cooldown: '3moves', category: 'Bloodborne' },
+    { name: 'Skinwalker', tag: 'Mystic', maxBlood: 1, hex: 3, cooldown: 'consecutive', category: 'Bloodborne' },
+    { name: 'Hacker', tag: 'Criminal', maxBlood: 2, hex: 3, cooldown: '3moves', category: 'Bloodborne' },
 
-    function handleGesture() {
-        if (touchendX < touchstartX) {
-            // Swipe left
-            toggleSidebar();
-        }
-        if (touchendX > touchstartX) {
-            // Swipe right
-            toggleSidebar();
-        }
-    }
+    // Heroics/SacredSouls
+    { name: 'Actor', tag: 'Artist', maxBlood: 1, hex: 3, cooldown: 'none', isHeroic: true, category: 'Heroic' },
+    { name: 'Therapist', tag: 'Medic', maxBlood: 1, hex: 3, cooldown: 'none', isHeroic: true, category: 'Heroic' },
+    { name: 'Princess', tag: 'Artist', maxBlood: 1, hex: 3, cooldown: 'none', isHeroic: true, category: 'Heroic' },
+    { name: 'Reporter', tag: 'Law & Order', maxBlood: 1, hex: 3, cooldown: 'none', isHeroic: true, category: 'Heroic' },
+    { name: 'Terrorist', tag: 'Criminal', maxBlood: 1, hex: 3, cooldown: 'none', isHeroic: true, category: 'Heroic' }
+];
 
-    document.addEventListener('touchstart', function(event) {
-        touchstartX = event.changedTouches[0].screenX;
-    }, false);
+// Roles that 'Dementor' is forbidden from reanimating: the entire
+// Heroic/SacredSouls category plus Skinwalker, Sorcerer and Watchmaker.
+const DEMENTOR_FORBIDDEN_ROLES = ['Actor', 'Therapist', 'Princess', 'Reporter', 'Terrorist', 'Skinwalker', 'Sorcerer', 'Watchmaker'];
+// Cards that 'Sorcerer' is forbidden from hijacking/controlling, beyond Heroics.
+const SORCERER_FORBIDDEN_ROLES = ['Skinwalker', 'Dementor', 'Watchmaker'];
 
-    document.addEventListener('touchend', function(event) {
-        touchendX = event.changedTouches[0].screenX;
-        handleGesture();
-    }, false);
-</script>
+let gameState = {
+    roundCount: 1,
+    currentTurn: 1, 
+    p1: [],
+    p2: [],
+    isGameOver: false,
+    difficulty: 'mid',
+    targetingMode: { isActive: false, type: null, actorId: null, firstTargetId: null, metadata: null },
+    p1KnightShields: 0,
+    p2KnightShields: 0,
+    botLastAttackRecord: null,
+    forcedBotActorName: null,
+    botExecutionSequenceOverride: null,
+    unusedBloodbanes: [],
+    lastHackerSwapCategory: null
+};
 
+function setDifficulty(level, btnEl) {
+    gameState.difficulty = level;
+    document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('diff-active'));
+    if (btnEl) btnEl.classList.add('diff-active');
+}
+document.addEventListener('DOMContentLoaded', () => {
+    const defaultBtn = document.querySelector(`.diff-btn[data-diff="${gameState.difficulty}"]`);
+    if (defaultBtn) defaultBtn.classList.add('diff-active');
+});
 
-
-
-
-
-
-
-
-
-<h5 style="font-size: 70px; color: purple; font-family:'Times New Roman', serif;text-align: center;">CRUCIAL RULES:</h5><br><br>
-<p style="font-size: 25px; color: black; font-family:century gothic; text-align: center;">
-1. 'Entities' can only be killed by 'Mystics'.<br><br>
-2. The difference between Hex lvl can't be more than 6.<br><br> 
-3. To revive 'Spy', 'Mage' needs 2 bloods.<br><br>
-4. If 'Mecha' is used with 'Witch', two blusters can be poisoned.<br><br>
-5. If 'Mecha' is used with 'Hood', two bloods can be received. 'Mecha' itself can receive, but can't if it dies on the given move.<br><br>
-6. If 'Watchmaker' is harmed by one blood, it can use its last remaining blood and thus, receive the blood lost on the previous move.<br><br>
-7. Ninja's last blood can be used to gain two bloods.<br><br>
-8.If using the last move of the last bluster, opponent's last bluster is killed then, it will be a tie but, if last move can't kill, he'll lose.<br><br>
-9. 'Mystics' even if not having the ability to harm, can harm 'Entities' by one blood. (Imam, Mage can take 1 blood form  entities.)<br><br>
-10. 'Skinwalker' can't be killed before it changes its form.<br><br>
-11. 'Sorcerer' can use opponent's 'Hood' to harm and gain blood for sorcerer himself or anyone else.<br><br>
-12. 'Condemned souls' can harm one other. The one using will not be affected</h2><br><br>
-<br><br>
-
-
-<h2 style="font-size: 70px; color: Grey; font-family:'Times New Roman', serif;text-align: center;">The End</h2>
-<p style="font-size: 10px; color: grey; font-family:'Times New Roman', serif;text-align: center;">DxD Studios</p>
-
-
-<br><br>
-
-
-
-
- <style>
-.wave-divider {
-    position: relative;
-    width: 100%;
-    height:10px;
-    background: grey;
+function writeLog(text) {
+    const log = document.getElementById('combatLog');
+    log.innerHTML += `<div>» ${text}</div>`;
+    log.scrollTop = log.scrollHeight;
 }
 
-.wave-divider::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: url('wave.svg') repeat-x;
-    background-size: cover;
-} </style> <div class="wave-divider"></div>
+function resetToSetup() {
+    document.getElementById('gameView').style.display = 'none';
+    document.getElementById('setupView').style.display = 'block';
+}
 
-<body>
-    <!-- Other content of your website -->
+function initializeMatch() {
+    let balanced = false;
+    let playerSquad = [], botSquad = [];
+    
+    const bloodbanes = CARD_POOL.filter(c => c.category === 'Bloodbane');
+    const bloodbornes = CARD_POOL.filter(c => c.category === 'Bloodborne');
+    const heroics = CARD_POOL.filter(c => c.category === 'Heroic');
 
-    <footer class="footer">
-        <div class="footer-container">
-            <div class="footer-section about">
-                <h2  style="font-size: 40px; color: Grey; font-family:'Times New Roman', serif;text-align: center;">Credits</h2>
-                <p style="text-align:center">
-Game Title: BloodLust.<br><br>
-Taken time: 7 Hrs.<br><br>
-Game concept: Areeb .<br><br>
-Bluster & its Development: Ifaz.<br><br>
-Enhanced by: Areeb, Ifaz, Mahdin.<br><br>
-Name Selection:Ifaz, Mahdin.<br><br>
-Lead Developer: Areeb.<br><br>
-Web Designer: Areeb.<br><br>
-Card Designer: Areeb.<br><br>
-QA Testers: Mahdin, Mahin.<br><br>
-Special Thanks: To Mahdin for his great support.  </p>
-                            <div class="footer-section contact">
-                           </div>
-        </div>
-        <div class="footer-bottom">
-            ©Copyright 2024 AintAreeb | Designed by Areeb
-        </div>
-    </footer>
+    while (!balanced) {
+        playerSquad = []; botSquad = [];
+        
+        // Shuffle helper array
+        const shuffle = (array) => array.map(a => ({ sort: Math.random(), value: a })).sort((a, b) => a.sort - b.sort).map(a => a.value);
 
-    <script src="script.js"></script>
-</body>
+        let shuffledBanes = shuffle([...bloodbanes]);
+        let shuffledBornes = shuffle([...bloodbornes]);
+        let shuffledHeroics = shuffle([...heroics]);
 
+        // Exact requirements: 5 Bloodbanes, 4 Bloodbornes, 1 Heroic per squad
+        let pBanes = shuffledBanes.slice(0, 5);
+        let bBanes = shuffledBanes.slice(5, 10);
 
+        let pBornes = shuffledBornes.slice(0, 4);
+        let bBornes = shuffledBornes.slice(4, 8);
 
+        let pHeroics = shuffledHeroics.slice(0, 1);
+        let bHeroics = shuffledHeroics.slice(1, 2);
 
+        let pRaw = [...pBanes, ...pBornes, ...pHeroics];
+        let bRaw = [...bBanes, ...bBornes, ...bHeroics];
+        gameState.unusedBloodbanes = shuffledBanes.slice(10, 12);
 
+        pRaw.forEach((pCard, idx) => {
+            playerSquad.push({...pCard, id: `p1_${idx}`, blood: pCard.maxBlood, imprisoned: false, hasActivity: false, hasKilled: false, poisoned: false, mechaCooldown: 0, lastUsedRound: 0, blockedCounter: 0, bartenderState: 'random', releasedImprisoned: false});
+        });
 
+        bRaw.forEach((bCard, idx) => {
+            botSquad.push({...bCard, id: `p2_${idx}`, blood: bCard.maxBlood, imprisoned: false, hasActivity: false, hasKilled: false, poisoned: false, mechaCooldown: 0, lastUsedRound: 0, blockedCounter: 0, bartenderState: 'random'});
+        });
 
+        let pSum = playerSquad.reduce((sum, c) => c.maxBlood === Infinity ? sum + 3 : sum + c.hex, 0);
+        let bSum = botSquad.reduce((sum, c) => c.maxBlood === Infinity ? sum + 3 : sum + c.hex, 0);
+        if (Math.abs(pSum - bSum) <= 25) balanced = true;
+    }
+
+    gameState.roundCount = 1;
+    gameState.p1 = playerSquad;
+    gameState.p2 = botSquad;
+    gameState.currentTurn = 1;
+    gameState.isGameOver = false;
+    gameState.p1KnightShields = 0;
+    gameState.p2KnightShields = 0;
+    gameState.botLastAttackRecord = null;
+    gameState.forcedBotActorName = null;
+    gameState.botExecutionSequenceOverride = null;
+    gameState.lastHackerSwapCategory = null;
+    abortTargetingSequence();
+
+    document.getElementById('setupView').style.display = 'none';
+    document.getElementById('gameView').style.display = 'block';
+    document.getElementById('resetButton').style.display = 'none';
+    document.getElementById('rematchButton').style.display = 'none';
+    document.getElementById('combatLog').innerHTML = '';
+    
+    writeLog("Engine Integrated. BloodLust allocated exactly: 5 Bloodbanes, 4 Bloodbornes, 1 Heroic.");
+    renderScene();
+}
+
+function openTargetingOverlay(actorId, actionKey, overlayInstruction, metadata = null) {
+    gameState.targetingMode.isActive = true;
+    gameState.targetingMode.type = actionKey;
+    gameState.targetingMode.actorId = actorId;
+    gameState.targetingMode.firstTargetId = null;
+    gameState.targetingMode.metadata = metadata;
+    
+    const bar = document.getElementById('targetBar');
+    bar.innerText = overlayInstruction;
+    bar.style.display = 'block';
+    document.getElementById('cancelActionBtn').style.display = 'block';
+    renderScene();
+}
+
+function abortTargetingSequence() {
+    gameState.targetingMode.isActive = false;
+    gameState.targetingMode.type = null;
+    gameState.targetingMode.actorId = null;
+    gameState.targetingMode.firstTargetId = null;
+    gameState.targetingMode.metadata = null;
+    document.getElementById('targetBar').style.display = 'none';
+    document.getElementById('cancelActionBtn').style.display = 'none';
+    renderScene();
+}
+
+function hasValidTargets(card, allies, enemies) {
+    if (card.name === 'Terrorist') {
+        let teamLostTwoCount = allies.filter(c => c.blood <= 0).length >= 2;
+        let targetsExist = enemies.some(c => c.blood > 1 && !c.isHeroic);
+        return teamLostTwoCount && targetsExist;
+    }
+    if (card.name === 'Therapist') return gameState.botLastAttackRecord !== null && enemies.some(c => c.blood > 0 && !c.imprisoned);
+    if (card.name === 'Reporter') return allies.some(c => c.blood > 0);
+    if (card.name === 'Actor') return true;
+    if (card.name === 'Princess') return gameState.botLastAttackRecord !== null;
+
+    let aliveEnemies = enemies.filter(c => c.blood > 0 && !c.imprisoned);
+    let aliveAllies = allies.filter(c => c.blood > 0 && !c.imprisoned);
+
+    let harmfulEnemies = aliveEnemies.filter(c => !c.isHeroic);
+
+    if (card.tag !== 'Mystic') {
+        harmfulEnemies = harmfulEnemies.filter(c => c.tag !== 'Entity');
+    }
+
+    if (card.name === 'Watchmaker') {
+        return gameState.botLastAttackRecord !== null;
+    }
+
+    if (card.name === 'Dementor') {
+        return allies.concat(enemies).some(c => c.blood <= 0 && !DEMENTOR_FORBIDDEN_ROLES.includes(c.name));
+    }
+
+    if (card.name === 'Knight' && card.blood === 2) return true;
+    if (card.name === 'Imam') {
+        let targetsExist = false;
+        if (gameState.botLastAttackRecord) {
+            let record = gameState.botLastAttackRecord;
+            let targetCard = allies.find(c => c.id === record.targetId);
+            let isBlockable = record.wasImprisoned || record.isDirectKill || record.isSorcererAction;
+            if (targetCard && isBlockable) {
+                targetsExist = true;
+            }
+        }
+        let entitiesExist = harmfulEnemies.some(c => c.tag === 'Entity');
+        return targetsExist || entitiesExist;
+    } 
+
+    if (card.name === 'Mage') {
+        let hasDeadAllies = allies.some(c => c.blood <= 0);
+        let hasEnemyEntities = enemies.some(c => c.blood > 0 && !c.imprisoned && c.tag === 'Entity');
+        return hasDeadAllies || hasEnemyEntities;
+    }
+    if (card.name === 'Mecha') {
+        let hasPartner = allies.some(c => c.blood > 0 && !c.imprisoned && ['Spy', 'Robber', 'Hood', 'Witch', 'Knight', 'Cop', 'Ninja'].includes(c.name));
+        return hasPartner && harmfulEnemies.length > 0;
+    }
+
+    if (card.name === 'Killer') return harmfulEnemies.length > 0;
+    if (card.name === 'Robber') {
+        let normalTargets = harmfulEnemies.filter(c => c.tag !== 'Criminal' && c.tag !== 'Entity');
+        let executeTargets = card.blood === 1 ? harmfulEnemies.filter(c => c.tag === 'Criminal' || c.name === 'Dictator') : [];
+        return normalTargets.length > 0 || executeTargets.length > 0;
+    }
+    if (card.name === 'Doctor') return aliveAllies.some(c => c.id !== card.id && c.blood < c.maxBlood);
+    if (card.name === 'Dictator') return harmfulEnemies.length > 0;
+    if (card.name === 'Cop') return harmfulEnemies.some(c => c.tag === 'Criminal' || c.tag === 'Law & Order');
+    if (card.name === 'Singer') return harmfulEnemies.length >= 2;
+    if (card.name === 'Spy') return harmfulEnemies.length > 0;
+    if (card.name === 'Ninja') return harmfulEnemies.length > 0;
+    if (card.name === 'Hood') {
+        let canSteal = harmfulEnemies.some(c => c.name !== 'Spy' || card.blood === 1);
+        let hasTeammate = aliveAllies.some(a => a.id !== card.id);
+        return canSteal && hasTeammate;
+    }
+    if (card.name === 'Witch') return harmfulEnemies.length > 0; 
+    if (card.name === 'Lawyer') {
+        return harmfulEnemies.some(c => (c.tag === 'Criminal' || c.tag === 'Law & Order') && c.hasActivity);
+    }
+    if (card.name === 'Sorcerer') {
+        return harmfulEnemies.filter(c => !SORCERER_FORBIDDEN_ROLES.includes(c.name)).length > 0;
+    }
+    if (card.name === 'Jinn') return harmfulEnemies.length > 0;
+    if (card.name === 'Bartender') return true;
+
+    if (card.name === 'Skinwalker') return gameState.unusedBloodbanes.length > 0;
+    if (card.name === 'Hacker') return getHackerEligiblePairs(allies, enemies, card.id).length > 0;
+
+    return harmfulEnemies.length > 0;
+}
+
+// Returns swappable own/enemy card pairs for Hacker, respecting the global
+// alternation rule (Bloodbane<->Bloodbane swaps must alternate with
+// Bloodborne<->Bloodborne swaps across the whole match) and excluding
+// dead, poisoned, imprisoned, Heroic, or the acting Hacker card itself.
+function getHackerEligiblePairs(allies, enemies, actorId) {
+    let requiredCategory = gameState.lastHackerSwapCategory === 'Bloodborne' ? 'Bloodbane'
+        : (gameState.lastHackerSwapCategory === 'Bloodbane' ? 'Bloodborne' : null);
+    let isSwappable = c => c.blood > 0 && !c.imprisoned && !c.poisoned && !c.isHeroic && (c.category === 'Bloodbane' || c.category === 'Bloodborne');
+    let ownEligible = allies.filter(c => c.id !== actorId && isSwappable(c) && (requiredCategory === null || c.category === requiredCategory));
+    let enemyEligible = enemies.filter(c => isSwappable(c) && (requiredCategory === null || c.category === requiredCategory));
+    let pairs = [];
+    ownEligible.forEach(o => {
+        enemyEligible.filter(e => e.category === o.category).forEach(e => pairs.push({ ownId: o.id, enemyId: e.id }));
+    });
+    return pairs;
+}
+
+function executeKnightFirstMove(actorId) {
+    let actor = gameState.p1.find(c => c.id === actorId);
+    actor.blood -= 1;
+    actor.hasActivity = true;
+    gameState.p1KnightShields = 2;
+    writeLog(`🛡️ Your Knight activated a global protection shield.`);
+    finalizeActiveTurn();
+}
+
+// Shared reversal step used by Watchmaker/Princess/Therapist (Imam applies its
+// own extra eligibility gate first, then reuses this same restore logic).
+// Undoes the bot's recorded last attack on `affectedCard`: releases it if it
+// was imprisoned, otherwise restores the Blood it lost and clears poison.
+function restoreFromRecord(record, affectedCard) {
+    if (!affectedCard) return;
+    if (record.wasImprisoned) {
+        affectedCard.imprisoned = false;
+    } else {
+        affectedCard.blood += record.damageDealt;
+        if (affectedCard.maxBlood !== Infinity && affectedCard.blood > affectedCard.maxBlood) {
+            affectedCard.blood = affectedCard.maxBlood;
+        }
+        if (record.wasPoisoned) affectedCard.poisoned = false;
+    }
+}
+
+function executeWatchmakerTimeTravel(actorId) {
+    let actor = gameState.p1.find(c => c.id === actorId);
+    actor.blood -= 1;
+    actor.hasActivity = true;
+    actor.lastUsedRound = gameState.roundCount;
+
+    writeLog(`⏳ Watchmaker initiates localized chronoshift protocol.`);
+    if (gameState.botLastAttackRecord) {
+        let record = gameState.botLastAttackRecord;
+        let affectedCard = gameState.p1.find(c => c.id === record.targetId);
+        restoreFromRecord(record, affectedCard);
+        if (affectedCard) {
+            writeLog(record.wasImprisoned
+                ? `⏳ Chronoshift Overturn: Imprisonment of ${affectedCard.name} has been erased.`
+                : `⏳ Chronoshift Overturn: Restored ${record.damageDealt} Blood and state modifiers to ${affectedCard.name}.`);
+        }
+    }
+    if (actor.blood <= 0) actor.blood = 0;
+    finalizeActiveTurn();
+}
+
+function executeImamDefensiveBlock(actorId) {
+    let actor = gameState.p1.find(c => c.id === actorId);
+    actor.blood -= 1;
+    actor.hasActivity = true;
+    
+    writeLog(`🕌 Imam calls upon divine intervention.`);
+    
+    if (gameState.botLastAttackRecord) {
+        let record = gameState.botLastAttackRecord;
+        let targetCard = gameState.p1.find(c => c.id === record.targetId);
+        
+        if (targetCard) {
+            if (record.wasImprisoned && targetCard.imprisoned) {
+                targetCard.imprisoned = false;
+                writeLog(`🕌 Imam divine block! Reversal of time released ${targetCard.name} from prison.`);
+            } else if ((record.isDirectKill || record.isSorcererAction || record.damageDealt > 0) && !record.isNormalAttack) {
+                targetCard.blood += record.damageDealt;
+                if (targetCard.blood > targetCard.maxBlood && targetCard.maxBlood !== Infinity) {
+                    targetCard.blood = targetCard.maxBlood;
+                }
+                writeLog(`🕌 Imam divine block! Resurrected/Restored ${targetCard.name} by returning +${record.damageDealt} Blood.`);
+            }
+        }
+    }
+    
+    finalizeActiveTurn();
+}
+
+function executePrincessSacrifice(actorId) {
+    let actor = gameState.p1.find(c => c.id === actorId);
+    actor.blood = 0;
+    actor.hasActivity = true;
+    writeLog(`👸 Princess sacrifices her sacred soul to nullify the bot's last assault!`);
+    if (gameState.botLastAttackRecord) {
+        let record = gameState.botLastAttackRecord;
+        let affectedCard = gameState.p1.find(c => c.id === record.targetId);
+        restoreFromRecord(record, affectedCard);
+        if (affectedCard) writeLog(`👸 Restored ${affectedCard.name} back to operational safety.`);
+    }
+    gameState.botLastAttackRecord = null;
+    renderScene();
+}
+
+function executeReporterRelease(cardId) {
+    let actor = gameState.p1.find(c => c.id === cardId);
+    let freedCount = 0;
+    gameState.p1.forEach(c => {
+        if (c.imprisoned) {
+            c.imprisoned = false;
+            freedCount++;
+        }
+    });
+    actor.releasedImprisoned = true;
+    writeLog(`📰 Reporter expose released ${freedCount} imprisoned cards.`);
+    renderScene();
+}
+
+function commitReporterTurn(cardId) {
+    let actor = gameState.p1.find(c => c.id === cardId);
+    actor.hasActivity = true;
+    actor.blood = 0;
+    writeLog(`📰 Reporter concludes operational turn.`);
+    finalizeActiveTurn();
+}
+
+function executeTherapistReboundPrep(actorId) {
+    let actor = gameState.p1.find(c => c.id === actorId);
+    if (!gameState.botLastAttackRecord) {
+        writeLog(`🧘 Therapist found no recent attack to rebound.`);
+        return;
+    }
+    
+    let record = gameState.botLastAttackRecord;
+    let affectedCard = gameState.p1.find(c => c.id === record.targetId);
+    restoreFromRecord(record, affectedCard);
+    if (affectedCard) writeLog(`🧘 Therapist reversed the assault on ${affectedCard.name}!`);
+
+    let botAbilityName = record.actorName || 'Enemy';
+    openTargetingOverlay(actor.id, 'therapist_rebound_strike', `🧘 THERAPIST REBOUND: CHOOSE OPPONENT TO UNLEASH ${botAbilityName.toUpperCase()} ABILITY`, { record: record });
+}
+
+function executeTerroristDrain(actorId) {
+    let actor = gameState.p1.find(c => c.id === actorId);
+    gameState.p2.forEach(c => {
+        if (c.blood > 1 && !c.isHeroic) {
+            c.blood -= 1;
+        }
+    });
+    actor.blood = 0;
+    actor.hasActivity = true;
+    writeLog(`💥 Terrorist drained 1 blood from eligible opponent cards and died instantly.`);
+    finalizeActiveTurn();
+}
+
+function runActorAbilityPad() {
+    let container = document.getElementById('actorOptionsContainer');
+    container.innerHTML = '';
+    let roles = ['Killer', 'Robber', 'Doctor', 'Dictator', 'Cop', 'Singer', 'Spy', 'Ninja', 'Hood', 'Witch', 'Lawyer', 'Knight', 'Jinn', 'Bartender'];
+    roles.forEach(role => {
+        let b = document.createElement('button');
+        b.className = 'btn';
+        b.style.margin = '2px 0';
+        b.style.background = '#444';
+        b.innerText = role.toUpperCase();
+        b.onclick = () => handleActorRoleSelection(role);
+        container.appendChild(b);
+    });
+    document.getElementById('actorChoiceModal').style.display = 'flex';
+}
+
+function handleActorRoleSelection(roleName) {
+    document.getElementById('actorChoiceModal').style.display = 'none';
+    let actorCard = gameState.p1.find(c => c.name === 'Actor' && c.blood > 0);
+    if (!actorCard) return;
+    writeLog(`🎭 Actor mimics ${roleName}!`);
+    if (roleName === 'Killer') openTargetingOverlay(actorCard.id, 'killer_strike', '🎯 ACTOR AS KILLER');
+    else if (roleName === 'Robber') openTargetingOverlay(actorCard.id, 'robber_siphon', '💰 ACTOR AS ROBBER');
+    else if (roleName === 'Doctor') openTargetingOverlay(actorCard.id, 'doctor_heal', '❤️ ACTOR AS DOCTOR');
+    else if (roleName === 'Dictator') openTargetingOverlay(actorCard.id, 'dictator_imprison', '⛓️ ACTOR AS DICTATOR');
+    else if (roleName === 'Cop') openTargetingOverlay(actorCard.id, 'cop_strike', '👮 ACTOR AS COP');
+    else if (roleName === 'Singer') openTargetingOverlay(actorCard.id, 'singer_step1', '🎤 ACTOR AS SINGER');
+    else if (roleName === 'Spy') openTargetingOverlay(actorCard.id, 'spy_strike', '👁️ ACTOR AS SPY');
+    else if (roleName === 'Ninja') openTargetingOverlay(actorCard.id, 'ninja_strike', '🥷 ACTOR AS NINJA');
+    else if (roleName === 'Hood') openTargetingOverlay(actorCard.id, 'hood_step1', '🏹 ACTOR AS HOOD');
+    else if (roleName === 'Witch') openTargetingOverlay(actorCard.id, 'witch_poison', '🔮 ACTOR AS WITCH');
+    else if (roleName === 'Lawyer') openTargetingOverlay(actorCard.id, 'lawyer_lock', '⚖️ ACTOR AS LAWYER');
+    else if (roleName === 'Knight') openTargetingOverlay(actorCard.id, 'knight_strike', '⚔️ ACTOR AS KNIGHT');
+    else if (roleName === 'Jinn') openTargetingOverlay(actorCard.id, 'jinn_block', '🧞 ACTOR AS JINN');
+    else if (roleName === 'Bartender') {
+        let activeEnemies = gameState.p2.filter(c => c.blood > 0 && !c.imprisoned && c.blockedCounter <= 0);
+        if (activeEnemies.length > 0) {
+            let randomEnemyCard = activeEnemies[Math.floor(Math.random() * activeEnemies.length)];
+            gameState.botExecutionSequenceOverride = randomEnemyCard.name;
+        }
+        actorCard.hasActivity = true;
+        actorCard.blood = 0;
+        finalizeActiveTurn();
+    }
+}
+
+function runDementorAbilityPad(actorId) {
+    let container = document.getElementById('dementorOptionsContainer');
+    container.innerHTML = '';
+    
+    let deadCards = [...gameState.p1, ...gameState.p2].filter(c => c.blood <= 0);
+    let uniqueDeadNames = [...new Set(deadCards.map(c => c.name))].filter(n => !DEMENTOR_FORBIDDEN_ROLES.includes(n));
+    
+    if (uniqueDeadNames.length === 0) {
+        writeLog("💀 Dementor found no deceased souls to mimic.");
+        return;
+    }
+    
+    uniqueDeadNames.forEach(role => {
+        let b = document.createElement('button');
+        b.className = 'btn';
+        b.style.margin = '2px 0';
+        b.style.background = '#444';
+        b.innerText = role.toUpperCase();
+        b.onclick = () => handleDementorRoleSelection(role, actorId);
+        container.appendChild(b);
+    });
+    document.getElementById('dementorChoiceModal').style.display = 'flex';
+}
+
+function handleDementorRoleSelection(roleName, actorId) {
+    document.getElementById('dementorChoiceModal').style.display = 'none';
+    let dementorCard = gameState.p1.find(c => c.id === actorId);
+    if (!dementorCard) return;
+    
+    writeLog(`💀 Dementor reanimates the essence of ${roleName}!`);
+    
+    if (roleName === 'Killer') openTargetingOverlay(dementorCard.id, 'killer_strike', '🎯 DEMENTOR AS KILLER');
+    else if (roleName === 'Robber') openTargetingOverlay(dementorCard.id, 'robber_siphon', '💰 DEMENTOR AS ROBBER');
+    else if (roleName === 'Doctor') openTargetingOverlay(dementorCard.id, 'doctor_heal', '❤️ DEMENTOR AS DOCTOR');
+    else if (roleName === 'Dictator') openTargetingOverlay(dementorCard.id, 'dictator_imprison', '⛓️ DEMENTOR AS DICTATOR');
+    else if (roleName === 'Cop') openTargetingOverlay(dementorCard.id, 'cop_strike', '👮 DEMENTOR AS COP');
+    else if (roleName === 'Singer') openTargetingOverlay(dementorCard.id, 'singer_step1', '🎤 DEMENTOR AS SINGER');
+    else if (roleName === 'Spy') openTargetingOverlay(dementorCard.id, 'spy_strike', '👁️ DEMENTOR AS SPY');
+    else if (roleName === 'Ninja') openTargetingOverlay(dementorCard.id, 'ninja_strike', '🥷 DEMENTOR AS NINJA');
+    else if (roleName === 'Hood') openTargetingOverlay(dementorCard.id, 'hood_step1', '🏹 DEMENTOR AS HOOD');
+    else if (roleName === 'Witch') openTargetingOverlay(dementorCard.id, 'witch_poison', '🔮 DEMENTOR AS WITCH');
+    else if (roleName === 'Lawyer') openTargetingOverlay(dementorCard.id, 'lawyer_lock', '⚖️ DEMENTOR AS LAWYER');
+    else if (roleName === 'Knight') openTargetingOverlay(dementorCard.id, 'knight_strike', '⚔️ DEMENTOR AS KNIGHT');
+    else if (roleName === 'Jinn') openTargetingOverlay(dementorCard.id, 'jinn_block', '🧞 DEMENTOR AS JINN');
+    else if (roleName === 'Bartender') {
+        let activeEnemies = gameState.p2.filter(c => c.blood > 0 && !c.imprisoned && c.blockedCounter <= 0);
+        if (activeEnemies.length > 0) {
+            let randomEnemyCard = activeEnemies[Math.floor(Math.random() * activeEnemies.length)];
+            gameState.botExecutionSequenceOverride = randomEnemyCard.name;
+        }
+        dementorCard.hasActivity = true;
+        dementorCard.blood = 0;
+        finalizeActiveTurn();
+    }
+}
+
+function runSorcererAbilityPad(actorId) {
+    let container = document.getElementById('sorcererOptionsContainer');
+    container.innerHTML = '';
+    let activeEnemies = gameState.p2.filter(c => c.blood > 0 && !c.imprisoned && !c.isHeroic && !SORCERER_FORBIDDEN_ROLES.includes(c.name));
+    
+    if (activeEnemies.length === 0) {
+        writeLog("🔮 Sorcerer found no valid active enemy cards to hijack.");
+        return;
+    }
+    
+    activeEnemies.forEach(enemy => {
+        let b = document.createElement('button');
+        b.className = 'btn';
+        b.style.margin = '2px 0';
+        b.style.background = '#444';
+        b.innerText = `${enemy.name.toUpperCase()} (${enemy.blood}🩸)`;
+        b.onclick = () => handleSorcererSelection(actorId, enemy.id);
+        container.appendChild(b);
+    });
+    document.getElementById('sorcererChoiceModal').style.display = 'flex';
+}
+
+function handleSorcererSelection(actorId, enemyId) {
+    document.getElementById('sorcererChoiceModal').style.display = 'none';
+    let actorCard = gameState.p1.find(c => c.id === actorId);
+    let enemy = gameState.p2.find(c => c.id === enemyId);
+    if (!actorCard || !enemy) return;
+    
+    actorCard.blood = Math.max(0, actorCard.blood - 1);
+    actorCard.hasActivity = true;
+    actorCard.lastUsedRound = gameState.roundCount;
+
+    gameState.targetingMode.isActive = true;
+    gameState.targetingMode.type = 'sorcerer_hijacked_action';
+    gameState.targetingMode.actorId = actorId;
+    gameState.targetingMode.metadata = { hijackedCardId: enemy.id, originalType: enemy.name };
+    
+    const bar = document.getElementById('targetBar');
+    bar.innerText = `🔮 HIJACKED ${enemy.name.toUpperCase()} (1 MOVE) - CHOOSE TARGET`;
+    bar.style.display = 'block';
+    document.getElementById('cancelActionBtn').style.display = 'block';
+    renderScene();
+}
+
+function runMechaAbilityPad(actorId) {
+    let container = document.getElementById('mechaOptionsContainer');
+    container.innerHTML = '';
+    let validAllies = gameState.p1.filter(c => c.blood > 0 && !c.imprisoned && ['Spy', 'Robber', 'Hood', 'Witch', 'Knight', 'Cop', 'Ninja'].includes(c.name));
+    
+    if (validAllies.length === 0) {
+        writeLog("🤖 Mecha found no valid components to fuse with.");
+        return;
+    }
+    
+    validAllies.forEach(ally => {
+        let b = document.createElement('button');
+        b.className = 'btn';
+        b.style.margin = '2px 0';
+        b.style.background = '#444';
+        b.innerText = `${ally.name.toUpperCase()} (${ally.blood}🩸)`;
+        b.onclick = () => handleMechaSelection(actorId, ally.id);
+        container.appendChild(b);
+    });
+    document.getElementById('mechaChoiceModal').style.display = 'flex';
+}
+
+function handleMechaSelection(actorId, partnerId) {
+    document.getElementById('mechaChoiceModal').style.display = 'none';
+    let actorCard = gameState.p1.find(c => c.id === actorId);
+    let partnerCard = gameState.p1.find(c => c.id === partnerId);
+    if (!actorCard || !partnerCard) return;
+
+    gameState.targetingMode.isActive = true;
+    gameState.targetingMode.type = 'mecha_click_route_1';
+    gameState.targetingMode.actorId = actorId;
+    gameState.targetingMode.firstTargetId = null;
+    gameState.targetingMode.metadata = { partnerId: partnerId };
+    
+    const bar = document.getElementById('targetBar');
+    bar.innerText = `🤖 FUSED WITH ${partnerCard.name.toUpperCase()}: CHOOSE FIRST TARGET`;
+    bar.style.display = 'block';
+    document.getElementById('cancelActionBtn').style.display = 'block';
+    renderScene();
+}
+
+function runSkinwalkerAbilityPad(actorId) {
+    let container = document.getElementById('skinwalkerOptionsContainer');
+    container.innerHTML = '';
+
+    if (gameState.unusedBloodbanes.length === 0) {
+        writeLog("🐺 Skinwalker found no remaining Bloodbane forms left to become.");
+        return;
+    }
+
+    gameState.unusedBloodbanes.forEach((template, idx) => {
+        let b = document.createElement('button');
+        b.className = 'btn';
+        b.style.margin = '2px 0';
+        b.style.background = '#444';
+        b.innerText = template.name.toUpperCase();
+        b.onclick = () => handleSkinwalkerTransform(actorId, idx);
+        container.appendChild(b);
+    });
+    document.getElementById('skinwalkerChoiceModal').style.display = 'flex';
+}
+
+function handleSkinwalkerTransform(actorId, templateIdx) {
+    document.getElementById('skinwalkerChoiceModal').style.display = 'none';
+    let actor = gameState.p1.find(c => c.id === actorId);
+    let template = gameState.unusedBloodbanes[templateIdx];
+    if (!actor || !template) return;
+
+    // Consumes the chosen remaining Bloodbane form; the other one stays
+    // available in case a second Skinwalker ever needs it.
+    gameState.unusedBloodbanes = gameState.unusedBloodbanes.filter((t, i) => i !== templateIdx);
+
+    actor.name = template.name;
+    actor.tag = template.tag;
+    actor.hex = template.hex;
+    actor.cooldown = template.cooldown;
+    actor.category = 'Bloodbane';
+    actor.maxBlood = template.maxBlood === Infinity ? Infinity : template.maxBlood + 1;
+    actor.blood = actor.maxBlood === Infinity ? Infinity : template.maxBlood + 1;
+    actor.wasSkinwalker = true;
+    actor.lastUsedRound = 0;
+
+    writeLog(`🐺 Your Skinwalker permanently shifted into ${template.name}, gaining +1 extra Blood!`);
+    // Free action: doesn't cost the turn's move, so the turn continues
+    // and the newly-transformed card can still act this same turn.
+    renderScene();
+}
+
+function runHackerAbilityPad(actorId) {
+    let container = document.getElementById('hackerOwnOptionsContainer');
+    container.innerHTML = '';
+    let pairs = getHackerEligiblePairs(gameState.p1, gameState.p2, actorId);
+    let ownIds = [...new Set(pairs.map(p => p.ownId))];
+
+    if (ownIds.length === 0) {
+        writeLog("💻 Hacker found no eligible card pairing to swap right now.");
+        return;
+    }
+
+    ownIds.forEach(id => {
+        let ally = gameState.p1.find(c => c.id === id);
+        let b = document.createElement('button');
+        b.className = 'btn';
+        b.style.margin = '2px 0';
+        b.style.background = '#444';
+        b.innerText = `${ally.name.toUpperCase()} (${ally.category})`;
+        b.onclick = () => runHackerEnemyChoicePad(actorId, id);
+        container.appendChild(b);
+    });
+    document.getElementById('hackerOwnChoiceModal').style.display = 'flex';
+}
+
+function runHackerEnemyChoicePad(actorId, ownId) {
+    document.getElementById('hackerOwnChoiceModal').style.display = 'none';
+    let container = document.getElementById('hackerEnemyOptionsContainer');
+    container.innerHTML = '';
+    let ownCard = gameState.p1.find(c => c.id === ownId);
+    let pairs = getHackerEligiblePairs(gameState.p1, gameState.p2, actorId).filter(p => p.ownId === ownId);
+
+    pairs.forEach(p => {
+        let enemy = gameState.p2.find(c => c.id === p.enemyId);
+        let b = document.createElement('button');
+        b.className = 'btn';
+        b.style.margin = '2px 0';
+        b.style.background = '#444';
+        b.innerText = `${enemy.name.toUpperCase()} (${enemy.category})`;
+        b.onclick = () => handleHackerSwap(actorId, ownId, enemy.id);
+        container.appendChild(b);
+    });
+    document.getElementById('hackerEnemyChoiceModal').style.display = 'flex';
+}
+
+function handleHackerSwap(actorId, ownId, enemyId) {
+    document.getElementById('hackerEnemyChoiceModal').style.display = 'none';
+    let actor = gameState.p1.find(c => c.id === actorId);
+    let ownCard = gameState.p1.find(c => c.id === ownId);
+    let enemyCard = gameState.p2.find(c => c.id === enemyId);
+    if (!actor || !ownCard || !enemyCard) return;
+
+    let swapCategory = ownCard.category;
+    let ownSnapshot = { name: ownCard.name, tag: ownCard.tag, maxBlood: ownCard.maxBlood, hex: ownCard.hex, cooldown: ownCard.cooldown, category: ownCard.category };
+    let enemySnapshot = { name: enemyCard.name, tag: enemyCard.tag, maxBlood: enemyCard.maxBlood, hex: enemyCard.hex, cooldown: enemyCard.cooldown, category: enemyCard.category };
+
+    Object.assign(ownCard, enemySnapshot);
+    Object.assign(enemyCard, ownSnapshot);
+
+    [ownCard, enemyCard].forEach(c => {
+        c.blood = c.maxBlood;
+        c.imprisoned = false;
+        c.poisoned = false;
+        c.hasActivity = false;
+        c.hasKilled = false;
+        c.mechaCooldown = 0;
+        c.blockedCounter = 0;
+        c.lastUsedRound = 0;
+        c.bartenderState = 'random';
+        c.releasedImprisoned = false;
+    });
+
+    gameState.lastHackerSwapCategory = swapCategory;
+
+    actor.blood = Math.max(0, actor.blood - 1);
+    actor.hasActivity = true;
+    actor.lastUsedRound = gameState.roundCount;
+    if (actor.blood <= 0) actor.blood = 0;
+
+    writeLog(`💻 Your Hacker swapped ${ownSnapshot.name} with enemy ${enemySnapshot.name}! Both blusters restored to full Blood.`);
+    finalizeActiveTurn();
+}
+
+function applyTeamPoisonTicks(squad) {
+    squad.forEach(card => {
+        if (card.poisoned && card.blood > 0 && card.name !== 'Spy' && !card.isHeroic) {
+            card.blood = Math.max(0, card.blood - 1);
+        }
+    });
+}
+
+function freeDoctorCleanse(doctorId, targetId) {
+    let doc = gameState.p1.find(c => c.id === doctorId);
+    let patient = gameState.p1.find(c => c.id === targetId);
+    doc.blood -= 1;
+    patient.poisoned = false;
+    if (doc.blood <= 0) doc.blood = 0;
+    writeLog(`⚕️ Doctor performs clean action to remove poison from ${patient.name}. Cost: 1 Blood.`);
+    renderScene();
+}
+
+function commitBlankSacrifice(cardId) {
+    const actor = gameState.p1.find(c => c.id === cardId);
+    if (actor.name !== 'Spy' && !actor.isHeroic) actor.blood -= 1;
+    actor.hasActivity = true; 
+    writeLog(`⏳ Your ${actor.name} skips action and sacrifices 1 Blood.`);
+    if (actor.cooldown === 'consecutive') actor.lastUsedRound = gameState.roundCount;
+    if (actor.cooldown === '3moves') actor.lastUsedRound = gameState.roundCount;
+    if (actor.blood <= 0) actor.blood = 0;
+    if (actor.isHeroic) actor.blood = 0;
+    finalizeActiveTurn();
+}
+
+function handleBartenderChoiceSelection(chosenCardName) {
+    document.getElementById('bartenderChoiceModal').style.display = 'none';
+    gameState.forcedBotActorName = chosenCardName;
+    writeLog(`🎲 Bartender choice mode set: Forceful tactical override will mandate enemy to deploy ${chosenCardName}.`);
+    
+    let actorCard = gameState.p1.find(c => c.name === 'Bartender' && c.blood > 0);
+    if (actorCard) {
+        actorCard.bartenderState = 'random';
+        actorCard.blood -= 1;
+        actorCard.hasActivity = true;
+        actorCard.lastUsedRound = gameState.roundCount;
+        if (actorCard.blood <= 0) actorCard.blood = 0;
+    }
+    finalizeActiveTurn();
+}
+
+function processSelectedTarget(targetId) {
+    const currentAbility = gameState.targetingMode.type;
+    const actorCard = gameState.p1.find(c => c.id === gameState.targetingMode.actorId);
+    let initialBlood = actorCard.blood;
+    
+    let baseMove = currentAbility;
+    let enemy = gameState.p2.find(c => c.id === targetId);
+    let ally = gameState.p1.find(c => c.id === targetId);
+
+    if (baseMove === 'therapist_rebound_strike') {
+        let record = gameState.targetingMode.metadata.record;
+        let botAbilityName = record.actorName;
+        
+        if (record.isDirectKill || botAbilityName === 'Killer') {
+            enemy.blood = 0;
+            writeLog(`🧘 Therapist rebounds lethal execution onto bot ${enemy.name}!`);
+        } else if (record.wasImprisoned || botAbilityName === 'Dictator' || botAbilityName === 'Lawyer') {
+            enemy.imprisoned = true;
+            writeLog(`🧘 Therapist rebounds imprisonment onto bot ${enemy.name}!`);
+        } else if (botAbilityName === 'Jinn') {
+            enemy.blockedCounter = 4;
+            writeLog(`🧘 Therapist rebounds lockdown onto bot ${enemy.name}!`);
+        } else if (botAbilityName === 'Witch') {
+            enemy.poisoned = true;
+            enemy.blood = Math.max(0, enemy.blood - 1);
+            writeLog(`🧘 Therapist rebounds poison strike onto bot ${enemy.name}!`);
+        } else {
+            let dmg = record.damageDealt > 0 ? record.damageDealt : 1;
+            enemy.blood = Math.max(0, enemy.blood - dmg);
+            if (record.wasPoisoned) enemy.poisoned = true;
+            writeLog(`🧘 Therapist rebounds attack onto bot ${enemy.name} for ${dmg} damage.`);
+        }
+        
+        actorCard.hasActivity = true;
+        actorCard.blood = 0;
+        abortTargetingSequence();
+        finalizeActiveTurn();
+        return;
+    }
+
+    if (baseMove === 'reporter_heal_1') {
+        let patient = gameState.p1.find(c => c.id === targetId);
+        patient.blood = Math.min(patient.maxBlood === Infinity ? 99 : patient.maxBlood, patient.blood + 1);
+        writeLog(`📰 Reporter distributed blood to ${patient.name} (+1 Blood).`);
+        
+        gameState.targetingMode.type = 'reporter_heal_2';
+        document.getElementById('targetBar').innerText = '📰 REPORTER: SELECT 2ND CARD TO HEAL';
+        renderScene();
+        return;
+    }
+    if (baseMove === 'reporter_heal_2') {
+        let patient = gameState.p1.find(c => c.id === targetId);
+        patient.blood = Math.min(patient.maxBlood === Infinity ? 99 : patient.maxBlood, patient.blood + 1);
+        writeLog(`📰 Reporter distributed blood to ${patient.name} (+1 Blood).`);
+        
+        gameState.targetingMode.type = 'reporter_heal_3';
+        document.getElementById('targetBar').innerText = '📰 REPORTER: SELECT 3RD CARD TO HEAL';
+        renderScene();
+        return;
+    }
+    if (baseMove === 'reporter_heal_3') {
+        let patient = gameState.p1.find(c => c.id === targetId);
+        patient.blood = Math.min(patient.maxBlood === Infinity ? 99 : patient.maxBlood, patient.blood + 1);
+        writeLog(`📰 Reporter distributed blood to ${patient.name} (+1 Blood).`);
+        
+        gameState.targetingMode.type = 'reporter_heal_4';
+        document.getElementById('targetBar').innerText = '📰 REPORTER: SELECT 4TH CARD TO HEAL';
+        renderScene();
+        return;
+    }
+    if (baseMove === 'reporter_heal_4') {
+        let patient = gameState.p1.find(c => c.id === targetId);
+        patient.blood = Math.min(patient.maxBlood === Infinity ? 99 : patient.maxBlood, patient.blood + 1);
+        writeLog(`📰 Reporter distributed blood to ${patient.name} (+1 Blood).`);
+        
+        actorCard.hasActivity = true;
+        actorCard.blood = 0;
+        abortTargetingSequence();
+        finalizeActiveTurn();
+        return;
+    }
+
+    if (baseMove === 'mecha_select_partner') {
+        gameState.targetingMode.firstTargetId = targetId;
+        gameState.targetingMode.type = 'mecha_click_route_1';
+        gameState.targetingMode.metadata = { partnerId: targetId };
+        const partnerCard = gameState.p1.find(c => c.id === targetId);
+        document.getElementById('targetBar').innerText = `🤖 FUSED WITH ${partnerCard.name.toUpperCase()}: CHOOSE FIRST TARGET`;
+        renderScene();
+        return;
+    }
+
+    if (baseMove === 'mecha_click_route_1') {
+        gameState.targetingMode.firstTargetId = targetId; 
+        gameState.targetingMode.type = 'mecha_click_route_2';
+        document.getElementById('targetBar').innerText = `🤖 SELECT SAME TARGET AGAIN FOR 2X DAMAGE OR ANOTHER TARGET TO SPLIT`;
+        renderScene();
+        return;
+    }
+
+    if (baseMove === 'mecha_click_route_2') {
+        let firstEnemy = gameState.p2.find(c => c.id === gameState.targetingMode.firstTargetId);
+        let secondEnemy = enemy;
+        let partnerId = gameState.targetingMode.metadata?.partnerId;
+        let partnerCard = gameState.p1.find(c => c.id === partnerId);
+        let pName = partnerCard ? partnerCard.name : 'Knight';
+
+        actorCard.blood = Math.max(0, actorCard.blood - 1);
+        actorCard.mechaCooldown = 4; 
+        actorCard.hasActivity = true;
+
+        let isSameTarget = (firstEnemy.id === secondEnemy.id);
+
+        if (pName === 'Witch') {
+            if (isSameTarget) {
+                firstEnemy.poisoned = true; 
+                firstEnemy.blood = Math.max(0, firstEnemy.blood - 2);
+                writeLog(`🤖 Mecha+Witch Fusion: Dealt 2x damage (2) and poisoned ${firstEnemy.name}.`);
+            } else {
+                firstEnemy.poisoned = true; firstEnemy.blood = Math.max(0, firstEnemy.blood - 1);
+                secondEnemy.poisoned = true; secondEnemy.blood = Math.max(0, secondEnemy.blood - 1);
+                writeLog(`🤖 Mecha+Witch Fusion: Dealt 1 damage and applied poison to both ${firstEnemy.name} and ${secondEnemy.name}.`);
+            }
+        } 
+        else if (pName === 'Hood') {
+            if (isSameTarget) {
+                firstEnemy.blood = Math.max(0, firstEnemy.blood - 2);
+                writeLog(`🤖 Mecha+Hood Fusion: Dealt 2x damage (2) to ${firstEnemy.name} and earned 2 Blood.`);
+            } else {
+                firstEnemy.blood = Math.max(0, firstEnemy.blood - 1);
+                secondEnemy.blood = Math.max(0, secondEnemy.blood - 1);
+                writeLog(`🤖 Mecha+Hood Fusion: Dealt 1 damage to ${firstEnemy.name} and ${secondEnemy.name}, earning 2 Blood.`);
+            }
+            gameState.targetingMode.type = 'mecha_hood_share_2';
+            document.getElementById('targetBar').innerText = `🏹 CHOOSE ALLY TO RECEIVE +2 BLOOD`;
+            renderScene();
+            return;
+        } 
+        else if (pName === 'Killer') {
+            if (isSameTarget) {
+                firstEnemy.blood = 0;
+                writeLog(`🤖 Mecha+Killer Fusion: Instant 2x lethal execution on ${firstEnemy.name}.`);
+            } else {
+                firstEnemy.blood = 0; secondEnemy.blood = 0;
+                writeLog(`🤖 Mecha+Killer Fusion: Split lethal execution! Both ${firstEnemy.name} and ${secondEnemy.name} were eliminated.`);
+            }
+        } 
+        else if (pName === 'Robber') {
+            if (isSameTarget) {
+                firstEnemy.blood = Math.max(0, firstEnemy.blood - 2);
+                actorCard.blood = Math.min(actorCard.maxBlood, actorCard.blood + 2);
+                writeLog(`🤖 Mecha+Robber Fusion: Siphoned 2 blood from ${firstEnemy.name}.`);
+            } else {
+                firstEnemy.blood = Math.max(0, firstEnemy.blood - 1);
+                secondEnemy.blood = Math.max(0, secondEnemy.blood - 1);
+                actorCard.blood = Math.min(actorCard.maxBlood, actorCard.blood + 2);
+                writeLog(`🤖 Mecha+Robber Fusion: Siphoned 1 blood each from ${firstEnemy.name} and ${secondEnemy.name}.`);
+            }
+        } 
+        else if (pName === 'Cop') {
+            let dmg1 = firstEnemy.hasActivity ? 2 : 1;
+            let dmg2 = secondEnemy.hasActivity ? 2 : 1;
+            if (isSameTarget) {
+                firstEnemy.blood = Math.max(0, firstEnemy.blood - (dmg1 * 2));
+                writeLog(`🤖 Mecha+Cop Fusion: Enforced 2x damage (${dmg1 * 2}) on ${firstEnemy.name}.`);
+            } else {
+                firstEnemy.blood = Math.max(0, firstEnemy.blood - dmg1);
+                secondEnemy.blood = Math.max(0, secondEnemy.blood - dmg2);
+                writeLog(`🤖 Mecha+Cop Fusion: Split damage applied: ${dmg1} to ${firstEnemy.name}, ${dmg2} to ${secondEnemy.name}.`);
+            }
+        } 
+        else {
+            if (isSameTarget) {
+                firstEnemy.blood = Math.max(0, firstEnemy.blood - 2);
+                writeLog(`🤖 Mecha+${pName} Fusion: Delivered 2x heavy damage (2) to ${firstEnemy.name}.`);
+            } else {
+                firstEnemy.blood = Math.max(0, firstEnemy.blood - 1);
+                secondEnemy.blood = Math.max(0, secondEnemy.blood - 1);
+                writeLog(`🤖 Mecha+${pName} Fusion: Delivered 1 split damage to ${firstEnemy.name} and ${secondEnemy.name}.`);
+            }
+        }
+        if (actorCard.blood <= 0) actorCard.blood = 0;
+        abortTargetingSequence();
+        finalizeActiveTurn();
+        return;
+    }
+
+    if (baseMove === 'sorcerer_hijacked_action') {
+        let meta = gameState.targetingMode.metadata;
+        let originalType = meta.originalType;
+        let hijackedCard = gameState.p1.find(c => c.id === meta.hijackedCardId) || gameState.p2.find(c => c.id === meta.hijackedCardId);
+
+        if (originalType === 'Killer') {
+            enemy.blood = 0;
+            writeLog(`🔮 Control Sequence: Killer executed ${enemy.name}!`);
+        } else if (originalType === 'Dictator' || originalType === 'Lawyer') {
+            enemy.imprisoned = true;
+            writeLog(`🔮 Control Sequence: ${originalType} imprisoned ${enemy.name}!`);
+        } else if (originalType === 'Witch') {
+            enemy.poisoned = true;
+            enemy.blood = Math.max(0, enemy.blood - 1);
+            writeLog(`🔮 Control Sequence: Witch damaged and poisoned ${enemy.name}.`);
+        } else if (originalType === 'Robber') {
+            enemy.blood = Math.max(0, enemy.blood - 1);
+            actorCard.blood = Math.min(actorCard.maxBlood === Infinity ? 99 : actorCard.maxBlood, actorCard.blood + 1);
+            writeLog(`🔮 Control Sequence: Robber siphons 1 blood from ${enemy.name}.`);
+        } else if (originalType === 'Doctor') {
+            ally.blood = Math.min(ally.maxBlood === Infinity ? 99 : ally.maxBlood, ally.blood + 1);
+            writeLog(`🔮 Control Sequence: Doctor healed ${ally.name}.`);
+        } else if (originalType === 'Cop') {
+            let dmg = enemy.hasActivity ? 2 : 1;
+            enemy.blood = Math.max(0, enemy.blood - dmg);
+            writeLog(`🔮 Control Sequence: Cop struck ${enemy.name} for ${dmg} damage.`);
+        } else if (originalType === 'Singer') {
+            enemy.blood = Math.max(0, enemy.blood - 2);
+            writeLog(`🔮 Control Sequence: Singer dealt 2 damage to ${enemy.name}.`);
+        } else if (originalType === 'Hood') {
+            enemy.blood = Math.max(0, enemy.blood - 1);
+            actorCard.blood = Math.min(actorCard.maxBlood === Infinity ? 99 : actorCard.maxBlood, actorCard.blood + 1);
+            writeLog(`🔮 Control Sequence: Hood stole 1 blood from ${enemy.name}.`);
+        } else {
+            enemy.blood = Math.max(0, enemy.blood - 1);
+            writeLog(`🔮 Control Sequence: ${originalType} struck ${enemy.name} for 1 damage.`);
+        }
+
+        if (hijackedCard) {
+            if (baseMove === 'sorcerer_hijacked_action') {
+                hijackedCard.blood = Math.max(0, hijackedCard.blood - 1);
+                writeLog(`⚠️ Control Loop Feedback: ${hijackedCard.name} lost 1 blood.`);
+            }
+        }
+
+        abortTargetingSequence();
+        finalizeActiveTurn();
+        return;
+    }
+
+    if (baseMove.startsWith('mage_revive_')) {
+        let bloodToUse = parseInt(baseMove.split('_')[2]);
+        actorCard.blood -= bloodToUse;
+        actorCard.hasActivity = true;
+        actorCard.lastUsedRound = gameState.roundCount;
+        ally.blood = bloodToUse;
+        ally.imprisoned = false;
+        writeLog(`🧙‍♂️ Your Mage sacrificed ${bloodToUse} Blood to resurrect dead bluster ${ally.name}.`);
+        if (actorCard.blood <= 0) actorCard.blood = 0;
+        abortTargetingSequence();
+        finalizeActiveTurn();
+        return;
+    }
+
+    if (baseMove === 'mecha_hood_share_2') {
+        ally.blood = Math.min(ally.maxBlood, ally.blood + 2);
+        writeLog(`🏹 Mecha+Hood Fusion transferred +2 Blood to revitalized ally ${ally.name}.`);
+        abortTargetingSequence();
+        finalizeActiveTurn();
+        return;
+    }
+
+    if (baseMove === 'singer_step1') {
+        gameState.targetingMode.firstTargetId = targetId;
+        gameState.targetingMode.type = 'singer_step2';
+        document.getElementById('targetBar').innerText = "🎤 SELECT SECOND TARGET";
+        renderScene();
+        return;
+    }
+    if (baseMove === 'hood_step1') {
+        gameState.targetingMode.firstTargetId = targetId;
+        if (enemy.name === 'Spy' && actorCard.blood === 1) { enemy.blood = 0; }
+        else if (enemy.name !== 'Spy' && enemy.tag !== 'Entity') { enemy.blood = Math.max(0, enemy.blood - 1); }
+        gameState.targetingMode.type = 'hood_step2';
+        document.getElementById('targetBar').innerText = "🏹 CHOOSE RECIPIENT ALLY";
+        renderScene();
+        return;
+    }
+
+    if (actorCard.name !== 'Spy' && !actorCard.isHeroic) actorCard.blood -= 1;
+    actorCard.hasActivity = true;
+
+    if (baseMove === 'jinn_block') {
+        enemy.blockedCounter = 4; 
+        writeLog(`🧞 Your Jinn locked down ${enemy.name}! It is suppressed and blocked for the next 3 opponent actions.`);
+    }
+    else if (baseMove === 'mystic_purge') {
+        enemy.blood = Math.max(0, enemy.blood - 1);
+        writeLog(`✨ ${actorCard.name} used Mystic Purge on Entity ${enemy.name}, dealing 1 pure damage.`);
+    }
+    else if (baseMove === 'lawyer_lock') {
+        enemy.imprisoned = true;
+        writeLog(`⚖️ Your Lawyer directly imprisons enemy ${enemy.name} for active operational violations.`);
+    }
+    else if (baseMove === 'knight_strike') {
+        if (enemy.name === 'Spy') enemy.blood = 0;
+        else if (enemy.tag !== 'Entity') enemy.blood = Math.max(0, enemy.blood - 1);
+        writeLog(`⚔️ Your Knight strikes enemy ${enemy.name}.`);
+    }
+    else if (baseMove === 'killer_strike') { 
+        enemy.blood = 0; 
+        writeLog(`🎯 Your Killer executes enemy ${enemy.name}.`);
+    } 
+    else if (baseMove === 'robber_siphon') { 
+        enemy.blood = Math.max(0, enemy.blood - 1); 
+        writeLog(`💰 Your Robber siphons 1 Blood from enemy ${enemy.name}.`);
+    }
+    else if (baseMove === 'robber_execute') { 
+        enemy.blood = 0; 
+        writeLog(`🪓 Your Robber triggers emergency stand and executes ${enemy.name}.`);
+    }
+    else if (baseMove === 'dictator_imprison') { 
+        enemy.imprisoned = true; 
+        writeLog(`⛓️ Your Dictator imprisons enemy ${enemy.name}.`);
+    }
+    else if (baseMove === 'doctor_heal') { 
+        ally.blood = Math.min(ally.maxBlood, ally.blood + 1); 
+        writeLog(`❤️ Your Doctor heals squadmate ${ally.name}.`);
+    }
+    else if (baseMove === 'cop_strike') {
+        let dmg = enemy.hasActivity ? 2 : 1;
+        enemy.blood = Math.max(0, enemy.blood - dmg);
+        writeLog(`👮 Your Cop strikes enemy ${enemy.name} for ${dmg} damage.`);
+    }
+    else if (baseMove === 'singer_step2') {
+        let enemy1 = gameState.p2.find(c => c.id === gameState.targetingMode.firstTargetId);
+        enemy1.blood = Math.max(0, enemy1.blood - 1);
+        if (!(enemy1.blood === 0 && enemy.blood === 1)) enemy.blood = Math.max(0, enemy.blood - 1);
+        writeLog(`🎤 Your Singer double-targets ${enemy1.name} and ${enemy.name}.`);
+    }
+    else if (baseMove === 'spy_strike') { 
+        if (enemy.name !== 'Spy') enemy.blood = Math.max(0, enemy.blood - 1); 
+        writeLog(`👁️ Your Spy strikes enemy ${enemy.name}.`);
+    }
+    else if (baseMove === 'ninja_strike') {
+        let enemyKilled = false;
+        if (enemy.name === 'Spy' && initialBlood === 1) {
+            enemy.blood = 0;
+            enemyKilled = true;
+            writeLog(`🥷 Your Ninja uses his last stand to instantly assassinate Spy!`);
+        } else if (enemy.name !== 'Spy') {
+            enemy.blood = Math.max(0, enemy.blood - 1);
+            if (enemy.blood === 0) enemyKilled = true;
+            writeLog(`🥷 Your Ninja deals damage to ${enemy.name}.`);
+        }
+        
+        if (enemyKilled && !actorCard.hasKilled) {
+            actorCard.blood += 2;
+            actorCard.maxBlood = Math.max(actorCard.maxBlood, actorCard.blood);
+            actorCard.hasKilled = true;
+            writeLog(`🥷 Your Ninja gets a kill and claims +2 blood amplification!`);
+        }
+    }
+    else if (baseMove === 'hood_step2') { 
+        ally.blood = Math.min(ally.maxBlood, ally.blood + 1); 
+        writeLog(`🏹 Your Hood steals blood and re-routes it to revitalize ${ally.name}.`);
+    }
+    else if (baseMove === 'witch_poison') {
+        enemy.poisoned = true; enemy.blood = Math.max(0, enemy.blood - 1);
+        writeLog(`🔮 Your Witch attacks and poisons ${enemy.name}.`);
+    }
+
+    if (actorCard.cooldown === 'consecutive') actorCard.lastUsedRound = gameState.roundCount;
+    if (actorCard.cooldown === '3moves') actorCard.lastUsedRound = gameState.roundCount;
+    if (actorCard.blood <= 0) actorCard.blood = 0;
+    if (actorCard.isHeroic) actorCard.blood = 0;
+    
+    abortTargetingSequence();
+    finalizeActiveTurn();
+}
+
+function runBartenderAbilityPad(actorId) {
+    let actor = gameState.p1.find(c => c.id === actorId);
+    let activeEnemies = gameState.p2.filter(c => c.blood > 0 && !c.imprisoned && c.blockedCounter <= 0);
+    
+    if (activeEnemies.length === 0) {
+        writeLog(`🎲 Bartender variation found no valid active enemy cards to manipulate.`);
+        return;
+    }
+
+    if (actor.bartenderState === 'random') {
+        let randomEnemyCard = activeEnemies[Math.floor(Math.random() * activeEnemies.length)];
+        gameState.botExecutionSequenceOverride = randomEnemyCard.name;
+        writeLog(`🎲 Bartender deployed! Next bot deployment protocol has been randomized to force card: ${randomEnemyCard.name}.`);
+        actor.bartenderState = 'choose';
+        actor.blood -= 1;
+        actor.hasActivity = true;
+        actor.lastUsedRound = gameState.roundCount;
+        if (actor.blood <= 0) actor.blood = 0;
+        finalizeActiveTurn();
+    } else {
+        let container = document.getElementById('bartenderOptionsContainer');
+        container.innerHTML = '';
+        let uniqueNames = [...new Set(activeEnemies.map(c => c.name))];
+        
+        uniqueNames.forEach(name => {
+            let b = document.createElement('button');
+            b.className = 'btn';
+            b.style.margin = '2px 0';
+            b.style.background = '#444';
+            b.innerText = name.toUpperCase();
+            b.onclick = () => handleBartenderChoiceSelection(name);
+            container.appendChild(b);
+        });
+        document.getElementById('bartenderChoiceModal').style.display = 'flex';
+    }
+}
+
+function finalizeActiveTurn() {
+    if (gameState.p2KnightShields > 0) gameState.p2KnightShields--;
+    gameState.p1.forEach(c => { 
+        if (c.mechaCooldown > 0) c.mechaCooldown--; 
+        if (c.blockedCounter > 0) c.blockedCounter--;
+    });
+    applyTeamPoisonTicks(gameState.p1);
+    renderScene();
+    if(gameState.isGameOver) return;
+    gameState.currentTurn = 2;
+    setTimeout(processBotTurnRoutine, 800);
+}
+
+// Restricts the bot's target pool to whatever the acting card's real rules
+// allow, mirroring the same restrictions hasValidTargets()/processSelectedTarget()
+// enforce for the player (e.g. Cop only strikes Criminal/Law & Order tags,
+// Robber's normal siphon can't hit Criminal tags, Hood can't hit Spy at full blood).
+function getBotCandidatePool(actor, enemies) {
+    let harmful = enemies.filter(c => !c.isHeroic);
+    if (actor.tag !== 'Mystic') harmful = harmful.filter(c => c.tag !== 'Entity');
+    if (actor.name === 'Cop') return harmful.filter(c => c.tag === 'Criminal' || c.tag === 'Law & Order');
+    if (actor.name === 'Robber') return actor.blood === 0 ? harmful.filter(c => c.tag === 'Criminal' || c.name === 'Dictator') : harmful.filter(c => c.tag !== 'Criminal');
+    if (actor.name === 'Hood') return harmful.filter(c => c.name !== 'Spy' || actor.blood === 0);
+    return harmful;
+}
+
+// Difficulty-scaled target choice: easy is pure random (legacy behaviour),
+// mid/hard/extreme increasingly focus-fire the lowest-Blood eligible target.
+function pickBotTarget(pool, difficulty) {
+    if (difficulty === 'easy' || pool.length === 0) return pool[Math.floor(Math.random() * pool.length)];
+    let minBlood = Math.min(...pool.map(c => c.blood));
+    let lowest = pool.filter(c => c.blood === minBlood);
+    return lowest[Math.floor(Math.random() * lowest.length)];
+}
+
+// Whether this bot card, if it acts, has a real chance to outright kill something.
+function canBotActorSecureKill(actor, enemies) {
+    let pool = getBotCandidatePool(actor, enemies);
+    if (pool.length === 0) return false;
+    if (actor.name === 'Killer') return true;
+    if (actor.name === 'Robber') return actor.blood === 1 && pool.length > 0;
+    if (actor.name === 'Ninja') return pool.some(c => c.blood === 1 || (c.name === 'Spy' && actor.blood === 1));
+    if (actor.name === 'Cop') return pool.some(c => c.blood <= (c.hasActivity ? 2 : 1));
+    if (actor.name === 'Knight' && actor.blood !== 2) return pool.some(c => c.name === 'Spy' || c.blood <= 1);
+    return pool.some(c => c.blood <= 1);
+}
+
+// Difficulty-scaled actor choice. Easy/Mid stay random among usable cards
+// (legacy behaviour). Hard/Extreme prefer securing a kill this turn, and
+// Extreme additionally falls back to high-impact disruption (imprison/lock/poison)
+// when no kill is available.
+function pickBotActor(usableBots, activePlayers, difficulty) {
+    if (difficulty === 'easy' || difficulty === 'mid') return usableBots[Math.floor(Math.random() * usableBots.length)];
+    let lethal = usableBots.filter(b => canBotActorSecureKill(b, activePlayers));
+    if (lethal.length > 0) return lethal[Math.floor(Math.random() * lethal.length)];
+    if (difficulty === 'extreme') {
+        let disruptors = usableBots.filter(b => ['Dictator', 'Lawyer', 'Jinn', 'Sorcerer', 'Witch', 'Dementor'].includes(b.name));
+        if (disruptors.length > 0) return disruptors[Math.floor(Math.random() * disruptors.length)];
+    }
+    return usableBots[Math.floor(Math.random() * usableBots.length)];
+}
+
+function processBotTurnRoutine() {
+    if(gameState.isGameOver) return;
+
+    let aliveBots = gameState.p2.filter(c => c.blood > 0 && !c.imprisoned);
+    let activePlayers = gameState.p1.filter(c => c.blood > 0 && !c.imprisoned && !c.isHeroic);
+
+    gameState.p2.forEach(c => { 
+        if (c.mechaCooldown > 0) c.mechaCooldown--; 
+        if (c.blockedCounter > 0) c.blockedCounter--;
+    });
+
+    if(aliveBots.length > 0 && activePlayers.length > 0) {
+        // Gated by the exact same hasValidTargets() rules the player's cards obey,
+        // so the bot can never attempt a move (e.g. Terrorist before 2 allies have
+        // died, Singer with only 1 target, Sorcerer/Dementor with no legal target,
+        // Mecha with no fusion partner, Hacker with no eligible swap) that the
+        // player wouldn't have been allowed to attempt in the same situation.
+        let usableBots = aliveBots.filter(b => {
+            if (b.cooldown === 'consecutive' && b.lastUsedRound && (gameState.roundCount - b.lastUsedRound < 2)) return false;
+            if (b.cooldown === '3moves' && b.lastUsedRound && (gameState.roundCount - b.lastUsedRound < 4)) return false;
+            if (b.blockedCounter > 0) return false;
+            return hasValidTargets(b, gameState.p2, gameState.p1);
+        });
+        
+        if (usableBots.length > 0) {
+            let aiActor = null;
+            
+            if (gameState.botExecutionSequenceOverride) {
+                let match = usableBots.find(c => c.name === gameState.botExecutionSequenceOverride);
+                if (match) aiActor = match;
+                gameState.botExecutionSequenceOverride = null;
+            } else if (gameState.forcedBotActorName) {
+                let match = usableBots.find(c => c.name === gameState.forcedBotActorName);
+                if (match) aiActor = match;
+                gameState.forcedBotActorName = null;
+            }
+
+            if (!aiActor) {
+                aiActor = pickBotActor(usableBots, activePlayers, gameState.difficulty);
+            }
+
+            if (aiActor.name !== 'Spy' && !aiActor.isHeroic) aiActor.blood -= 1;
+            aiActor.hasActivity = true; 
+
+            // Same per-card target restrictions the player is held to (Cop can only
+            // strike Criminal/Law & Order tags, Robber can't normal-siphon Criminals, etc.)
+            let candidatePool = getBotCandidatePool(aiActor, activePlayers);
+            let targetPlayer = pickBotTarget(candidatePool.length ? candidatePool : activePlayers, gameState.difficulty);
+            
+            let preAttackBlood = targetPlayer.blood;
+            let actionType = 'damage';
+            let executedAction = true;
+            let isDirectKill = false;
+            let wasPoisonedState = targetPlayer.poisoned;
+
+            if (targetPlayer.isHeroic) {
+                writeLog(`🤖 Bot ${aiActor.name} tried to attack your Heroic ${targetPlayer.name}, but Sacred Souls cannot be harmed by enemy cards!`);
+                executedAction = false;
+            } else {
+                if (aiActor.name === 'Killer') {
+                    targetPlayer.blood = 0;
+                    isDirectKill = true;
+                    writeLog(`🤖 Bot Killer executes your ${targetPlayer.name}!`);
+                } else if (aiActor.name === 'Jinn') {
+                    targetPlayer.blockedCounter = 4;
+                    actionType = 'block';
+                    writeLog(`🧞 Bot Jinn locked down ${targetPlayer.name}! It is suppressed and blocked for 3 moves.`);
+                } else if (aiActor.name === 'Therapist') {
+                    let botAllies = gameState.p2.filter(c => c.id !== aiActor.id);
+                    if (botAllies.length > 0) {
+                        let healTarget = botAllies.find(c => c.blood < c.maxBlood || c.poisoned || c.imprisoned) || botAllies[Math.floor(Math.random() * botAllies.length)];
+                        healTarget.blood = (healTarget.maxBlood === Infinity) ? 3 : healTarget.maxBlood;
+                        healTarget.poisoned = false;
+                        healTarget.imprisoned = false;
+                        writeLog(`🧘 Bot Therapist fully restored and cleansed squadmate ${healTarget.name}!`);
+                    } else {
+                        writeLog(`🧘 Bot Therapist found no squadmates to heal.`);
+                    }
+                    aiActor.blood = 0;
+                } else if (aiActor.name === 'Robber') {
+                    let targetIsCriminalOrDictator = targetPlayer.tag === 'Criminal' || targetPlayer.name === 'Dictator';
+                    if (aiActor.blood === 0 && targetIsCriminalOrDictator) {
+                        targetPlayer.blood = 0;
+                        isDirectKill = true;
+                        writeLog(`🪓 Bot Robber triggers emergency stand and executes ${targetPlayer.name}.`);
+                    } else {
+                        if (targetPlayer.name !== 'Spy' && targetPlayer.tag !== 'Entity') {
+                            targetPlayer.blood = Math.max(0, targetPlayer.blood - 1);
+                            aiActor.blood = Math.min(aiActor.maxBlood, aiActor.blood + 1);
+                        }
+                        writeLog(`💰 Bot Robber siphons 1 Blood from enemy ${targetPlayer.name}.`);
+                    }
+                } else if (aiActor.name === 'Doctor') {
+                    let healTargets = gameState.p2.filter(c => c.id !== aiActor.id && c.blood > 0 && c.blood < c.maxBlood);
+                    if (healTargets.length > 0) {
+                        let patient = healTargets[Math.floor(Math.random() * healTargets.length)];
+                        patient.blood = Math.min(patient.maxBlood, patient.blood + 1);
+                        writeLog(`❤️ Bot Doctor heals squadmate ${patient.name}.`);
+                    } else {
+                        writeLog(`❤️ Bot Doctor found no injured squadmates.`);
+                    }
+                } else if (aiActor.name === 'Dictator') {
+                    targetPlayer.imprisoned = true;
+                    actionType = 'imprison';
+                    writeLog(`🤖 Bot Dictator captures and imprisons your ${targetPlayer.name}!`);
+                } else if (aiActor.name === 'Cop') {
+                    let dmg = targetPlayer.hasActivity ? 2 : 1;
+                    targetPlayer.blood = Math.max(0, targetPlayer.blood - dmg);
+                    writeLog(`👮 Bot Cop strikes enemy ${targetPlayer.name} for ${dmg} damage.`);
+                } else if (aiActor.name === 'Singer') {
+                    targetPlayer.blood = Math.max(0, targetPlayer.blood - 1);
+                    let otherPlayers = activePlayers.filter(c => c.id !== targetPlayer.id);
+                    let logMsg = `🎤 Bot Singer double-targets ${targetPlayer.name}`;
+                    if (otherPlayers.length > 0) {
+                        let secondTarget = otherPlayers[Math.floor(Math.random() * otherPlayers.length)];
+                        secondTarget.blood = Math.max(0, secondTarget.blood - 1);
+                        logMsg += ` and ${secondTarget.name}.`;
+                    } else {
+                        logMsg += `.`;
+                    }
+                    writeLog(logMsg);
+                } else if (aiActor.name === 'Spy') {
+                    if (targetPlayer.name !== 'Spy') targetPlayer.blood = Math.max(0, targetPlayer.blood - 1);
+                    writeLog(`👁️ Bot Spy strikes enemy ${targetPlayer.name}.`);
+                } else if (aiActor.name === 'Ninja') {
+                    let enemyKilled = false;
+                    if (targetPlayer.name === 'Spy' && aiActor.blood === 0) {
+                        targetPlayer.blood = 0;
+                        enemyKilled = true;
+                        writeLog(`🥷 Bot Ninja uses his last stand to instantly assassinate Spy!`);
+                    } else if (targetPlayer.name !== 'Spy') {
+                        targetPlayer.blood = Math.max(0, targetPlayer.blood - 1);
+                        if (targetPlayer.blood === 0) enemyKilled = true;
+                        writeLog(`🥷 Bot Ninja deals damage to ${targetPlayer.name}.`);
+                    }
+                    if (enemyKilled && !aiActor.hasKilled) {
+                        aiActor.blood += 2;
+                        aiActor.maxBlood = Math.max(aiActor.maxBlood, aiActor.blood);
+                        aiActor.hasKilled = true;
+                        writeLog(`🥷 Bot Ninja gets a kill and claims +2 blood amplification!`);
+                    }
+                } else if (aiActor.name === 'Hood') {
+                    if (targetPlayer.name !== 'Spy' && targetPlayer.tag !== 'Entity') {
+                        targetPlayer.blood = Math.max(0, targetPlayer.blood - 1);
+                    }
+                    let hoodAllies = gameState.p2.filter(c => c.id !== aiActor.id && c.blood > 0);
+                    if (hoodAllies.length > 0) {
+                        let recipient = hoodAllies[Math.floor(Math.random() * hoodAllies.length)];
+                        recipient.blood = Math.min(recipient.maxBlood, recipient.blood + 1);
+                        writeLog(`🏹 Bot Hood steals blood and re-routes it to revitalize ${recipient.name}.`);
+                    } else {
+                        writeLog(`🏹 Bot Hood steals blood but has no active allies.`);
+                    }
+                } else if (aiActor.name === 'Witch') {
+                    if (targetPlayer.tag === 'Entity') {
+                        targetPlayer.blood = Math.max(0, targetPlayer.blood - 1);
+                        writeLog(`✨ Bot Witch used Mystic Purge on Entity ${targetPlayer.name}, dealing 1 pure damage.`);
+                    } else {
+                        targetPlayer.poisoned = true;
+                        targetPlayer.blood = Math.max(0, targetPlayer.blood - 1);
+                        writeLog(`🔮 Bot Witch strikes and poisons your ${targetPlayer.name}.`);
+                    }
+                } else if (aiActor.name === 'Lawyer') {
+                    let validTargets = activePlayers.filter(c => (c.tag === 'Criminal' || c.tag === 'Law & Order') && c.hasActivity);
+                    if (validTargets.length > 0) {
+                        let botTarget = validTargets[Math.floor(Math.random() * validTargets.length)];
+                        targetPlayer = botTarget; 
+                        preAttackBlood = targetPlayer.blood;
+                        targetPlayer.imprisoned = true;
+                        actionType = 'imprison';
+                        writeLog(`🤖 Bot Lawyer captures and imprisons your ${targetPlayer.name}!`);
+                    } else {
+                        writeLog(`🤖 Bot Lawyer found no active operational targets and stands down.`);
+                        executedAction = false;
+                    }
+                } else if (aiActor.name === 'Sorcerer') {
+                    if (targetPlayer.tag === 'Entity') {
+                        targetPlayer.blood = Math.max(0, targetPlayer.blood - 1);
+                        writeLog(`✨ Bot Sorcerer used Mystic Purge on Entity ${targetPlayer.name}, dealing 1 pure damage.`);
+                    } else {
+                        targetPlayer.blood = Math.max(0, targetPlayer.blood - 1);
+                        writeLog(`🔮 Bot Sorcerer hijacks control and strikes your ${targetPlayer.name} for 1 damage.`);
+                    }
+                } else if (aiActor.name === 'Imam') {
+                    if (targetPlayer.tag === 'Entity') {
+                        targetPlayer.blood = Math.max(0, targetPlayer.blood - 1);
+                        writeLog(`✨ Bot Imam used Mystic Purge on Entity ${targetPlayer.name}, dealing 1 pure damage.`);
+                    } else {
+                        if (targetPlayer.name !== 'Spy') targetPlayer.blood = Math.max(0, targetPlayer.blood - 1);
+                        writeLog(`🕌 Bot Imam calls upon divine intervention and strikes ${targetPlayer.name}.`);
+                    }
+                } else if (aiActor.name === 'Knight') {
+                    if (aiActor.blood === 1) {
+                        gameState.p2KnightShields = 2;
+                        writeLog(`🛡️ Bot Knight activated a global protection shield.`);
+                    } else {
+                        if (targetPlayer.name === 'Spy') targetPlayer.blood = 0;
+                        else if (targetPlayer.tag !== 'Entity') targetPlayer.blood = Math.max(0, targetPlayer.blood - 1);
+                        writeLog(`⚔️ Bot Knight strikes enemy ${targetPlayer.name}.`);
+                    }
+                } else if (aiActor.name === 'Mage') {
+                    let deadBots = gameState.p2.filter(c => c.blood <= 0);
+                    if (deadBots.length > 0) {
+                        let cost = deadBots[0].name === 'Spy' ? 2 : 1;
+                        if (aiActor.blood >= cost) {
+                            aiActor.blood -= cost;
+                            deadBots[0].blood = cost;
+                            writeLog(`🤖 Bot Mage resurrected ${deadBots[0].name} with ${cost} Blood.`);
+                        }
+                    } else if (targetPlayer.tag === 'Entity') {
+                        targetPlayer.blood = Math.max(0, targetPlayer.blood - 1);
+                        writeLog(`✨ Bot Mage used Mystic Purge on Entity ${targetPlayer.name}, dealing 1 pure damage.`);
+                    } else {
+                        targetPlayer.blood = Math.max(0, targetPlayer.blood - 1);
+                        writeLog(`🤖 Bot Mage strikes your ${targetPlayer.name} for 1 damage.`);
+                    }
+                } else if (aiActor.name === 'Mecha') {
+                    if (targetPlayer.name !== 'Spy' && !(targetPlayer.tag === 'Entity')) {
+                        targetPlayer.blood = Math.max(0, targetPlayer.blood - 2);
+                        writeLog(`🤖 Bot Mecha activated overdrive fusion to deal 2 damage to your ${targetPlayer.name}.`);
+                    }
+                } else if (aiActor.name === 'Watchmaker') {
+                    if (targetPlayer.name !== 'Spy' && targetPlayer.tag !== 'Entity') targetPlayer.blood = Math.max(0, targetPlayer.blood - 1);
+                    writeLog(`⏳ Bot Watchmaker strikes your ${targetPlayer.name} for 1 damage.`);
+                } else if (aiActor.name === 'Bartender') {
+                    if (targetPlayer.name !== 'Spy') targetPlayer.blood = Math.max(0, targetPlayer.blood - 1);
+                    writeLog(`🎲 Bot Bartender mixes a toxic cocktail, striking your ${targetPlayer.name} for 1 damage.`);
+                } else if (aiActor.name === 'Terrorist') {
+                    gameState.p1.forEach(c => {
+                        if (c.blood > 1 && !c.isHeroic) {
+                            c.blood -= 1;
+                        }
+                    });
+                    aiActor.blood = 0;
+                    writeLog(`💥 Bot Terrorist drained 1 blood from eligible player cards and died instantly.`);
+                } else if (aiActor.name === 'Reporter') {
+                    let freedCount = 0;
+                    gameState.p2.forEach(c => {
+                        if (c.imprisoned) {
+                            c.imprisoned = false;
+                            freedCount++;
+                        }
+                    });
+                    if (freedCount > 0) writeLog(`📰 Bot Reporter expose released ${freedCount} imprisoned cards.`);
+                    
+                    let injuredBots = gameState.p2.filter(c => c.blood > 0 && c.blood < c.maxBlood);
+                    for (let i = 0; i < 4; i++) {
+                        if (injuredBots.length > 0) {
+                            let b = injuredBots[Math.floor(Math.random() * injuredBots.length)];
+                            b.blood = Math.min(b.maxBlood === Infinity ? 99 : b.maxBlood, b.blood + 1);
+                            writeLog(`📰 Bot Reporter distributed blood to ${b.name} (+1 Blood).`);
+                            injuredBots = gameState.p2.filter(c => c.blood > 0 && c.blood < c.maxBlood);
+                        }
+                    }
+                    aiActor.blood = 0;
+                } else if (aiActor.name === 'Actor') {
+                    let roles = ['Killer', 'Dictator', 'Jinn', 'Witch', 'Cop'];
+                    let randomRole = roles[Math.floor(Math.random() * roles.length)];
+                    writeLog(`🎭 Bot Actor mimics ${randomRole}!`);
+                    if (randomRole === 'Killer') {
+                        targetPlayer.blood = 0; isDirectKill = true;
+                    } else if (randomRole === 'Dictator') {
+                        targetPlayer.imprisoned = true; actionType = 'imprison';
+                    } else if (randomRole === 'Jinn') {
+                        targetPlayer.blockedCounter = 4; actionType = 'block';
+                    } else if (randomRole === 'Witch') {
+                        targetPlayer.poisoned = true; targetPlayer.blood = Math.max(0, targetPlayer.blood - 1);
+                    } else if (randomRole === 'Cop') {
+                        let dmg = targetPlayer.hasActivity ? 2 : 1;
+                        targetPlayer.blood = Math.max(0, targetPlayer.blood - dmg);
+                    }
+                    aiActor.blood = 0;
+                } else if (aiActor.name === 'Princess') {
+                    aiActor.blood = 0;
+                    writeLog(`👸 Bot Princess sacrifices her soul to assert presence.`);
+                } else if (aiActor.name === 'Dementor') {
+                    let deadCards = [...gameState.p1, ...gameState.p2].filter(c => c.blood <= 0 && !DEMENTOR_FORBIDDEN_ROLES.includes(c.name));
+                    if (deadCards.length > 0) {
+                        let randomDead = deadCards[Math.floor(Math.random() * deadCards.length)];
+                        writeLog(`💀 Bot Dementor reanimates the essence of ${randomDead.name}!`);
+                        if (randomDead.name === 'Killer') {
+                            targetPlayer.blood = 0; isDirectKill = true;
+                        } else if (randomDead.name === 'Dictator') {
+                            targetPlayer.imprisoned = true; actionType = 'imprison';
+                        } else if (randomDead.name === 'Jinn') {
+                            targetPlayer.blockedCounter = 4; actionType = 'block';
+                        } else {
+                            targetPlayer.blood = Math.max(0, targetPlayer.blood - 1);
+                        }
+                    } else {
+                        targetPlayer.blood = Math.max(0, targetPlayer.blood - 1);
+                        writeLog(`🤖 Bot Dementor strikes your ${targetPlayer.name} for 1 damage.`);
+                    }
+                } else if (aiActor.name === 'Skinwalker') {
+                    if (gameState.unusedBloodbanes.length > 0) {
+                        let idx = Math.floor(Math.random() * gameState.unusedBloodbanes.length);
+                        let template = gameState.unusedBloodbanes[idx];
+                        gameState.unusedBloodbanes = gameState.unusedBloodbanes.filter((t, i) => i !== idx);
+                        aiActor.name = template.name;
+                        aiActor.tag = template.tag;
+                        aiActor.hex = template.hex;
+                        aiActor.cooldown = template.cooldown;
+                        aiActor.category = 'Bloodbane';
+                        aiActor.maxBlood = template.maxBlood === Infinity ? Infinity : template.maxBlood + 1;
+                        aiActor.blood = aiActor.maxBlood;
+                        aiActor.wasSkinwalker = true;
+                        writeLog(`🐺 Bot Skinwalker permanently shifted into ${template.name}, gaining +1 extra Blood!`);
+                    } else {
+                        writeLog(`🐺 Bot Skinwalker found no remaining Bloodbane forms and held its ground.`);
+                    }
+                } else if (aiActor.name === 'Hacker') {
+                    let pairs = getHackerEligiblePairs(gameState.p2, gameState.p1, aiActor.id);
+                    if (pairs.length > 0) {
+                        let chosen = pairs[Math.floor(Math.random() * pairs.length)];
+                        let ownCard = gameState.p2.find(c => c.id === chosen.ownId);
+                        let enemyCard = gameState.p1.find(c => c.id === chosen.enemyId);
+                        let swapCategory = ownCard.category;
+                        let ownSnapshot = { name: ownCard.name, tag: ownCard.tag, maxBlood: ownCard.maxBlood, hex: ownCard.hex, cooldown: ownCard.cooldown, category: ownCard.category };
+                        let enemySnapshot = { name: enemyCard.name, tag: enemyCard.tag, maxBlood: enemyCard.maxBlood, hex: enemyCard.hex, cooldown: enemyCard.cooldown, category: enemyCard.category };
+                        Object.assign(ownCard, enemySnapshot);
+                        Object.assign(enemyCard, ownSnapshot);
+                        [ownCard, enemyCard].forEach(c => {
+                            c.blood = c.maxBlood;
+                            c.imprisoned = false; c.poisoned = false; c.hasActivity = false; c.hasKilled = false;
+                            c.mechaCooldown = 0; c.blockedCounter = 0; c.lastUsedRound = 0; c.bartenderState = 'random'; c.releasedImprisoned = false;
+                        });
+                        gameState.lastHackerSwapCategory = swapCategory;
+                        writeLog(`💻 Bot Hacker swapped its ${ownSnapshot.name} with your ${enemySnapshot.name}! Both blusters restored to full Blood.`);
+                    } else {
+                        writeLog(`💻 Bot Hacker found no eligible pairing and held its ground.`);
+                    }
+                } else {
+                    if (targetPlayer.name !== 'Spy' && !(targetPlayer.tag === 'Entity' && aiActor.tag !== 'Mystic')) {
+                        targetPlayer.blood = Math.max(0, targetPlayer.blood - 1);
+                    }
+                    writeLog(`🤖 Bot ${aiActor.name} strikes your ${targetPlayer.name} for 1 damage.`);
+                }
+            }
+
+            if (executedAction) {
+                gameState.botLastAttackRecord = {
+                    actorName: aiActor.name,
+                    targetId: targetPlayer.id,
+                    damageDealt: preAttackBlood - targetPlayer.blood,
+                    wasImprisoned: actionType === 'imprison',
+                    isDirectKill: isDirectKill,
+                    wasPoisoned: !wasPoisonedState && targetPlayer.poisoned,
+                    isSorcererAction: aiActor.name === 'Sorcerer',
+                    isNormalAttack: (aiActor.name !== 'Killer' && aiActor.name !== 'Dictator' && aiActor.name !== 'Lawyer' && aiActor.name !== 'Sorcerer')
+                };
+            } else {
+                gameState.botLastAttackRecord = null;
+            }
+
+            if (aiActor.cooldown === 'consecutive') aiActor.lastUsedRound = gameState.roundCount;
+            if (aiActor.cooldown === '3moves') aiActor.lastUsedRound = gameState.roundCount;
+        } else {
+            let aiActor = aliveBots[0];
+            if (aiActor.name !== 'Spy' && !aiActor.isHeroic) aiActor.blood -= 1;
+            aiActor.hasActivity = true;
+            if (aiActor.blood <= 0) aiActor.blood = 0;
+            writeLog(`🤖 Bot ${aiActor.name} has no operational space and passes.`);
+        }
+    }
+
+    if (gameState.p1KnightShields > 0) gameState.p1KnightShields--;
+    applyTeamPoisonTicks(gameState.p2);
+    
+    gameState.roundCount++;
+    gameState.currentTurn = 1;
+    renderScene();
+}
+
+function evaluateWinThresholds() {
+    if(gameState.isGameOver) return; 
+    let p1Survival = gameState.p1.some(c => c.blood > 0 && !c.imprisoned);
+    let p2Survival = gameState.p2.some(c => c.blood > 0 && !c.imprisoned);
+
+    if (gameState.p1.length > 0) {
+        if (!p1Survival) { gameState.isGameOver = true; } 
+        else if (!p2Survival) { gameState.isGameOver = true; }
+    }
+}
+
+function renderScene() {
+    // Skinwalker can't be killed before it changes form - its 1 Blood is untouchable.
+    [...gameState.p1, ...gameState.p2].forEach(c => {
+        if (c.name === 'Skinwalker' && c.blood < 1) c.blood = 1;
+    });
+    evaluateWinThresholds();
+    if (gameState.isGameOver) {
+        document.getElementById('turnIndicator').innerText = "🏁 SIMULATION CONCLUDED";
+        document.getElementById('resetButton').style.display = 'block';
+        document.getElementById('rematchButton').style.display = 'block';
+    } else {
+        document.getElementById('turnIndicator').innerText = gameState.currentTurn === 1 ? "YOUR TURN" : "BOT PROCESSING...";
+    }
+    
+    let p1Html = '';
+    gameState.p1.forEach(card => {
+        let isDead = card.blood <= 0;
+        let isEligibleAlly = false;
+        
+        if (gameState.targetingMode.isActive) {
+            const m = gameState.targetingMode.type;
+            if (m === 'doctor_heal' && !isDead && !card.imprisoned && card.blood < card.maxBlood) isEligibleAlly = true;
+            if (m.startsWith('reporter_heal_') && !isDead && !card.imprisoned) isEligibleAlly = true;
+            if (m === 'hood_step2' && !isDead && !card.imprisoned && card.id !== gameState.targetingMode.actorId) isEligibleAlly = true;
+            if (m === 'mecha_hood_share_2' && !isDead && !card.imprisoned && card.id !== gameState.targetingMode.actorId) isEligibleAlly = true;
+            if (m.startsWith('mage_revive_') && isDead) isEligibleAlly = true;
+            if (m === 'mecha_select_partner' && !isDead && !card.imprisoned && ['Spy', 'Robber', 'Hood', 'Witch', 'Knight', 'Cop', 'Ninja'].includes(card.name)) isEligibleAlly = true;
+            if (m === 'sorcerer_hijacked_action' && !isDead && !card.imprisoned && gameState.targetingMode.metadata.originalType === 'Doctor' && card.blood < card.maxBlood) isEligibleAlly = true;
+        }
+
+        let isLockedByCooldown = false;
+        if (card.cooldown === 'consecutive' && card.lastUsedRound && (gameState.roundCount - card.lastUsedRound < 2)) isLockedByCooldown = true;
+        if (card.cooldown === '3moves' && card.lastUsedRound && (gameState.roundCount - card.lastUsedRound < 4)) isLockedByCooldown = true;
+        if (card.name === 'Mecha' && card.mechaCooldown > 0) isLockedByCooldown = true;
+        if (card.blockedCounter > 0) isLockedByCooldown = true;
+
+        let canTakeAction = gameState.currentTurn === 1 && !isDead && !card.imprisoned && !gameState.targetingMode.isActive;
+        let okMoves = hasValidTargets(card, gameState.p1, gameState.p2);
+        
+        let heartsDisplay = card.name === 'Spy' ? '🩸 ∞' : '🩸'.repeat(card.blood);
+        if (isDead) heartsDisplay = '☠️ DEAD';
+
+        let doctorCleanseBtn = '';
+        if (gameState.currentTurn === 1 && !isDead && card.poisoned) {
+            let activeDoc = gameState.p1.find(c => c.name === 'Doctor' && c.blood > 0 && !c.imprisoned);
+            if (activeDoc) {
+                doctorCleanseBtn = `<button class="btn free-btn" onclick="freeDoctorCleanse('${activeDoc.id}','${card.id}')">⚕️ Cleanse</button>`;
+            }
+        }
+
+        p1Html += `
+            <div class="card ${isDead ? 'dead' : ''} ${card.imprisoned ? 'imprisoned' : ''} ${canTakeAction && !isLockedByCooldown && okMoves ? 'active-turn' : ''} ${isEligibleAlly ? 'valid-target' : ''}">
+                <span class="cooldown-badge">${(card.cooldown === 'consecutive' && card.lastUsedRound && (gameState.roundCount - card.lastUsedRound < 2)) ? '🚫' : ''}${card.name==='Mecha'&&card.mechaCooldown>0?'⏳':''}${card.blockedCounter>0?'🔒':''}</span>
+                <div class="card-title">${card.name}</div>
+                <span class="card-tag">${card.tag}</span>
+                ${card.poisoned ? `<span class="poison-badge">☣️ POISON</span>` : ''}
+                ${card.blockedCounter > 0 ? `<span style="font-size:8px; color:#ff3333;">BLOCKED (${card.blockedCounter-1})</span><br>` : ''}
+                ${gameState.p1KnightShields > 0 && !isDead ? `<span class="shield-badge">🛡️ K-SHIELD</span>` : ''}
+                <div class="hearts">${heartsDisplay}</div>
+                ${doctorCleanseBtn}
+                ${isEligibleAlly ? `<button class="btn target-btn" onclick="processSelectedTarget('${card.id}')">SELECT</button>` : ''}
+                ${canTakeAction ? buildDynamicActionPads(card, isLockedByCooldown) : ''}
+            </div>
+        `;
+    });
+    document.getElementById('p1Field').innerHTML = p1Html;
+
+    let p2Html = '';
+    gameState.p2.forEach(card => {
+        let isDead = card.blood <= 0;
+        let isEligibleEnemy = false;
+        let isSelectedFirst = false;
+        
+        if (gameState.targetingMode.isActive) {
+            const m = gameState.targetingMode.type;
+            const act = gameState.p1.find(c => c.id === gameState.targetingMode.actorId);
+            
+            if (m === 'sorcerer_hijacked_action' && !isDead && !card.imprisoned && !card.isHeroic && gameState.targetingMode.metadata.originalType !== 'Doctor') {
+                isEligibleEnemy = true;
+            } else if (!isDead && !card.imprisoned && m !== 'doctor_heal' && !m.startsWith('reporter_heal_') && m !== 'hood_step2' && m !== 'mecha_hood_share_2' && !m.startsWith('mage_revive_') && m !== 'mecha_select_partner') {
+                if (!card.isHeroic) {
+                    if (m === 'mystic_purge') {
+                        if (card.tag === 'Entity') isEligibleEnemy = true;
+                    } else if (m === 'mecha_click_route_1' || m === 'mecha_click_route_2') {
+                        if (m === 'mecha_click_route_2' && card.id === gameState.targetingMode.firstTargetId) isSelectedFirst = true;
+                        isEligibleEnemy = true;
+                    } else if (!(card.tag === 'Entity' && act && act.tag !== 'Mystic' && m !== 'knight_strike')) {
+                        if (m === 'killer_strike') isEligibleEnemy = true; 
+                        if (m === 'dictator_imprison') isEligibleEnemy = true; 
+                        if (m === 'jinn_block') isEligibleEnemy = true;
+                        if (m === 'therapist_rebound_strike') isEligibleEnemy = true;
+                        if (m === 'robber_siphon' && card.tag !== 'Criminal' && card.tag !== 'Entity') isEligibleEnemy = true;
+                        if (m === 'robber_execute' && (card.tag === 'Criminal' || card.name === 'Dictator')) isEligibleEnemy = true;
+                        if (m === 'cop_strike' && (card.tag === 'Criminal' || card.tag === 'Law & Order')) isEligibleEnemy = true;
+                        if (m === 'spy_strike') {
+                            if (card.name === 'Spy') {
+                                let otherOptions = gameState.p2.filter(e => e.blood > 0 && !e.imprisoned && e.name !== 'Spy');
+                                if (otherOptions.length === 0) isEligibleEnemy = true;
+                            } else {
+                                isEligibleEnemy = true;
+                            }
+                        }
+                        if (m === 'knight_strike') {
+                            if (card.tag === 'Entity') {
+                                let otherOptions = gameState.p2.filter(e => e.blood > 0 && !e.imprisoned && e.tag !== 'Entity');
+                                if (otherOptions.length === 0) isEligibleEnemy = true;
+                            } else {
+                                isEligibleEnemy = true;
+                            }
+                        }
+                        if (m === 'ninja_strike') {
+                            if (card.name !== 'Spy' || (act && act.blood === 1)) isEligibleEnemy = true;
+                        }
+                        if (m === 'singer_step1') isEligibleEnemy = true;
+                        if (m === 'singer_step2') {
+                            if (card.id === gameState.targetingMode.firstTargetId) {
+                                isSelectedFirst = true;
+                            } else {
+                                let enemy1 = gameState.p2.find(c => c.id === gameState.targetingMode.firstTargetId);
+                                let wouldKillFirst = (enemy1.blood === 1);
+                                let wouldKillSecond = (card.blood === 1);
+                                
+                                if (wouldKillFirst && wouldKillSecond) {
+                                    let otherOptions = gameState.p2.filter(e => e.blood > 0 && !e.imprisoned && e.id !== enemy1.id && e.id !== card.id && e.blood > 1);
+                                    if (otherOptions.length === 0) isEligibleEnemy = true;
+                                } else {
+                                    isEligibleEnemy = true;
+                                }
+                            }
+                        }
+                        if (m === 'hood_step1') {
+                            if (card.name !== 'Spy' || (act && act.blood === 1)) isEligibleEnemy = true;
+                        }
+                        if (m === 'witch_poison') isEligibleEnemy = true;
+                        if (m === 'lawyer_lock') {
+                            if ((card.tag === 'Criminal' || card.tag === 'Law & Order') && card.hasActivity) {
+                                isEligibleEnemy = true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        p2Html += `
+            <div class="card ${isDead ? 'dead' : ''} ${card.imprisoned ? 'imprisoned' : ''} ${isEligibleEnemy ? 'valid-target' : ''} ${isSelectedFirst ? 'selected-first' : ''}">
+                <div class="card-title">${card.name}</div>
+                <span class="card-tag">${card.tag}</span>
+                ${card.poisoned ? `<span class="poison-badge">☣️ POISON</span>` : ''}
+                ${card.blockedCounter > 0 ? `<span style="font-size:8px; color:#ff3333;">BLOCKED (${card.blockedCounter-1})</span><br>` : ''}
+                ${gameState.p2KnightShields > 0 && !isDead ? `<span class="shield-badge">🛡️ K-SHIELD</span>` : ''}
+                <div class="hearts">${card.name === 'Spy' && !isDead ? '🩸 ∞' : (isDead ? '☠️ DEAD' : '🩸'.repeat(card.blood))}</div>
+                ${isEligibleEnemy ? `<button class="btn target-btn" onclick="processSelectedTarget('${card.id}')">CHOOSE</button>` : ''}
+            </div>
+        `;
+    });
+    document.getElementById('p2Field').innerHTML = p2Html;
+}
+
+// Holds the pending set of buttons for whichever card currently has its
+// merged-action picker open, keyed by card id.
+window.__mergedActionButtons = {};
+
+// If a card only has one available move, render its button as normal.
+// If it has more than one, collapse them all into a single "Actions"
+// button that pops up a chooser (matching the hijack/fuse/etc. modals)
+// listing each individual move so the player can pick one.
+function renderCardActionButtons(card, btns) {
+    if (btns.length === 0) return '';
+    if (btns.length === 1) return btns[0];
+    window.__mergedActionButtons[card.id] = btns
+        .map(b => b.replace('onclick="', 'onclick="closeMergedActionModal(); '))
+        .join('');
+    return `<button class="btn" style="background:#3a3a3a;" onclick="openMergedActionModalFor('${card.id}', '${card.name.toUpperCase()} ACTIONS')">⚡ Actions</button>`;
+}
+
+function openMergedActionModalFor(cardId, title) {
+    document.getElementById('mergedActionModalTitle').innerText = title;
+    document.getElementById('mergedActionOptionsContainer').innerHTML = window.__mergedActionButtons[cardId] || '';
+    document.getElementById('mergedActionModal').style.display = 'flex';
+}
+
+function closeMergedActionModal() {
+    document.getElementById('mergedActionModal').style.display = 'none';
+}
+
+function buildDynamicActionPads(card, isLockedByCooldown) {
+    let html = '<div class="action-panel">';
+    let validTargetsExist = hasValidTargets(card, gameState.p1, gameState.p2);
+    
+    if (!isLockedByCooldown && (validTargetsExist || ['Knight', 'Watchmaker', 'Bartender', 'Actor', 'Dementor', 'Mecha', 'Sorcerer'].includes(card.name))) {
+        let btns = [];
+        if (card.name === 'Terrorist') {
+            btns.push(`<button class="btn" style="background:#bf360c;" onclick="executeTerroristDrain('${card.id}')">💥 Drain</button>`);
+        }
+        if (card.name === 'Therapist') {
+            btns.push(`<button class="btn" style="background:#00acc1;" onclick="executeTherapistReboundPrep('${card.id}')">🧘 Rebound</button>`);
+        }
+        if (card.name === 'Reporter') {
+            if (!card.releasedImprisoned) {
+                btns.push(`<button class="btn" style="background:#7b1fa2;" onclick="executeReporterRelease('${card.id}')">🔓 Release</button>`);
+            }
+            btns.push(`<button class="btn" style="background:#0d47a1;" onclick="openTargetingOverlay('${card.id}', 'reporter_heal_1', '📰 REPORTER: SELECT 1ST CARD TO HEAL')">📰 Heal</button>`);
+            if (card.releasedImprisoned) {
+                btns.push(`<button class="btn waste-btn" onclick="commitReporterTurn('${card.id}')">Finish Turn</button>`);
+            }
+        }
+        if (card.name === 'Actor') {
+            btns.push(`<button class="btn" style="background:#e040fb;" onclick="runActorAbilityPad()">🎭 Mimic</button>`);
+        }
+        if (card.name === 'Princess') {
+            btns.push(`<button class="btn" style="background:#ff4081;" onclick="executePrincessSacrifice('${card.id}')">👸 Sacrifice</button>`);
+        }
+        if (card.name === 'Killer') btns.push(`<button class="btn" onclick="openTargetingOverlay('${card.id}', 'killer_strike', '🎯 KILLER EXECUTION')">Kill</button>`);
+        if (card.name === 'Robber') {
+            let normalTargetsExist = gameState.p2.some(c => c.blood > 0 && !c.imprisoned && c.tag !== 'Criminal' && c.tag !== 'Entity');
+            if (normalTargetsExist) {
+                btns.push(`<button class="btn" onclick="openTargetingOverlay('${card.id}', 'robber_siphon', '💰 SIPHON BLOOD')">Siphon</button>`);
+            }
+            if (card.blood === 1) {
+                let targetsExist = gameState.p2.some(c => c.blood > 0 && !c.imprisoned && (c.tag === 'Criminal' || c.name === 'Dictator'));
+                if (targetsExist) {
+                    btns.push(`<button class="btn" style="background:#ff5500;" onclick="openTargetingOverlay('${card.id}', 'robber_execute', '🪓 EXECUTE DICTATOR/CRIMINAL')">Execute</button>`);
+                }
+            }
+        }
+        if (card.name === 'Mage') {
+            if (card.blood >= 1) btns.push(`<button class="btn" style="background:#3f51b5;" onclick="openTargetingOverlay('${card.id}', 'mage_revive_1', '🧙‍♂️ MAGE REVIVE (1 BLOOD)')">Revive 1</button>`);
+            if (card.blood >= 2) btns.push(`<button class="btn" style="background:#3f51b5;" onclick="openTargetingOverlay('${card.id}', 'mage_revive_2', '🧙‍♂️ MAGE REVIVE (2 BLOOD)')">Revive 2</button>`);
+            if (card.blood >= 3) btns.push(`<button class="btn" style="background:#3f51b5;" onclick="openTargetingOverlay('${card.id}', 'mage_revive_3', '🧙‍♂️ MAGE REVIVE (3 BLOOD)')">Revive 3</button>`);
+            if (gameState.p2.some(c => c.blood > 0 && !c.imprisoned && c.tag === 'Entity')) {
+                btns.push(`<button class="btn" style="background:#4a148c;" onclick="openTargetingOverlay('${card.id}', 'mystic_purge', '✨ MYSTIC PURGE')">Purge</button>`);
+            }
+        }
+        if (card.name === 'Mecha') {
+            btns.push(`<button class="btn" style="background:#009688;" onclick="runMechaAbilityPad('${card.id}')">Fuse</button>`);
+        }
+        if (card.name === 'Skinwalker') {
+            btns.push(`<button class="btn" style="background:#8d6e63;" onclick="runSkinwalkerAbilityPad('${card.id}')">🐺 Transform</button>`);
+        }
+        if (card.name === 'Hacker') {
+            btns.push(`<button class="btn" style="background:#37474f;" onclick="runHackerAbilityPad('${card.id}')">💻 Swap</button>`);
+        }
+        if (card.name === 'Dementor') {
+            btns.push(`<button class="btn" style="background:#5d4037;" onclick="runDementorAbilityPad('${card.id}')">Mimic</button>`);
+        }
+        if (card.name === 'Watchmaker') {
+            btns.push(`<button class="btn" style="background:#795548;" onclick="executeWatchmakerTimeTravel('${card.id}')">⏳ Rewind</button>`);
+        }
+        if (card.name === 'Jinn') {
+            btns.push(`<button class="btn" style="background:#00bcd4;" onclick="openTargetingOverlay('${card.id}', 'jinn_block', '🧞 SELECT TARGET TO BLOCK FOR 3 MOVES')">Lockdown</button>`);
+        }
+        if (card.name === 'Bartender') {
+            let labelText = card.bartenderState === 'random' ? '🎲 Randomise' : '🃏 Choose';
+            btns.push(`<button class="btn" style="background:#ff9800; color:#000;" onclick="runBartenderAbilityPad('${card.id}')">${labelText}</button>`);
+        }
+        if (card.name === 'Doctor') btns.push(`<button class="btn" onclick="openTargetingOverlay('${card.id}', 'doctor_heal', '❤️ HEAL SQUADMATE')">Heal</button>`);
+        if (card.name === 'Dictator') btns.push(`<button class="btn" onclick="openTargetingOverlay('${card.id}', 'dictator_imprison', '⛓️ DICTATOR IMPRISON')">Jail</button>`);
+        if (card.name === 'Cop') btns.push(`<button class="btn" style="background:#2a4d7c;" onclick="openTargetingOverlay('${card.id}', 'cop_strike', '👮 ENFORCE LAW')">Strike</button>`);
+        if (card.name === 'Singer') btns.push(`<button class="btn" style="background:#9c27b0;" onclick="openTargetingOverlay('${card.id}', 'singer_step1', '🎤 DUET TARGET A')">Duet</button>`);
+        if (card.name === 'Spy') btns.push(`<button class="btn" style="background:#4caf50;" onclick="openTargetingOverlay('${card.id}', 'spy_strike', '👁️ SPY INFILTRATE')">Attack</button>`);
+        if (card.name === 'Ninja') btns.push(`<button class="btn" style="background:#607d8b;" onclick="openTargetingOverlay('${card.id}', 'ninja_strike', '🥷 SHADOW STRIKE')">Strike</button>`);
+        if (card.name === 'Hood') btns.push(`<button class="btn" style="background:#e91e63;" onclick="openTargetingOverlay('${card.id}', 'hood_step1', '🏹 STEAL BLOOD')">Steal</button>`);
+        
+        if (card.name === 'Witch') {
+            btns.push(`<button class="btn" style="background:#2e7d32;" onclick="openTargetingOverlay('${card.id}', 'witch_poison', '🔮 WITCH: ATTACK & POISON')">Attack</button>`);
+            if (gameState.p2.some(c => c.blood > 0 && !c.imprisoned && c.tag === 'Entity')) {
+                btns.push(`<button class="btn" style="background:#4a148c;" onclick="openTargetingOverlay('${card.id}', 'mystic_purge', '✨ MYSTIC PURGE')">Purge</button>`);
+            }
+        }
+        if (card.name === 'Lawyer') btns.push(`<button class="btn" style="background:#00838f;" onclick="openTargetingOverlay('${card.id}', 'lawyer_lock', '⚖️ LAWYER IMPRISONMENT')">Lock</button>`);
+        if (card.name === 'Knight') {
+            if (card.blood === 2) btns.push(`<button class="btn" style="background:#059669;" onclick="executeKnightFirstMove('${card.id}')">🛡️ Shield</button>`);
+            else btns.push(`<button class="btn" style="background:#c62828;" onclick="openTargetingOverlay('${card.id}', 'knight_strike', '⚔️ KNIGHT BLADE')">Strike</button>`);
+        }
+        if (card.name === 'Sorcerer') {
+            btns.push(`<button class="btn" style="background:#6a1b9a;" onclick="runSorcererAbilityPad('${card.id}')">Hijack</button>`);
+            if (gameState.p2.some(c => c.blood > 0 && !c.imprisoned && c.tag === 'Entity')) {
+                btns.push(`<button class="btn" style="background:#4a148c;" onclick="openTargetingOverlay('${card.id}', 'mystic_purge', '✨ MYSTIC PURGE')">Purge</button>`);
+            }
+        }
+        if (card.name === 'Imam') {
+            let canBlock = false;
+            if (gameState.botLastAttackRecord) {
+                let record = gameState.botLastAttackRecord;
+                let targetCard = gameState.p1.find(c => c.id === record.targetId);
+                let isBlockable = record.wasImprisoned || record.isDirectKill || record.isSorcererAction;
+                if (targetCard && isBlockable) {
+                    canBlock = true;
+                }
+            }
+            if (canBlock) {
+                btns.push(`<button class="btn" style="background:#059669;" onclick="executeImamDefensiveBlock('${card.id}')">🕌 Revive Block</button>`);
+            }
+            if (gameState.p2.some(c => c.blood > 0 && !c.imprisoned && c.tag === 'Entity')) {
+                btns.push(`<button class="btn" style="background:#4a148c;" onclick="openTargetingOverlay('${card.id}', 'mystic_purge', '✨ MYSTIC PURGE')">Purge</button>`);
+            }
+        }
+
+        html += renderCardActionButtons(card, btns);
+    } else {
+        html += `<button class="btn waste-btn" onclick="commitBlankSacrifice('${card.id}')">Skip</button>`;
+    }
+    
+    html += '</div>';
+    return html;
+}
+</script>
 </body>
 </html>
-
-
