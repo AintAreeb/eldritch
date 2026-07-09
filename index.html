@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BloodLust: Revision Engine v3.2</title>
+    <title>BloodLust</title>
     <style>
         /* Linear.app Premium Dark Theme Matrix */
         body { 
@@ -458,7 +458,7 @@
 <body>
 
     <div id="setupView" class="setup-screen">
-        <h1>🩸 BLOODLUST</h1>
+        <h1>BLOODLUST</h1>
         <div class="squad-title" style="margin-top:0; border-bottom:none;">Select Bot Difficulty</div>
         <div id="difficultyPicker" style="display:flex; gap:8px; justify-content:center; margin:10px 0 18px 0;">
             <button class="btn diff-btn" data-diff="easy" style="width:auto; padding:8px 14px; font-size:10px;" onclick="setDifficulty('easy', this)">EASY</button>
@@ -471,8 +471,8 @@
     </div>
 
     <div id="gameView" style="display: none;">
-        <h1>🩸 BLOODLUST</h1>
-        <div class="turn-display" id="turnIndicator">YOUR TURN</div>
+        <h1>BLOODLUST</h1>
+        <div class="turn-display" id="turnIndicator"></div>
         
         <div class="targeting-status" id="targetBar"></div>
         <button id="cancelActionBtn" class="btn cancel-btn" style="display:none;" onclick="abortTargetingSequence()">❌ ABORT ADVANCED MANEUVER</button>
@@ -480,12 +480,12 @@
         <button id="resetButton" class="reset-btn" style="display:none;" onclick="resetToSetup()">RETURN TO ROOT SCREEN</button>
         <button id="rematchButton" class="rematch-btn" style="display:none;" onclick="initializeMatch()">🔁 INSTANT REMATCH</button>
 
-        <div class="squad-title" id="p1Title">Your Squad</div>
+        <div class="squad-title" id="p1Title">Arcanum</div>
         <div class="squad" id="p1Field"></div>
         
         <div class="log" id="combatLog"></div>
 
-        <div class="squad-title" id="p2Title">Bot's Squad</div>
+        <div class="squad-title" id="p2Title">Miasma</div>
         <div class="squad" id="p2Field"></div>
     </div>
 
