@@ -589,6 +589,30 @@
             padding: 10px; font-size: 11px; font-weight: 600; cursor: pointer; text-transform: uppercase;
             letter-spacing: 0.04em;
         }
+        /* Account login/register box */
+        .account-box {
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px; padding: 12px; margin: 0 0 16px 0;
+        }
+        .account-input {
+            width: 100%; box-sizing: border-box; background: #0d0c14; color: #f7f8f8;
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 9px 10px;
+            font-size: 12px; margin-bottom: 6px;
+        }
+        .account-input::placeholder { color: #5a5f68; }
+        .account-btn-row { display: flex; gap: 6px; }
+        .account-btn {
+            flex: 1; background: #ff3333; color: #fff; border: none; border-radius: 8px;
+            padding: 9px 4px; font-size: 11px; font-weight: 600; cursor: pointer;
+            text-transform: uppercase; letter-spacing: 0.03em;
+        }
+        .account-btn-alt { background: #2a2932; }
+        .account-status { font-size: 10px; color: #ff8888; text-align: center; margin-top: 6px; min-height: 12px; }
+        #accountLoggedIn {
+            display: flex; align-items: center; justify-content: space-between; gap: 8px;
+        }
+        #accountWelcome { font-size: 12px; font-weight: 600; color: #4af7a7; }
+        #accountLoggedIn .account-btn { flex: none; padding: 8px 12px; }
         /* Tutorial ("Learn Mode") guide chat bubble */
         .tutor-bubble {
             display: flex; gap: 8px; align-items: flex-start; margin-bottom: 12px;
@@ -667,6 +691,22 @@
 
     <div id="setupView" class="setup-screen">
         <h1>BLOODLUST</h1>
+
+        <div id="accountBox" class="account-box">
+            <div id="accountLoggedOut">
+                <input type="text" id="acctUsername" class="account-input" placeholder="Username" maxlength="20" autocomplete="username">
+                <input type="password" id="acctPassword" class="account-input" placeholder="Password" maxlength="60" autocomplete="current-password">
+                <div class="account-btn-row">
+                    <button class="account-btn" onclick="blLogin()">Log In</button>
+                    <button class="account-btn account-btn-alt" onclick="blRegister()">Create Account</button>
+                </div>
+                <div id="accountStatus" class="account-status"></div>
+            </div>
+            <div id="accountLoggedIn" style="display:none;">
+                <span id="accountWelcome"></span>
+                <button class="account-btn account-btn-alt" onclick="blLogout()">Log Out</button>
+            </div>
+        </div>
 
         <div id="topModePicker" style="display:flex; gap:8px; justify-content:center; margin:10px 0 18px 0;">
             <button class="btn picker-btn picker-active" data-top-mode="bot" style="width:auto; padding:8px 14px; font-size:10px;" onclick="showTopMode('bot', this)">VS BOT</button>
@@ -1279,14 +1319,117 @@ window.addEventListener('popstate', (e) => {
     }
 });
 
+// ============================================================================
+// ACCOUNTS (real, cross-device — backed by your own free Supabase project)
+// This file has no server of its own, so "an account that works from any
+// device" has to talk to something real. Fill in your project's URL and
+// public anon key below (see bloodlust_accounts_setup.sql for the one-time
+// database setup). Both values are meant to be public/embedded in
+// client-side code — Supabase's Row Level Security + the two RPC functions
+// are what actually keep this safe, not secrecy of these values.
+const SUPABASE_URL = 'https://bgryhaxudtgjosdwcvza.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_M50JE0mHtDCGh6CcRwzfTQ_RXqkB69v';
+
+const BL_ACCOUNT_KEY = 'bloodlust_account'; // remembers who's logged in on THIS device
+let blAccount = null; // { username } | null
+
+async function blCallAccountRpc(fnName, payload) {
+    if (!SUPABASE_URL || SUPABASE_URL.includes('YOUR_SUPABASE') || !SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.includes('YOUR_SUPABASE')) {
+        return { ok: false, error: 'Accounts aren\'t set up yet — add your Supabase URL/key in the code.' };
+    }
+    try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fnName}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_ANON_KEY,
+                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+            },
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) return { ok: false, error: `Server error (${res.status}).` };
+        const data = await res.json();
+        return data;
+    } catch (e) {
+        return { ok: false, error: 'Could not reach the account server — check your connection.' };
+    }
+}
+
+function blSetAccountStatus(text) {
+    const el = document.getElementById('accountStatus');
+    if (el) el.innerText = text || '';
+}
+
+function blRenderAccountUI() {
+    const loggedOut = document.getElementById('accountLoggedOut');
+    const loggedIn = document.getElementById('accountLoggedIn');
+    if (blAccount) {
+        loggedOut.style.display = 'none';
+        loggedIn.style.display = 'flex';
+        document.getElementById('accountWelcome').innerText = `👤 Logged in as ${blAccount.username}`;
+    } else {
+        loggedOut.style.display = 'block';
+        loggedIn.style.display = 'none';
+    }
+}
+
+function blRestoreAccountOnLoad() {
+    try {
+        const raw = localStorage.getItem(BL_ACCOUNT_KEY);
+        if (raw) blAccount = JSON.parse(raw);
+    } catch (e) {}
+    blRenderAccountUI();
+}
+
+async function blRegister() {
+    const username = document.getElementById('acctUsername').value.trim();
+    const password = document.getElementById('acctPassword').value;
+    blSetAccountStatus('Creating account...');
+    const result = await blCallAccountRpc('register_player', { p_username: username, p_password: password });
+    if (result.ok) {
+        blAccount = { username: result.username };
+        localStorage.setItem(BL_ACCOUNT_KEY, JSON.stringify(blAccount));
+        blSetAccountStatus('');
+        blRenderAccountUI();
+    } else {
+        blSetAccountStatus(result.error || 'Could not create account.');
+    }
+}
+
+async function blLogin() {
+    const username = document.getElementById('acctUsername').value.trim();
+    const password = document.getElementById('acctPassword').value;
+    blSetAccountStatus('Logging in...');
+    const result = await blCallAccountRpc('login_player', { p_username: username, p_password: password });
+    if (result.ok) {
+        blAccount = { username: result.username };
+        localStorage.setItem(BL_ACCOUNT_KEY, JSON.stringify(blAccount));
+        blSetAccountStatus('');
+        blRenderAccountUI();
+    } else {
+        blSetAccountStatus(result.error || 'Could not log in.');
+    }
+}
+
+function blLogout() {
+    blAccount = null;
+    try { localStorage.removeItem(BL_ACCOUNT_KEY); } catch (e) {}
+    document.getElementById('acctUsername').value = '';
+    document.getElementById('acctPassword').value = '';
+    blSetAccountStatus('');
+    blRenderAccountUI();
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     bl_replaceState({ screen: 'setup', modal: null });
     const defaultBtn = document.querySelector(`.diff-btn[data-diff="${gameState.difficulty}"]`);
     if (defaultBtn) defaultBtn.classList.add('diff-active');
+    blRestoreAccountOnLoad();
     if (!mpAttemptReconnectOnLoad()) {
         attemptSoloRestoreOnLoad();
     }
 });
+
 
 
 function showTopMode(mode, btnEl) {
