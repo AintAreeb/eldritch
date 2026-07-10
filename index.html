@@ -877,6 +877,39 @@ function applyShieldedImprison(target) {
     }
 }
 
+// --- Wasted-harm pre-filtering -------------------------------------------
+// Rather than only refunding a wasted move AFTER it resolves (see
+// moveHadNoRealEffect/concludeTargetedMove below), these two helpers catch
+// the well-defined cases up front so the "harm/kill/imprison" option is
+// never even offered in the first place:
+//  - imprison-type moves (Dictator, Lawyer) are ALWAYS fully blocked by a
+//    K-Shield, regardless of the target's current Blood.
+//  - damage/execution-type moves (Killer, Robber, Cop, Spy, Ninja, Knight,
+//    Witch, Hood, Mystic Purge) can only ever be wasted against a target
+//    that is already floored and can't be floored any further: either a
+//    K-Shielded card sitting at exactly 1 Blood (K-Shield stops any
+//    killing blow at 1, so a hit landing on a card already at 1 changes
+//    nothing), or a not-yet-transformed Skinwalker, which is hard-floored
+//    at 1 Blood by its own untouchable rule (see renderScene) independent
+//    of any team K-Shield.
+// These are used both to hide the option from the player's target list and
+// to keep the bot from ever picking the same wasted target, so the two
+// sides are held to identical rules.
+function isImprisonMoveWasted(target) {
+    return isCardShielded(target);
+}
+function isHarmMoveWasted(target) {
+    if (!target) return false;
+    if (target.name === 'Skinwalker') return true;
+    return isCardShielded(target) && target.blood === 1;
+}
+// Witch's poison is a real, independent side effect even when the
+// accompanying damage would be wasted — so Witch is only truly wasted
+// against a target that's already poisoned too.
+function isWitchMoveWasted(target) {
+    return isHarmMoveWasted(target) && !!target.poisoned;
+}
+
 // --- Wasted-move protection ---------------------------------------------
 // Some moves (e.g. trying to execute/imprison a card that's already
 // floored at 1 Blood by a K-Shield) can resolve without changing anything
@@ -1880,26 +1913,26 @@ function hasValidTargets(card, allies, enemies) {
         return hasPartner && harmfulEnemies.length > 0;
     }
 
-    if (card.name === 'Killer') return harmfulEnemies.length > 0;
+    if (card.name === 'Killer') return harmfulEnemies.some(c => !isHarmMoveWasted(c));
     if (card.name === 'Robber') {
-        let normalTargets = harmfulEnemies.filter(c => c.tag !== 'Criminal' && c.tag !== 'Entity');
-        let executeTargets = card.blood === 1 ? harmfulEnemies.filter(c => c.tag === 'Criminal' || c.name === 'Dictator') : [];
+        let normalTargets = harmfulEnemies.filter(c => c.tag !== 'Criminal' && c.tag !== 'Entity' && !isHarmMoveWasted(c));
+        let executeTargets = card.blood === 1 ? harmfulEnemies.filter(c => (c.tag === 'Criminal' || c.name === 'Dictator') && !isHarmMoveWasted(c)) : [];
         return normalTargets.length > 0 || executeTargets.length > 0;
     }
     if (card.name === 'Doctor') return aliveAllies.some(c => c.id !== card.id && c.blood < c.maxBlood);
-    if (card.name === 'Dictator') return harmfulEnemies.length > 0;
-    if (card.name === 'Cop') return harmfulEnemies.some(c => c.tag === 'Criminal' || c.tag === 'Law & Order');
+    if (card.name === 'Dictator') return harmfulEnemies.some(c => !isImprisonMoveWasted(c));
+    if (card.name === 'Cop') return harmfulEnemies.some(c => (c.tag === 'Criminal' || c.tag === 'Law & Order') && !isHarmMoveWasted(c));
     if (card.name === 'Singer') return harmfulEnemies.length >= 2;
-    if (card.name === 'Spy') return harmfulEnemies.length > 0;
-    if (card.name === 'Ninja') return harmfulEnemies.length > 0;
+    if (card.name === 'Spy') return harmfulEnemies.some(c => !isHarmMoveWasted(c));
+    if (card.name === 'Ninja') return harmfulEnemies.some(c => !isHarmMoveWasted(c));
     if (card.name === 'Hood') {
-        let canSteal = harmfulEnemies.some(c => c.name !== 'Spy' || card.blood === 1);
+        let canSteal = harmfulEnemies.some(c => (c.name !== 'Spy' || card.blood === 1) && !isHarmMoveWasted(c));
         let hasTeammate = aliveAllies.some(a => a.id !== card.id);
         return canSteal && hasTeammate;
     }
-    if (card.name === 'Witch') return harmfulEnemies.length > 0; 
+    if (card.name === 'Witch') return harmfulEnemies.some(c => !isWitchMoveWasted(c));
     if (card.name === 'Lawyer') {
-        return harmfulEnemies.some(c => (c.tag === 'Criminal' || c.tag === 'Law & Order') && c.hasActivity);
+        return harmfulEnemies.some(c => (c.tag === 'Criminal' || c.tag === 'Law & Order') && c.hasActivity && !isImprisonMoveWasted(c));
     }
     if (card.name === 'Sorcerer') {
         return harmfulEnemies.filter(c => !SORCERER_FORBIDDEN_ROLES.includes(c.name)).length > 0;
@@ -2902,9 +2935,20 @@ function finalizeActiveTurn() {
 function getBotCandidatePool(actor, enemies) {
     let harmful = enemies.filter(c => !c.isHeroic);
     if (actor.tag !== 'Mystic') harmful = harmful.filter(c => c.tag !== 'Entity');
-    if (actor.name === 'Cop') return harmful.filter(c => c.tag === 'Criminal' || c.tag === 'Law & Order');
-    if (actor.name === 'Robber') return actor.blood === 0 ? harmful.filter(c => c.tag === 'Criminal' || c.name === 'Dictator') : harmful.filter(c => c.tag !== 'Criminal');
-    if (actor.name === 'Hood') return harmful.filter(c => c.name !== 'Spy' || actor.blood === 0);
+    // Same wasted-move exclusions the player's target list is held to (see
+    // isHarmMoveWasted/isImprisonMoveWasted/isWitchMoveWasted) — the bot
+    // should never spend its move attacking a K-Shielded card already
+    // floored at 1 Blood, or an untransformed Skinwalker, any more than the
+    // player is allowed to.
+    if (actor.name === 'Cop') return harmful.filter(c => (c.tag === 'Criminal' || c.tag === 'Law & Order') && !isHarmMoveWasted(c));
+    if (actor.name === 'Robber') return (actor.blood === 0 ? harmful.filter(c => c.tag === 'Criminal' || c.name === 'Dictator') : harmful.filter(c => c.tag !== 'Criminal')).filter(c => !isHarmMoveWasted(c));
+    if (actor.name === 'Hood') return harmful.filter(c => (c.name !== 'Spy' || actor.blood === 0) && !isHarmMoveWasted(c));
+    if (actor.name === 'Killer' || actor.name === 'Spy') return harmful.filter(c => !isHarmMoveWasted(c));
+    if (actor.name === 'Ninja') return harmful.filter(c => (c.name !== 'Spy' || actor.blood === 1) && !isHarmMoveWasted(c));
+    if (actor.name === 'Knight') return harmful.filter(c => !isHarmMoveWasted(c));
+    if (actor.name === 'Witch') return harmful.filter(c => !isWitchMoveWasted(c));
+    if (actor.name === 'Dictator') return harmful.filter(c => !isImprisonMoveWasted(c));
+    if (actor.name === 'Lawyer') return harmful.filter(c => c.hasActivity && !isImprisonMoveWasted(c));
     return harmful;
 }
 
@@ -3081,16 +3125,26 @@ function pickBotActor(usableBots, activePlayers, difficulty) {
     return usableBots[Math.floor(Math.random() * usableBots.length)];
 }
 
-function processBotTurnRoutine() {
+// isFollowUpAction/freeActionDepth let the routine recurse into itself when
+// the bot's Skinwalker transforms — a free action that doesn't cost the
+// turn (mirroring the player's own Skinwalker, see handleSkinwalkerTransform)
+// — so the bot immediately gets to act again with a fresh pick instead of
+// its whole turn being skipped. Only the outermost (non-follow-up) call
+// touches the once-per-turn cooldown ticks, and only the call that finally
+// resolves a real (non-free) action — or runs out of usable bots — falls
+// through to the turn-ending code at the bottom.
+function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
     if(gameState.isGameOver) return;
 
     let aliveBots = gameState.p2.filter(c => c.blood > 0 && !c.imprisoned);
     let activePlayers = gameState.p1.filter(c => c.blood > 0 && !c.imprisoned && !c.isHeroic);
 
-    gameState.p2.forEach(c => { 
-        if (c.mechaCooldown > 0) c.mechaCooldown--; 
-        if (c.blockedCounter > 0) c.blockedCounter--;
-    });
+    if (!isFollowUpAction) {
+        gameState.p2.forEach(c => { 
+            if (c.mechaCooldown > 0) c.mechaCooldown--; 
+            if (c.blockedCounter > 0) c.blockedCounter--;
+        });
+    }
 
     if(aliveBots.length > 0 && activePlayers.length > 0) {
         // Gated by the exact same hasValidTargets() rules the player's cards obey,
@@ -3479,7 +3533,25 @@ function processBotTurnRoutine() {
                         aiActor.maxBlood = template.maxBlood === Infinity ? Infinity : template.maxBlood + 1;
                         aiActor.blood = aiActor.maxBlood;
                         aiActor.wasSkinwalker = true;
-                        writeLog(`🐺 Bot Skinwalker permanently shifted into ${template.name}, gaining +1 extra Blood!`);
+                        // Free action: doesn't cost the turn's move (matches the
+                        // player's handleSkinwalkerTransform), so the bot's turn
+                        // is NOT ended here — it immediately gets to act again,
+                        // either with the newly-transformed card or any other
+                        // usable card, instead of its whole turn being skipped.
+                        aiActor.lastUsedRound = 0;
+                        writeLog(`🐺 Bot Skinwalker permanently shifted into ${template.name}, gaining +1 extra Blood! It acts again immediately.`);
+                        renderScene();
+                        if (freeActionDepth < 8) {
+                            processBotTurnRoutine(true, freeActionDepth + 1);
+                        } else {
+                            // Safety valve against a runaway chain — end the turn normally.
+                            gameState.roundCount++;
+                            gameState.currentTurn = 1;
+                            stopMoveTimer();
+                            renderScene();
+                            if (!gameState.isGameOver) startMoveTimer(1);
+                        }
+                        return;
                     } else {
                         writeLog(`🐺 Bot Skinwalker found no remaining Bloodbane forms and held its ground.`);
                     }
@@ -3680,36 +3752,45 @@ function renderScene() {
             } else if (!isDead && !card.imprisoned && m !== 'doctor_heal' && !m.startsWith('reporter_heal_') && m !== 'hood_step2' && m !== 'mecha_hood_share_2' && !m.startsWith('mage_revive_') && m !== 'mecha_select_partner') {
                 if (!card.isHeroic) {
                     if (m === 'mystic_purge') {
-                        if (card.tag === 'Entity') isEligibleEnemy = true;
+                        if (card.tag === 'Entity' && !isHarmMoveWasted(card)) isEligibleEnemy = true;
                     } else if (m === 'mecha_click_route_1' || m === 'mecha_click_route_2') {
                         if (m === 'mecha_click_route_2' && card.id === gameState.targetingMode.firstTargetId) isSelectedFirst = true;
                         isEligibleEnemy = true;
                     } else if (!(card.tag === 'Entity' && act && act.tag !== 'Mystic' && m !== 'knight_strike')) {
-                        if (m === 'killer_strike') isEligibleEnemy = true; 
-                        if (m === 'dictator_imprison') isEligibleEnemy = true; 
+                        // Each harm/kill move below is additionally gated by
+                        // isHarmMoveWasted (K-Shielded card already floored at
+                        // 1 Blood, or a not-yet-transformed Skinwalker) so a
+                        // guaranteed no-op target is never offered as an
+                        // option in the first place, and imprison moves are
+                        // gated by isImprisonMoveWasted (K-Shield always
+                        // fully blocks imprisonment). Skinwalker can still be
+                        // legitimately imprisoned, so it's only excluded from
+                        // the damage/execution moves, not from those.
+                        if (m === 'killer_strike' && !isHarmMoveWasted(card)) isEligibleEnemy = true; 
+                        if (m === 'dictator_imprison' && !isImprisonMoveWasted(card)) isEligibleEnemy = true; 
                         if (m === 'jinn_block') isEligibleEnemy = true;
                         if (m === 'therapist_rebound_strike') isEligibleEnemy = true;
-                        if (m === 'robber_siphon' && card.tag !== 'Criminal' && card.tag !== 'Entity') isEligibleEnemy = true;
-                        if (m === 'robber_execute' && (card.tag === 'Criminal' || card.name === 'Dictator')) isEligibleEnemy = true;
-                        if (m === 'cop_strike' && (card.tag === 'Criminal' || card.tag === 'Law & Order')) isEligibleEnemy = true;
+                        if (m === 'robber_siphon' && card.tag !== 'Criminal' && card.tag !== 'Entity' && !isHarmMoveWasted(card)) isEligibleEnemy = true;
+                        if (m === 'robber_execute' && (card.tag === 'Criminal' || card.name === 'Dictator') && !isHarmMoveWasted(card)) isEligibleEnemy = true;
+                        if (m === 'cop_strike' && (card.tag === 'Criminal' || card.tag === 'Law & Order') && !isHarmMoveWasted(card)) isEligibleEnemy = true;
                         if (m === 'spy_strike') {
                             if (card.name === 'Spy') {
-                                let otherOptions = gameState.p2.filter(e => e.blood > 0 && !e.imprisoned && e.name !== 'Spy');
+                                let otherOptions = gameState.p2.filter(e => e.blood > 0 && !e.imprisoned && e.name !== 'Spy' && !isHarmMoveWasted(e));
                                 if (otherOptions.length === 0) isEligibleEnemy = true;
-                            } else {
+                            } else if (!isHarmMoveWasted(card)) {
                                 isEligibleEnemy = true;
                             }
                         }
                         if (m === 'knight_strike') {
                             if (card.tag === 'Entity') {
-                                let otherOptions = gameState.p2.filter(e => e.blood > 0 && !e.imprisoned && e.tag !== 'Entity');
-                                if (otherOptions.length === 0) isEligibleEnemy = true;
-                            } else {
+                                let otherOptions = gameState.p2.filter(e => e.blood > 0 && !e.imprisoned && e.tag !== 'Entity' && !isHarmMoveWasted(e));
+                                if (otherOptions.length === 0 && !isHarmMoveWasted(card)) isEligibleEnemy = true;
+                            } else if (!isHarmMoveWasted(card)) {
                                 isEligibleEnemy = true;
                             }
                         }
                         if (m === 'ninja_strike') {
-                            if (card.name !== 'Spy' || (act && act.blood === 1)) isEligibleEnemy = true;
+                            if ((card.name !== 'Spy' || (act && act.blood === 1)) && !isHarmMoveWasted(card)) isEligibleEnemy = true;
                         }
                         if (m === 'singer_step1') isEligibleEnemy = true;
                         if (m === 'singer_step2') {
@@ -3729,11 +3810,11 @@ function renderScene() {
                             }
                         }
                         if (m === 'hood_step1') {
-                            if (card.name !== 'Spy' || (act && act.blood === 1)) isEligibleEnemy = true;
+                            if ((card.name !== 'Spy' || (act && act.blood === 1)) && !isHarmMoveWasted(card)) isEligibleEnemy = true;
                         }
-                        if (m === 'witch_poison') isEligibleEnemy = true;
+                        if (m === 'witch_poison' && !isWitchMoveWasted(card)) isEligibleEnemy = true;
                         if (m === 'lawyer_lock') {
-                            if ((card.tag === 'Criminal' || card.tag === 'Law & Order') && card.hasActivity) {
+                            if ((card.tag === 'Criminal' || card.tag === 'Law & Order') && card.hasActivity && !isImprisonMoveWasted(card)) {
                                 isEligibleEnemy = true;
                             }
                         }
@@ -3813,12 +3894,12 @@ function buildDynamicActionPads(card, isLockedByCooldown) {
         }
         if (card.name === 'Killer') btns.push(`<button class="btn" onclick="openTargetingOverlay('${card.id}', 'killer_strike', '🎯 KILLER EXECUTION')">Kill</button>`);
         if (card.name === 'Robber') {
-            let normalTargetsExist = gameState.p2.some(c => c.blood > 0 && !c.imprisoned && c.tag !== 'Criminal' && c.tag !== 'Entity');
+            let normalTargetsExist = gameState.p2.some(c => c.blood > 0 && !c.imprisoned && c.tag !== 'Criminal' && c.tag !== 'Entity' && !isHarmMoveWasted(c));
             if (normalTargetsExist) {
                 btns.push(`<button class="btn" onclick="openTargetingOverlay('${card.id}', 'robber_siphon', '💰 SIPHON BLOOD')">Siphon</button>`);
             }
             if (card.blood === 1) {
-                let targetsExist = gameState.p2.some(c => c.blood > 0 && !c.imprisoned && (c.tag === 'Criminal' || c.name === 'Dictator'));
+                let targetsExist = gameState.p2.some(c => c.blood > 0 && !c.imprisoned && (c.tag === 'Criminal' || c.name === 'Dictator') && !isHarmMoveWasted(c));
                 if (targetsExist) {
                     btns.push(`<button class="btn" style="background:#ff5500;" onclick="openTargetingOverlay('${card.id}', 'robber_execute', '🪓 EXECUTE DICTATOR/CRIMINAL')">Execute</button>`);
                 }
@@ -3828,7 +3909,7 @@ function buildDynamicActionPads(card, isLockedByCooldown) {
             if (card.blood >= 1) btns.push(`<button class="btn" style="background:#3f51b5;" onclick="openTargetingOverlay('${card.id}', 'mage_revive_1', '🧙‍♂️ MAGE REVIVE (1 BLOOD)')">Revive 1</button>`);
             if (card.blood >= 2) btns.push(`<button class="btn" style="background:#3f51b5;" onclick="openTargetingOverlay('${card.id}', 'mage_revive_2', '🧙‍♂️ MAGE REVIVE (2 BLOOD)')">Revive 2</button>`);
             if (card.blood >= 3) btns.push(`<button class="btn" style="background:#3f51b5;" onclick="openTargetingOverlay('${card.id}', 'mage_revive_3', '🧙‍♂️ MAGE REVIVE (3 BLOOD)')">Revive 3</button>`);
-            if (gameState.p2.some(c => c.blood > 0 && !c.imprisoned && c.tag === 'Entity')) {
+            if (gameState.p2.some(c => c.blood > 0 && !c.imprisoned && c.tag === 'Entity' && !isHarmMoveWasted(c))) {
                 btns.push(`<button class="btn" style="background:#4a148c;" onclick="openTargetingOverlay('${card.id}', 'mystic_purge', '✨ MYSTIC PURGE')">Purge</button>`);
             }
         }
@@ -3866,7 +3947,7 @@ function buildDynamicActionPads(card, isLockedByCooldown) {
         
         if (card.name === 'Witch') {
             btns.push(`<button class="btn" style="background:#2e7d32;" onclick="openTargetingOverlay('${card.id}', 'witch_poison', '🔮 WITCH: ATTACK & POISON')">Attack</button>`);
-            if (gameState.p2.some(c => c.blood > 0 && !c.imprisoned && c.tag === 'Entity')) {
+            if (gameState.p2.some(c => c.blood > 0 && !c.imprisoned && c.tag === 'Entity' && !isHarmMoveWasted(c))) {
                 btns.push(`<button class="btn" style="background:#4a148c;" onclick="openTargetingOverlay('${card.id}', 'mystic_purge', '✨ MYSTIC PURGE')">Purge</button>`);
             }
         }
@@ -3877,7 +3958,7 @@ function buildDynamicActionPads(card, isLockedByCooldown) {
         }
         if (card.name === 'Sorcerer') {
             btns.push(`<button class="btn" style="background:#6a1b9a;" onclick="runSorcererAbilityPad('${card.id}')">Hijack</button>`);
-            if (gameState.p2.some(c => c.blood > 0 && !c.imprisoned && c.tag === 'Entity')) {
+            if (gameState.p2.some(c => c.blood > 0 && !c.imprisoned && c.tag === 'Entity' && !isHarmMoveWasted(c))) {
                 btns.push(`<button class="btn" style="background:#4a148c;" onclick="openTargetingOverlay('${card.id}', 'mystic_purge', '✨ MYSTIC PURGE')">Purge</button>`);
             }
         }
@@ -3894,7 +3975,7 @@ function buildDynamicActionPads(card, isLockedByCooldown) {
             if (canBlock) {
                 btns.push(`<button class="btn" style="background:#059669;" onclick="executeImamDefensiveBlock('${card.id}')">🕌 Revive Block</button>`);
             }
-            if (gameState.p2.some(c => c.blood > 0 && !c.imprisoned && c.tag === 'Entity')) {
+            if (gameState.p2.some(c => c.blood > 0 && !c.imprisoned && c.tag === 'Entity' && !isHarmMoveWasted(c))) {
                 btns.push(`<button class="btn" style="background:#4a148c;" onclick="openTargetingOverlay('${card.id}', 'mystic_purge', '✨ MYSTIC PURGE')">Purge</button>`);
             }
         }
