@@ -667,11 +667,13 @@ let gameState = {
 
 // --- Per-move countdown timer -------------------------------------------
 // aliveCharacterCount() counts every card across both squads that still has
-// Blood > 0 (dead cards don't count towards the pool, matching the rule
-// that losing a character shortens every subsequent move's clock).
+// Blood > 0 AND is not imprisoned (dead cards don't count towards the pool,
+// matching the rule that losing a character shortens every subsequent move's
+// clock — an imprisoned character shortens it the same way, since it's
+// effectively out of action too).
 function aliveCharacterCount() {
-    let aliveP1 = gameState.p1.filter(c => c.blood > 0).length;
-    let aliveP2 = gameState.p2.filter(c => c.blood > 0).length;
+    let aliveP1 = gameState.p1.filter(c => c.blood > 0 && !c.imprisoned).length;
+    let aliveP2 = gameState.p2.filter(c => c.blood > 0 && !c.imprisoned).length;
     return aliveP1 + aliveP2;
 }
 
