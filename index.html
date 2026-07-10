@@ -69,6 +69,19 @@
             letter-spacing: 0.06em; 
         }
         
+        .move-timer {
+            text-align: center;
+            font-weight: 700;
+            font-size: 20px;
+            color: #4af7a7;
+            margin-bottom: 10px;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+            letter-spacing: 0.04em;
+            transition: color 0.3s ease;
+        }
+        .move-timer.timer-warning { color: #ffcc00; }
+        .move-timer.timer-critical { color: #ff3333; }
+
         .targeting-status { 
             background: linear-gradient(135deg, #ffaa00 0%, #cc8800 100%); 
             color: #000; 
@@ -487,6 +500,7 @@
     <div id="gameView" style="display: none;">
         <h1>BLOODLUST</h1>
         <div class="turn-display" id="turnIndicator"></div>
+        <div class="move-timer" id="moveTimer"></div>
         
         <div class="targeting-status" id="targetBar"></div>
         <button id="cancelActionBtn" class="btn cancel-btn" style="display:none;" onclick="abortTargetingSequence()">❌ ABORT ADVANCED MANEUVER</button>
@@ -635,8 +649,90 @@ let gameState = {
     // by Bartender's "copy the opponent's last move" ability. null means
     // the side's last turn didn't produce a copyable move.
     p1LastMoveRole: null,
-    p2LastMoveRole: null
+    p2LastMoveRole: null,
+    // Per-move countdown: 2 seconds per character still alive (both squads
+    // combined) at the moment the move begins. Recalculated fresh at the
+    // start of every single move (player's or bot's).
+    moveTimer: { secondsLeft: 0, intervalId: null, forSide: null }
 };
+
+// --- Per-move countdown timer -------------------------------------------
+// aliveCharacterCount() counts every card across both squads that still has
+// Blood > 0 (dead cards don't count towards the pool, matching the rule
+// that losing a character shortens every subsequent move's clock).
+function aliveCharacterCount() {
+    let aliveP1 = gameState.p1.filter(c => c.blood > 0).length;
+    let aliveP2 = gameState.p2.filter(c => c.blood > 0).length;
+    return aliveP1 + aliveP2;
+}
+
+function stopMoveTimer() {
+    if (gameState.moveTimer.intervalId) {
+        clearInterval(gameState.moveTimer.intervalId);
+        gameState.moveTimer.intervalId = null;
+    }
+    let el = document.getElementById('moveTimer');
+    if (el) { el.innerText = ''; el.classList.remove('timer-warning', 'timer-critical'); }
+}
+
+function renderMoveTimerDisplay() {
+    let el = document.getElementById('moveTimer');
+    if (!el) return;
+    let secs = gameState.moveTimer.secondsLeft;
+    el.innerText = `⏱ ${secs}s`;
+    el.classList.remove('timer-warning', 'timer-critical');
+    if (secs <= 5) el.classList.add('timer-critical');
+    else if (secs <= 10) el.classList.add('timer-warning');
+}
+
+// Starts the countdown for whichever side (1 = player, 2 = bot) is about to
+// move. Duration = 2 seconds * total characters still alive right now.
+function startMoveTimer(side) {
+    stopMoveTimer();
+    if (gameState.isGameOver) return;
+    let duration = aliveCharacterCount() * 2;
+    gameState.moveTimer.secondsLeft = duration;
+    gameState.moveTimer.forSide = side;
+    renderMoveTimerDisplay();
+    gameState.moveTimer.intervalId = setInterval(() => {
+        gameState.moveTimer.secondsLeft--;
+        if (gameState.moveTimer.secondsLeft <= 0) {
+            stopMoveTimer();
+            handleMoveTimeout(side);
+            return;
+        }
+        renderMoveTimerDisplay();
+    }, 1000);
+}
+
+// Called when a move's clock hits zero. The player forfeits whatever move
+// they were mid-way through (any open targeting sequence is cancelled and
+// the turn passes to the bot untouched). The bot doesn't actually need a
+// forced-forfeit path since it always resolves its move synchronously well
+// inside the window, but the guard is here for safety.
+function handleMoveTimeout(side) {
+    if (gameState.isGameOver) return;
+    if (side === 1) {
+        if (gameState.targetingMode.isActive) {
+            gameState.targetingMode.isActive = false;
+            gameState.targetingMode.type = null;
+            gameState.targetingMode.actorId = null;
+            gameState.targetingMode.firstTargetId = null;
+            gameState.targetingMode.metadata = null;
+            gameState.targetingMode.preEffectSnapshot = null;
+            document.getElementById('targetBar').style.display = 'none';
+            document.getElementById('cancelActionBtn').style.display = 'none';
+        }
+        writeLog("⏰ Time's up! Your move was forfeited.");
+        finalizeActiveTurn();
+    } else if (side === 2) {
+        writeLog("⏰ Bot ran out of time and forfeits its move.");
+        gameState.roundCount++;
+        gameState.currentTurn = 1;
+        renderScene();
+        startMoveTimer(1);
+    }
+}
 
 // --- K-Shield protection helpers ---------------------------------------
 // A Knight's shield is squad-wide: while a squad's shield counter is > 0,
@@ -832,6 +928,7 @@ function writeLog(text) {
 }
 
 function resetToSetup() {
+    stopMoveTimer();
     document.getElementById('gameView').style.display = 'none';
     document.getElementById('setupView').style.display = 'block';
 }
@@ -839,6 +936,7 @@ function resetToSetup() {
 function initializeMatch() {
     let balanced = false;
     let playerSquad = [], botSquad = [];
+    let finalPHexSum = 0, finalBHexSum = 0;
     
     const bloodbanes = CARD_POOL.filter(c => c.category === 'Bloodbane');
     const bloodbornes = CARD_POOL.filter(c => c.category === 'Bloodborne');
@@ -878,13 +976,20 @@ function initializeMatch() {
 
         let pSum = playerSquad.reduce((sum, c) => c.maxBlood === Infinity ? sum + 3 : sum + c.hex, 0);
         let bSum = botSquad.reduce((sum, c) => c.maxBlood === Infinity ? sum + 3 : sum + c.hex, 0);
-        if (Math.abs(pSum - bSum) <= 25) balanced = true;
+        if (Math.abs(pSum - bSum) <= 25) {
+            balanced = true;
+            finalPHexSum = pSum;
+            finalBHexSum = bSum;
+        }
     }
 
     gameState.roundCount = 1;
     gameState.p1 = playerSquad;
     gameState.p2 = botSquad;
-    gameState.currentTurn = 1;
+    gameState.p1HexTotal = finalPHexSum;
+    gameState.p2HexTotal = finalBHexSum;
+    // Lower total hex level moves first. Ties default to the player.
+    gameState.currentTurn = (finalBHexSum < finalPHexSum) ? 2 : 1;
     gameState.isGameOver = false;
     gameState.p1KnightShields = 0;
     gameState.p2KnightShields = 0;
@@ -903,7 +1008,19 @@ function initializeMatch() {
     document.getElementById('combatLog').innerHTML = '';
     
     writeLog("Engine Integrated. BloodLust allocated exactly: 5 Bloodbanes, 4 Bloodbornes, 1 Heroic.");
+    writeLog(`⬡ Hex totals — Your Squad: ${finalPHexSum} | Bot Squad: ${finalBHexSum}.`);
+    if (finalPHexSum === finalBHexSum) {
+        writeLog("⬡ Hex totals are tied — you move first.");
+    } else {
+        writeLog(gameState.currentTurn === 1 ? "⬡ Your squad has the lower hex total and moves first!" : "⬡ The bot's squad has the lower hex total and moves first!");
+    }
     renderScene();
+    if (gameState.currentTurn === 2) {
+        startMoveTimer(2);
+        setTimeout(processBotTurnRoutine, 800);
+    } else {
+        startMoveTimer(1);
+    }
 }
 
 function openTargetingOverlay(actorId, actionKey, overlayInstruction, metadata = null) {
@@ -1954,6 +2071,7 @@ function runBartenderAbilityPad(actorId) {
 }
 
 function finalizeActiveTurn() {
+    stopMoveTimer();
     gameState.forcedPlayerActorName = null;
     if (gameState.p2KnightShields > 0) gameState.p2KnightShields--;
     gameState.p1.forEach(c => { 
@@ -1964,6 +2082,7 @@ function finalizeActiveTurn() {
     renderScene();
     if(gameState.isGameOver) return;
     gameState.currentTurn = 2;
+    startMoveTimer(2);
     setTimeout(processBotTurnRoutine, 800);
 }
 
@@ -2624,7 +2743,9 @@ function processBotTurnRoutine() {
     
     gameState.roundCount++;
     gameState.currentTurn = 1;
+    stopMoveTimer();
     renderScene();
+    if (!gameState.isGameOver) startMoveTimer(1);
 }
 
 function evaluateWinThresholds() {
