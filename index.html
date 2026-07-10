@@ -816,6 +816,10 @@ function handleMoveTimeout(side) {
         writeLog("⏰ Time's up! Your move was forfeited.");
         finalizeActiveTurn();
     } else if (side === 2) {
+        // Safety guard: in multiplayer this should never fire, since no
+        // local timer is ever started for the opponent's turn (each device
+        // only clocks its own turn — see startBattleWithSquads/finalizeActiveTurn).
+        if (mp.isMultiplayer) return;
         writeLog("⏰ Bot ran out of time and forfeits its move.");
         gameState.roundCount++;
         gameState.currentTurn = 1;
@@ -1143,12 +1147,16 @@ function startBattleWithSquads(p1Squad, p2Squad, p1Hex, p2Hex, opts = {}) {
             startMoveTimer(1);
         }
     } else {
-        // PHASE 3 TODO: this is where "whichever side isn't mySide" should
-        // start listening for the opponent's networked move instead of
-        // sitting idle. Move relay isn't wired up yet — see mp.sendMsg /
-        // mpHandleMessage for where that plugs in next.
-        startMoveTimer(gameState.currentTurn);
-        writeLog("⚡ Multiplayer squads are locked in. Live move relay is coming in the next update.");
+        // In multiplayer, p1 always means "my squad" on this device (see the
+        // mirroring in mpRunRandomizedSquadFlow / mpApplyDraftPick), so
+        // currentTurn === 1 already correctly means "my turn" here. Only
+        // clock MY turn locally — the opponent clocks their own turn on
+        // their own device and sends the result over when they finish.
+        if (gameState.currentTurn === 1) {
+            startMoveTimer(1);
+        } else {
+            writeLog("⚡ Waiting for opponent's move...");
+        }
     }
 }
 
@@ -1381,7 +1389,16 @@ function mpBeginSquadPhase() {
 function mpRunRandomizedSquadFlow() {
     if (mp.mySide === 1) {
         let built = buildRandomBalancedSquads();
-        mp.sendMsg({ type: 'squadsReady', payload: built });
+        // Perspective mirroring: I'm side 1, so MY board is p1Squad/p1Hex as
+        // built. The opponent needs the mirror image — their p1 (their own
+        // squad) is what I built as p2, and vice versa — so both devices
+        // consistently render "p1 = my squad" regardless of which absolute
+        // side each player actually is.
+        mp.sendMsg({ type: 'squadsReady', payload: {
+            p1Squad: built.p2Squad, p2Squad: built.p1Squad,
+            p1Hex: built.p2Hex, p2Hex: built.p1Hex,
+            unusedBloodbanes: built.unusedBloodbanes
+        }});
         mpStartBattleFromPayload(built);
     } else {
         mpLog('Waiting for opponent to roll squads...');
@@ -1456,12 +1473,24 @@ function mpApplyDraftPick(cardName, side) {
     d.turnSide = (side === 1) ? 2 : 1;
 
     if (d.p1Picks.length === 10 && d.p2Picks.length === 10) {
-        const p1Squad = mpMaterializeSquad(d.p1Picks, 'p1');
-        const p2Squad = mpMaterializeSquad(d.p2Picks, 'p2');
-        const p1Hex = p1Squad.reduce((s, c) => c.maxBlood === Infinity ? s + 3 : s + c.hex, 0);
-        const p2Hex = p2Squad.reduce((s, c) => c.maxBlood === Infinity ? s + 3 : s + c.hex, 0);
+        const sideASquad = mpMaterializeSquad(d.p1Picks, 'p1');
+        const sideBSquad = mpMaterializeSquad(d.p2Picks, 'p2');
+        const sideAHex = sideASquad.reduce((s, c) => c.maxBlood === Infinity ? s + 3 : s + c.hex, 0);
+        const sideBHex = sideBSquad.reduce((s, c) => c.maxBlood === Infinity ? s + 3 : s + c.hex, 0);
         gameState.unusedBloodbanes = d.pool.filter(c => c.category === 'Bloodbane').map(c => ({...c}));
-        mpStartBattleFromPayload({ p1Squad, p2Squad, p1Hex, p2Hex, unusedBloodbanes: gameState.unusedBloodbanes });
+        // Both devices run this same draft-completion code independently
+        // (each tracked the picks via the 'draftPick' messages), so each
+        // just needs to mirror the absolute side-A/side-B squads onto its
+        // own p1 ("my squad") based on its own mp.mySide — no extra network
+        // round-trip required.
+        const myFirst = (mp.mySide === 1);
+        mpStartBattleFromPayload({
+            p1Squad: myFirst ? sideASquad : sideBSquad,
+            p2Squad: myFirst ? sideBSquad : sideASquad,
+            p1Hex: myFirst ? sideAHex : sideBHex,
+            p2Hex: myFirst ? sideBHex : sideAHex,
+            unusedBloodbanes: gameState.unusedBloodbanes
+        });
     } else {
         mpRenderDraft();
     }
@@ -1472,6 +1501,19 @@ function mpHandleMessage(data, peerId) {
         mpStartBattleFromPayload(data.payload);
     } else if (data.type === 'draftPick') {
         mpApplyDraftPick(data.cardName, mp.draft ? mp.draft.turnSide : null);
+    } else if (data.type === 'turnState') {
+        // Opponent just finished their turn — their message is already
+        // mirrored to my perspective (see mpBuildSwappedStatePayload), so
+        // applying it directly makes it my turn.
+        Object.assign(gameState, data.payload);
+        abortTargetingSequence();
+        if (gameState.isGameOver) {
+            renderScene();
+            return;
+        }
+        gameState.currentTurn = 1;
+        renderScene();
+        startMoveTimer(1);
     }
 }
 
@@ -2522,6 +2564,27 @@ function runBartenderAbilityPad(actorId) {
     beginBartenderCopyTargeting(actorId, 'Bartender');
 }
 
+// Builds the message sent to the opponent after MY turn ends. Every field
+// here is side-specific, so it's built as a mirror image of my own local
+// state: my p1 (my squad, just-updated) becomes their p2 (opponent), and
+// vice versa. The receiving device applies this object onto its own
+// gameState verbatim — no swapping needed on the receiving end, because the
+// swap already happened here before sending.
+function mpBuildSwappedStatePayload() {
+    return {
+        p1: gameState.p2, p2: gameState.p1,
+        p1KnightShields: gameState.p2KnightShields, p2KnightShields: gameState.p1KnightShields,
+        botLastAttackRecord: gameState.playerLastAttackRecord, playerLastAttackRecord: gameState.botLastAttackRecord,
+        forcedBotActorName: gameState.forcedPlayerActorName, forcedPlayerActorName: gameState.forcedBotActorName,
+        p1LastMoveRole: gameState.p2LastMoveRole, p2LastMoveRole: gameState.p1LastMoveRole,
+        p1HexTotal: gameState.p2HexTotal, p2HexTotal: gameState.p1HexTotal,
+        roundCount: gameState.roundCount,
+        isGameOver: gameState.isGameOver,
+        unusedBloodbanes: gameState.unusedBloodbanes,
+        lastHackerSwapCategory: gameState.lastHackerSwapCategory
+    };
+}
+
 function finalizeActiveTurn() {
     stopMoveTimer();
     gameState.forcedPlayerActorName = null;
@@ -2532,8 +2595,18 @@ function finalizeActiveTurn() {
     });
     applyTeamPoisonTicks(gameState.p1);
     renderScene();
-    if(gameState.isGameOver) return;
+    if (gameState.isGameOver) {
+        // Send final state even on game-over so the opponent's screen
+        // reflects the real ending board instead of freezing stale.
+        if (mp.isMultiplayer) mp.sendMsg({ type: 'turnState', payload: mpBuildSwappedStatePayload() });
+        return;
+    }
     gameState.currentTurn = 2;
+    if (mp.isMultiplayer) {
+        renderScene();
+        mp.sendMsg({ type: 'turnState', payload: mpBuildSwappedStatePayload() });
+        return;
+    }
     startMoveTimer(2);
     setTimeout(processBotTurnRoutine, 800);
 }
@@ -3238,7 +3311,7 @@ function renderScene() {
         document.getElementById('resetButton').style.display = 'block';
         document.getElementById('rematchButton').style.display = 'block';
     } else {
-        document.getElementById('turnIndicator').innerText = gameState.currentTurn === 1 ? "YOUR TURN" : "BOT PROCESSING...";
+        document.getElementById('turnIndicator').innerText = gameState.currentTurn === 1 ? "YOUR TURN" : (mp.isMultiplayer ? "OPPONENT'S TURN..." : "BOT PROCESSING...");
     }
     
     let p1Html = '';
