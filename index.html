@@ -658,6 +658,7 @@ const CARD_POOL = [
     { name: 'Sorcerer', tag: 'Mystic', maxBlood: 2, hex: 3, cooldown: 'consecutive', category: 'Bloodbane' },
     { name: 'Singer', tag: 'Artist', maxBlood: 2, hex: 2, cooldown: 'none', category: 'Bloodbane' },
     { name: 'Witch', tag: 'Mystic', maxBlood: 2, hex: 2, cooldown: 'none', category: 'Bloodbane' },
+    { name: 'Skinwalker', tag: 'Mystic', maxBlood: 1, hex: 3, cooldown: 'consecutive', category: 'Bloodbane' },
 
     // Bloodbornes
     { name: 'Mecha', tag: 'Bloodsmith', maxBlood: 2, hex: 3, cooldown: 'none', category: 'Bloodborne' },
@@ -668,7 +669,6 @@ const CARD_POOL = [
     { name: 'Bartender', tag: 'Criminal', maxBlood: 2, hex: 2, cooldown: 'consecutive', category: 'Bloodborne' },
     { name: 'Jinn', tag: 'Entity', maxBlood: 2, hex: 1, cooldown: 'consecutive', category: 'Bloodborne' },
     { name: 'Watchmaker', tag: 'Bloodsmith', maxBlood: 2, hex: 3, cooldown: '3moves', category: 'Bloodborne' },
-    { name: 'Skinwalker', tag: 'Mystic', maxBlood: 1, hex: 3, cooldown: 'consecutive', category: 'Bloodbane' },
     { name: 'Hacker', tag: 'Criminal', maxBlood: 2, hex: 3, cooldown: '3moves', category: 'Bloodborne' },
 
     // Heroics/SacredSouls
@@ -1304,19 +1304,7 @@ function mpConnectDirect(code) {
         mp.peerId = peerId;
         mp.mySide = (window.__trysteroSelfId < peerId) ? 1 : 2;
         mpLog('Opponent connected!');
-        // Squad mode (Random/Draft) is picked locally on each device and
-        // was never actually shared — if the two players didn't both
-        // remember to tap the same toggle, each device would silently
-        // start a different flow (one waiting on a draft pick, the other
-        // waiting on a squad payload) and neither would ever finish. Side 1
-        // is the single source of truth here: it announces its mode, and
-        // side 2 adopts it before doing anything else.
-        if (mp.mySide === 1) {
-            mp.sendMsg({ type: 'squadModeSync', mode: mp.squadMode });
-            mpBeginSquadPhase();
-        } else {
-            mpLog('Syncing match settings...');
-        }
+        mpBeginSquadPhase();
     };
 }
 
@@ -1502,10 +1490,7 @@ function mpApplyDraftPick(cardName, side) {
 }
 
 function mpHandleMessage(data, peerId) {
-    if (data.type === 'squadModeSync') {
-        mp.squadMode = data.mode;
-        mpBeginSquadPhase();
-    } else if (data.type === 'squadsReady') {
+    if (data.type === 'squadsReady') {
         mpStartBattleFromPayload(mpRestoreFromWire(data.payload));
     } else if (data.type === 'draftPick') {
         mpApplyDraftPick(data.cardName, mp.draft ? mp.draft.turnSide : null);
