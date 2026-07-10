@@ -70,17 +70,24 @@
         }
         
         .move-timer {
-            text-align: center;
             font-weight: 700;
-            font-size: 20px;
+            font-size: 13px;
             color: #4af7a7;
-            margin-bottom: 10px;
             font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
             letter-spacing: 0.04em;
             transition: color 0.3s ease;
         }
         .move-timer.timer-warning { color: #ffcc00; }
         .move-timer.timer-critical { color: #ff3333; }
+
+        .squad-title-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 6px;
+            margin-top: 20px;
+        }
 
         .targeting-status { 
             background: linear-gradient(135deg, #ffaa00 0%, #cc8800 100%); 
@@ -500,7 +507,6 @@
     <div id="gameView" style="display: none;">
         <h1>BLOODLUST</h1>
         <div class="turn-display" id="turnIndicator"></div>
-        <div class="move-timer" id="moveTimer"></div>
         
         <div class="targeting-status" id="targetBar"></div>
         <button id="cancelActionBtn" class="btn cancel-btn" style="display:none;" onclick="abortTargetingSequence()">❌ ABORT ADVANCED MANEUVER</button>
@@ -508,7 +514,10 @@
         <button id="resetButton" class="reset-btn" style="display:none;" onclick="resetToSetup()">RETURN TO ROOT SCREEN</button>
         <button id="rematchButton" class="rematch-btn" style="display:none;" onclick="initializeMatch()">🔁 INSTANT REMATCH</button>
 
-        <div class="squad-title" id="p1Title">Arcanum</div>
+        <div class="squad-title-row">
+            <span class="squad-title" id="p1Title" style="margin-top:0; border-bottom:none; padding-bottom:0;">Arcanum</span>
+            <span class="move-timer" id="moveTimer"></span>
+        </div>
         <div class="squad" id="p1Field"></div>
         
         <div class="log" id="combatLog"></div>
@@ -2778,8 +2787,8 @@ function renderScene() {
         }
     }
     document.getElementById('p1Title').innerText = gameState.forcedPlayerActorName
-        ? `Your Squad — 🎲 Bartender forces you to play: ${gameState.forcedPlayerActorName}`
-        : 'Your Squad';
+        ? `Arcanum — 🎲 Bartender forces you to play: ${gameState.forcedPlayerActorName}`
+        : 'Arcanum';
     evaluateWinThresholds();
     if (gameState.isGameOver) {
         document.getElementById('turnIndicator').innerText = "🏁 SIMULATION CONCLUDED";
