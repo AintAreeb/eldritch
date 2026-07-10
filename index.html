@@ -708,7 +708,8 @@ function captureEffectSnapshot(actorId) {
     return { cards: cards, botOverride: gameState.botExecutionSequenceOverride, actor: actor ? { ...actor } : null };
 }
 
-function moveHadNoRealEffect(actorId) {
+function moveHadNoRealEffect(actorId, selfTargeted) {
+    if (selfTargeted) return false;
     let snap = gameState.targetingMode.preEffectSnapshot;
     if (!snap) return false;
     if (gameState.botExecutionSequenceOverride !== snap.botOverride) return false;
@@ -797,8 +798,8 @@ function deriveMoveRoleForTracking(actorId, baseMove) {
 
 // Call this instead of "abortTargetingSequence(); finalizeActiveTurn();"
 // at the true end of any targeted move so wasted moves get refunded.
-function concludeTargetedMove(actorId, baseMove) {
-    if (moveHadNoRealEffect(actorId)) {
+function concludeTargetedMove(actorId, baseMove, selfTargeted) {
+    if (moveHadNoRealEffect(actorId, selfTargeted)) {
         let snap = gameState.targetingMode.preEffectSnapshot;
         let actor = gameState.p1.find(c => c.id === actorId);
         if (actor && snap && snap.actor) Object.assign(actor, snap.actor);
@@ -1915,10 +1916,8 @@ function processSelectedTarget(targetId) {
     if (actorCard.blood <= 0) actorCard.blood = 0;
     if (actorCard.isHeroic) actorCard.blood = 0;
     
-    concludeTargetedMove(actorCard.id, baseMove);
+    concludeTargetedMove(actorCard.id, baseMove, targetId === actorCard.id);
 }
-
-// Shared by the player's own Bartender and by Actor/Dementor mimicking
 // Bartender: looks at the opponent's last mimicable move (tracked in
 // gameState.p2LastMoveRole) and opens the exact same targeting flow a
 // direct play of that role would use, so the player picks the target the
