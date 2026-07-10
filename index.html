@@ -2923,7 +2923,7 @@ function buildDynamicActionPads(card, isLockedByCooldown) {
         if (card.name === 'Bartender') {
             let copyRole = gameState.p2LastMoveRole;
             let canCopy = copyRole && BARTENDER_MIMICABLE_ROLES.includes(copyRole);
-            let labelText = canCopy ? `🍹 Copy ${copyRole}` : '🍹 Nothing to copy';
+            let labelText = canCopy ? `🍹 Copy ${copyRole}` : '🍹 Skip';
             btns.push(`<button class="btn" style="background:#ff9800; color:#000;" onclick="runBartenderAbilityPad('${card.id}')">${labelText}</button>`);
         }
         if (card.name === 'Doctor') btns.push(`<button class="btn" onclick="openTargetingOverlay('${card.id}', 'doctor_heal', '❤️ HEAL SQUADMATE')">Heal</button>`);
