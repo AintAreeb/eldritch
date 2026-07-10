@@ -1304,7 +1304,19 @@ function mpConnectDirect(code) {
         mp.peerId = peerId;
         mp.mySide = (window.__trysteroSelfId < peerId) ? 1 : 2;
         mpLog('Opponent connected!');
-        mpBeginSquadPhase();
+        // Squad mode (Random/Draft) is picked locally on each device and
+        // was never actually shared — if the two players didn't both
+        // remember to tap the same toggle, each device would silently
+        // start a different flow (one waiting on a draft pick, the other
+        // waiting on a squad payload) and neither would ever finish. Side 1
+        // is the single source of truth here: it announces its mode, and
+        // side 2 adopts it before doing anything else.
+        if (mp.mySide === 1) {
+            mp.sendMsg({ type: 'squadModeSync', mode: mp.squadMode });
+            mpBeginSquadPhase();
+        } else {
+            mpLog('Syncing match settings...');
+        }
     };
 }
 
@@ -1490,7 +1502,10 @@ function mpApplyDraftPick(cardName, side) {
 }
 
 function mpHandleMessage(data, peerId) {
-    if (data.type === 'squadsReady') {
+    if (data.type === 'squadModeSync') {
+        mp.squadMode = data.mode;
+        mpBeginSquadPhase();
+    } else if (data.type === 'squadsReady') {
         mpStartBattleFromPayload(mpRestoreFromWire(data.payload));
     } else if (data.type === 'draftPick') {
         mpApplyDraftPick(data.cardName, mp.draft ? mp.draft.turnSide : null);
