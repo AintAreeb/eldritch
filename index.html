@@ -521,6 +521,11 @@
         }, 5000);
     </script>
 
+    <div id="reconnectBanner" style="display:none; position:fixed; top:0; left:0; right:0; background:#4af7a7; color:#0d0c14; text-align:center; padding:8px 6px; font-size:12px; font-weight:700; z-index:9999; letter-spacing:0.03em;">
+        RECONNECTING TO YOUR MATCH…
+        <button onclick="mpAbandonReconnect()" style="margin-left:10px; background:#0d0c14; color:#4af7a7; border:none; border-radius:4px; padding:4px 10px; font-size:10px; font-weight:700; cursor:pointer;">GIVE UP &amp; RETURN TO MENU</button>
+    </div>
+
     <div id="setupView" class="setup-screen">
         <h1>BLOODLUST</h1>
 
@@ -1006,6 +1011,7 @@ function setDifficulty(level, btnEl) {
 document.addEventListener('DOMContentLoaded', () => {
     const defaultBtn = document.querySelector(`.diff-btn[data-diff="${gameState.difficulty}"]`);
     if (defaultBtn) defaultBtn.classList.add('diff-active');
+    mpAttemptReconnectOnLoad();
 });
 
 function showTopMode(mode, btnEl) {
@@ -1200,12 +1206,14 @@ const MP_CONFIG = {
 let mp = {
     isMultiplayer: false,
     room: null,
+    roomName: null,     // the actual trystero room name, saved so a refresh can rejoin it
     sendMsg: null,
     peerId: null,
     mySide: null,       // 1 or 2, assigned once an opponent connects
     squadMode: 'random', // 'random' | 'draft'
     matched: false,
-    draft: null
+    draft: null,
+    phase: 'lobby'      // 'lobby' | 'draft' | 'battle' — used for reconnect/resync
 };
 
 function mpLog(text) {
@@ -1240,6 +1248,150 @@ function mpRestoreFromWire(value) {
     return value;
 }
 
+// ---- Reconnect-after-refresh support ---------------------------------------
+// Trystero peers live entirely in page memory, so a refresh normally wipes
+// mp/gameState and forces the tab back to the very first screen — even though
+// the OTHER device's connection and match are still alive and waiting. To fix
+// that we (a) persist just enough info to rejoin the exact same room after a
+// reload, and (b) once rejoined, ask the still-connected peer for the
+// authoritative current state (a "resync") rather than trusting our own
+// possibly-stale local snapshot, since the opponent may have kept playing.
+const BL_SESSION_KEY = 'bloodlust_mp_session';
+const BL_SNAPSHOT_KEY = 'bloodlust_mp_snapshot';
+const BL_SESSION_MAX_AGE_MS = 3 * 60 * 60 * 1000; // 3 hours
+
+function mpSaveSession() {
+    if (!mp.isMultiplayer || !mp.roomName || !mp.mySide) return;
+    try {
+        localStorage.setItem(BL_SESSION_KEY, JSON.stringify({
+            roomName: mp.roomName,
+            mySide: mp.mySide,
+            squadMode: mp.squadMode,
+            ts: Date.now()
+        }));
+    } catch (e) {}
+}
+
+function mpClearSession() {
+    try {
+        localStorage.removeItem(BL_SESSION_KEY);
+        localStorage.removeItem(BL_SNAPSHOT_KEY);
+    } catch (e) {}
+}
+
+// Best-effort local copy of exactly what's on screen, so a refresh can render
+// *something real* immediately instead of the initial menu — even before the
+// peer resync response lands.
+function mpSaveSnapshot() {
+    if (!mp.isMultiplayer) return;
+    try {
+        const snap = { phase: mp.phase, ts: Date.now() };
+        if (mp.phase === 'draft') snap.draft = mpSanitizeForWire(mp.draft);
+        else if (mp.phase === 'battle') snap.gameState = mpSanitizeForWire(gameState);
+        localStorage.setItem(BL_SNAPSHOT_KEY, JSON.stringify(snap));
+    } catch (e) {}
+}
+
+// Mirrors my current battle state to the opponent's perspective, same as
+// mpBuildSwappedStatePayload for a normal turn handoff, but also includes
+// whose turn it actually is right now (a plain turnState message always
+// implies "it's now your turn", which isn't true for an arbitrary resync).
+function mpBuildFullSyncPayload() {
+    const swapped = mpBuildSwappedStatePayload();
+    swapped.currentTurn = gameState.currentTurn === 1 ? 2 : 1;
+    return swapped;
+}
+
+// Called when a peer (possibly a just-reconnected one) asks what's going on.
+function mpHandleResyncRequest(peerId) {
+    if (mp.phase === 'draft' && mp.draft) {
+        mp.sendMsg({ type: 'resyncResponseDraft', payload: mpSanitizeForWire(mp.draft) }, peerId);
+    } else if (mp.phase === 'battle') {
+        mp.sendMsg({ type: 'resyncResponseBattle', payload: mpSanitizeForWire(mpBuildFullSyncPayload()) }, peerId);
+    } else {
+        mp.sendMsg({ type: 'resyncResponseNone' }, peerId);
+    }
+}
+
+function mpShowReconnectBanner() {
+    const el = document.getElementById('reconnectBanner');
+    if (el) el.style.display = 'block';
+}
+function mpHideReconnectBanner() {
+    const el = document.getElementById('reconnectBanner');
+    if (el) el.style.display = 'none';
+}
+
+function mpAbandonReconnect() {
+    mpHideReconnectBanner();
+    resetToSetup();
+}
+
+// Runs once on page load. If a match was in progress before a refresh,
+// restores whatever we can from the local snapshot right away (so the tab
+// never just dumps you back on the title screen), rejoins the same P2P room,
+// and requests a fresh resync from the opponent to correct anything that
+// happened while we were reloading.
+function mpAttemptReconnectOnLoad() {
+    let session;
+    try {
+        const raw = localStorage.getItem(BL_SESSION_KEY);
+        if (!raw) return;
+        session = JSON.parse(raw);
+    } catch (e) { return; }
+    if (!session || !session.roomName || !session.mySide) return;
+    if (Date.now() - (session.ts || 0) > BL_SESSION_MAX_AGE_MS) { mpClearSession(); return; }
+    if (!window.__trysteroReady) { setTimeout(mpAttemptReconnectOnLoad, 300); return; }
+
+    mp.isMultiplayer = true;
+    mp.mySide = session.mySide;
+    mp.squadMode = session.squadMode;
+    mp.roomName = session.roomName;
+    mpShowReconnectBanner();
+
+    // Best-effort immediate restore from our own last-known snapshot.
+    try {
+        const rawSnap = localStorage.getItem(BL_SNAPSHOT_KEY);
+        if (rawSnap) {
+            const snap = JSON.parse(rawSnap);
+            if (snap.phase === 'draft' && snap.draft) {
+                mp.phase = 'draft';
+                mp.draft = mpRestoreFromWire(snap.draft);
+                document.getElementById('setupView').style.display = 'none';
+                document.getElementById('gameView').style.display = 'none';
+                document.getElementById('draftView').style.display = 'block';
+                mpRenderDraft();
+            } else if (snap.phase === 'battle' && snap.gameState) {
+                mp.phase = 'battle';
+                Object.assign(gameState, mpRestoreFromWire(snap.gameState));
+                document.getElementById('setupView').style.display = 'none';
+                document.getElementById('draftView').style.display = 'none';
+                document.getElementById('gameView').style.display = 'block';
+                renderScene();
+            }
+        }
+    } catch (e) {}
+
+    mp.room = window.__trysteroJoinRoom(MP_CONFIG, mp.roomName);
+    const msgAction = mp.room.makeAction('msg');
+    mp.sendMsg = msgAction.send;
+    msgAction.onMessage = (data, peerId) => mpHandleMessage(data, peerId);
+
+    const requestResync = (peerId) => {
+        mp.peerId = peerId;
+        mp.sendMsg({ type: 'resyncRequest' }, peerId);
+    };
+    mp.room.onPeerJoin = requestResync;
+    Object.keys(mp.room.getPeers()).forEach(requestResync);
+
+    // If nobody answers in time, stop blocking the screen with the banner —
+    // whatever we restored from the local snapshot (or the plain setup
+    // screen, if we had no snapshot at all) stays as the best we can do.
+    setTimeout(() => {
+        mpHideReconnectBanner();
+    }, 8000);
+}
+
 function mpSetSquadMode(mode, btnEl) {
     mp.squadMode = mode;
     document.querySelectorAll('#mpPanel .picker-btn[data-mp-mode]').forEach(b => b.classList.remove('picker-active'));
@@ -1254,7 +1406,8 @@ function mpTeardownConnection() {
     if (mp.room) {
         try { mp.room.leave(); } catch (e) {}
     }
-    mp = { isMultiplayer: false, room: null, sendMsg: null, peerId: null, mySide: null, squadMode: mp.squadMode, matched: false, draft: null };
+    mpClearSession();
+    mp = { isMultiplayer: false, room: null, roomName: null, sendMsg: null, peerId: null, mySide: null, squadMode: mp.squadMode, matched: false, draft: null, phase: 'lobby' };
     const codeEl = document.getElementById('mpRoomCodeDisplay');
     if (codeEl) codeEl.innerText = '';
     mpLog('');
@@ -1295,8 +1448,9 @@ function mpJoinRoom() {
 
 function mpConnectDirect(code) {
     mp.isMultiplayer = true;
+    mp.roomName = 'room-' + code;
     mpLog('Waiting for opponent to connect...');
-    mp.room = window.__trysteroJoinRoom(MP_CONFIG, 'room-' + code);
+    mp.room = window.__trysteroJoinRoom(MP_CONFIG, mp.roomName);
     const msgAction = mp.room.makeAction('msg');
     mp.sendMsg = msgAction.send;
     msgAction.onMessage = (data, peerId) => mpHandleMessage(data, peerId);
@@ -1304,6 +1458,7 @@ function mpConnectDirect(code) {
         mp.peerId = peerId;
         mp.mySide = (window.__trysteroSelfId < peerId) ? 1 : 2;
         mpLog('Opponent connected!');
+        mpSaveSession();
         mpBeginSquadPhase();
     };
 }
@@ -1362,10 +1517,12 @@ function mpFinalizeMatch(peerId) {
     const privateName = 'match-' + [window.__trysteroSelfId, peerId].sort().join('-');
     try { mp.room.leave(); } catch (e) {}
     mpLog('Opponent found! Connecting...');
+    mp.roomName = privateName;
     mp.room = window.__trysteroJoinRoom(MP_CONFIG, privateName);
     const msgAction = mp.room.makeAction('msg');
     mp.sendMsg = msgAction.send;
     msgAction.onMessage = (data, pid) => mpHandleMessage(data, pid);
+    mpSaveSession();
     mpBeginSquadPhase();
 }
 
@@ -1403,7 +1560,10 @@ function mpRunRandomizedSquadFlow() {
 function mpStartBattleFromPayload(built) {
     gameState.unusedBloodbanes = built.unusedBloodbanes || [];
     document.getElementById('draftView').style.display = 'none';
+    mp.phase = 'battle';
+    mp.draft = null;
     startBattleWithSquads(built.p1Squad, built.p2Squad, built.p1Hex, built.p2Hex, { vsBot: false });
+    mpSaveSnapshot();
 }
 
 // ---- Draft mode ------------------------------------------------------------
@@ -1421,23 +1581,58 @@ function mpCategoryCap(category) {
     return 1; // Heroic
 }
 
+// Snake draft order: P1 takes 1, then P2 and P1 alternate taking 2-at-a-time,
+// and the very last card goes to P1 alone. With 10 picks needed per side this
+// works out to exactly: P1(1), P2(2), P1(2), P2(2), P1(2), P2(2), P1(2), P2(2),
+// P1(2), P2(2), P1(1) — 6 turns for P1 (1+2+2+2+2+1=10) and 5 turns for P2
+// (2+2+2+2+2=10).
+function mpBuildDraftSchedule() {
+    return [
+        { side: 1, count: 1 },
+        { side: 2, count: 2 },
+        { side: 1, count: 2 },
+        { side: 2, count: 2 },
+        { side: 1, count: 2 },
+        { side: 2, count: 2 },
+        { side: 1, count: 2 },
+        { side: 2, count: 2 },
+        { side: 1, count: 2 },
+        { side: 2, count: 2 },
+        { side: 1, count: 1 }
+    ];
+}
+
 function mpStartDraft() {
-    mp.draft = { pool: CARD_POOL.map(c => ({...c})), p1Picks: [], p2Picks: [], turnSide: 1 };
+    const schedule = mpBuildDraftSchedule();
+    mp.draft = {
+        pool: CARD_POOL.map(c => ({...c})),
+        p1Picks: [], p2Picks: [],
+        schedule,
+        scheduleIndex: 0,
+        turnSide: schedule[0].side,
+        picksLeftInTurn: schedule[0].count
+    };
+    mp.phase = 'draft';
     document.getElementById('draftView').style.display = 'block';
     mpRenderDraft();
+    mpSaveSnapshot();
 }
 
 function mpRenderDraft() {
     const d = mp.draft;
     const isMyTurn = d.turnSide === mp.mySide;
-    const categories = ['Bloodbane', 'Bloodborne', 'Heroic'];
+    const categories = [
+        { key: 'Bloodbane', label: '🩸 BLOODBANE CAGE' },
+        { key: 'Bloodborne', label: '⚙️ BLOODBORNE CAGE' },
+        { key: 'Heroic', label: '⭐ HEROIC CAGE' }
+    ];
     let html = '';
-    categories.forEach(cat => {
+    categories.forEach(({ key: cat, label }) => {
         const cardsInCat = d.pool.filter(c => c.category === cat);
         if (cardsInCat.length === 0) return;
         const turnPicks = d.turnSide === 1 ? d.p1Picks : d.p2Picks;
         const roomLeft = turnPicks.filter(c => c.category === cat).length < mpCategoryCap(cat);
-        html += `<div class="squad-title" style="margin-top:12px;">${cat}</div><div class="squad" style="grid-template-columns:repeat(3, minmax(0,1fr));">`;
+        html += `<div class="squad-title" style="margin-top:12px;">${label} (cap ${mpCategoryCap(cat)})</div><div class="squad" style="grid-template-columns:repeat(3, minmax(0,1fr));">`;
         cardsInCat.forEach(c => {
             const canPick = isMyTurn && roomLeft;
             html += `<button class="btn" style="height:auto; padding:10px 4px; ${canPick ? '' : 'opacity:0.35;'}" ${canPick ? `onclick="mpMakeDraftPick('${c.name}')"` : 'disabled'}>${c.name}</button>`;
@@ -1445,13 +1640,15 @@ function mpRenderDraft() {
         html += '</div>';
     });
     document.getElementById('draftPoolGrid').innerHTML = html;
-    document.getElementById('draftStatus').innerText = isMyTurn ? "Your pick — choose a card" : "Opponent is picking...";
+    document.getElementById('draftStatus').innerText = isMyTurn
+        ? `Your pick — choose ${d.picksLeftInTurn} card${d.picksLeftInTurn > 1 ? 's' : ''} this turn`
+        : "Opponent is picking...";
     document.getElementById('draftMyCount').innerText = (mp.mySide === 1 ? d.p1Picks.length : d.p2Picks.length) + ' / 10';
     document.getElementById('draftOppCount').innerText = (mp.mySide === 1 ? d.p2Picks.length : d.p1Picks.length) + ' / 10';
 }
 
 function mpMakeDraftPick(cardName) {
-    if (!mp.draft || mp.draft.turnSide !== mp.mySide) return;
+    if (!mp.draft || mp.draft.turnSide !== mp.mySide || mp.draft.picksLeftInTurn <= 0) return;
     mpApplyDraftPick(cardName, mp.mySide);
     mp.sendMsg({ type: 'draftPick', cardName });
 }
@@ -1463,7 +1660,17 @@ function mpApplyDraftPick(cardName, side) {
     if (idx === -1) return;
     const card = d.pool.splice(idx, 1)[0];
     if (side === 1) d.p1Picks.push(card); else d.p2Picks.push(card);
-    d.turnSide = (side === 1) ? 2 : 1;
+
+    d.picksLeftInTurn--;
+    if (d.picksLeftInTurn <= 0 && d.p1Picks.length + d.p2Picks.length < 20) {
+        d.scheduleIndex++;
+        const next = d.schedule[d.scheduleIndex];
+        if (next) {
+            d.turnSide = next.side;
+            d.picksLeftInTurn = next.count;
+        }
+    }
+    mpSaveSnapshot();
 
     if (d.p1Picks.length === 10 && d.p2Picks.length === 10) {
         const sideASquad = mpMaterializeSquad(d.p1Picks, 'p1');
@@ -1500,6 +1707,8 @@ function mpHandleMessage(data, peerId) {
         // applying it directly makes it my turn.
         Object.assign(gameState, mpRestoreFromWire(data.payload));
         abortTargetingSequence();
+        mp.phase = 'battle';
+        mpSaveSnapshot();
         if (gameState.isGameOver) {
             renderScene();
             return;
@@ -1507,6 +1716,37 @@ function mpHandleMessage(data, peerId) {
         gameState.currentTurn = 1;
         renderScene();
         startMoveTimer(1);
+    } else if (data.type === 'resyncRequest') {
+        mpHandleResyncRequest(peerId);
+    } else if (data.type === 'resyncResponseDraft') {
+        mpHideReconnectBanner();
+        mp.isMultiplayer = true;
+        mp.phase = 'draft';
+        mp.draft = mpRestoreFromWire(data.payload);
+        document.getElementById('setupView').style.display = 'none';
+        document.getElementById('gameView').style.display = 'none';
+        document.getElementById('draftView').style.display = 'block';
+        mpRenderDraft();
+        mpSaveSnapshot();
+    } else if (data.type === 'resyncResponseBattle') {
+        mpHideReconnectBanner();
+        mp.isMultiplayer = true;
+        mp.phase = 'battle';
+        mp.draft = null;
+        Object.assign(gameState, mpRestoreFromWire(data.payload));
+        abortTargetingSequence();
+        document.getElementById('setupView').style.display = 'none';
+        document.getElementById('draftView').style.display = 'none';
+        document.getElementById('gameView').style.display = 'block';
+        renderScene();
+        if (!gameState.isGameOver) {
+            if (gameState.currentTurn === 1) startMoveTimer(1);
+            else writeLog("⚡ Waiting for opponent's move...");
+        }
+        mpSaveSnapshot();
+    } else if (data.type === 'resyncResponseNone') {
+        mpHideReconnectBanner();
+        mpLog("Couldn't find your match anymore — it may have ended.");
     }
 }
 
@@ -2588,6 +2828,7 @@ function finalizeActiveTurn() {
     });
     applyTeamPoisonTicks(gameState.p1);
     renderScene();
+    if (mp.isMultiplayer) mpSaveSnapshot();
     if (gameState.isGameOver) {
         // Send final state even on game-over so the opponent's screen
         // reflects the real ending board instead of freezing stale.
