@@ -1358,12 +1358,13 @@ function mpAttemptReconnectOnLoad() {
     } catch (e) {}
 
     mp.room = window.__trysteroJoinRoom(MP_CONFIG, mp.roomName);
-    const msgAction = mp.room.makeAction('msg');
-    mp.sendMsg = msgAction.send;
-    msgAction.onMessage = (data, peerId) => mpHandleMessage(data, peerId);
+    const reliable = mpWireReliableRoom(mp.room);
+    mp.sendMsg = reliable.send;
+    reliable.msgAction.onMessage = (data, peerId) => mpHandleMessage(data, peerId);
 
     const requestResync = (peerId) => {
         mp.peerId = peerId;
+        reliable.onPeerConnected();
         mp.sendMsg({ type: 'resyncRequest' }, peerId);
     };
     mp.room.onPeerJoin = requestResync;
@@ -1416,6 +1417,42 @@ function mpReady() {
     return true;
 }
 
+// A brand-new trystero room's WebRTC data channel isn't open the instant
+// joinRoom() returns — the ICE/SDP handshake still has to finish. If a
+// message is sent before that completes, trystero has no peer to deliver it
+// to and the message is silently dropped forever (not queued, not retried).
+// This matters most right after "random opponent" matchmaking hands two
+// peers off from the shared public lobby room into their own brand-new
+// private room and gameplay starts immediately: the very first message sent
+// in that private room (the first draft pick, or the initial random-squad
+// payload) can vanish before the channel is actually up, leaving one side
+// stuck forever thinking it's still waiting on the other ("opponent is
+// choosing" never updates). This wrapper queues any send attempted before a
+// peer has actually joined the room and flushes the queue the instant they
+// do, so nothing sent early gets lost. Targeted sends (a specific peerId
+// given) are always let through immediately since those only ever happen in
+// direct reply to a message just received on a channel that's already open.
+function mpWireReliableRoom(room) {
+    const msgAction = room.makeAction('msg');
+    const rawSend = msgAction.send;
+    const state = { connected: Object.keys(room.getPeers()).length > 0, outbox: [] };
+    const flush = () => {
+        state.connected = true;
+        const queued = state.outbox;
+        state.outbox = [];
+        queued.forEach(([data, peerId]) => rawSend(data, peerId));
+    };
+    const send = (data, peerId) => {
+        if (state.connected || peerId) {
+            rawSend(data, peerId);
+        } else {
+            state.outbox.push([data, peerId]);
+        }
+    };
+    return { msgAction, send, onPeerConnected: flush };
+}
+
+
 // ---- Create / Join by room code -----------------------------------------
 function mpCreateRoom() {
     if (!mpReady()) return;
@@ -1436,12 +1473,13 @@ function mpConnectDirect(code) {
     mp.roomName = 'room-' + code;
     mpLog('Waiting for opponent to connect...');
     mp.room = window.__trysteroJoinRoom(MP_CONFIG, mp.roomName);
-    const msgAction = mp.room.makeAction('msg');
-    mp.sendMsg = msgAction.send;
-    msgAction.onMessage = (data, peerId) => mpHandleMessage(data, peerId);
+    const reliable = mpWireReliableRoom(mp.room);
+    mp.sendMsg = reliable.send;
+    reliable.msgAction.onMessage = (data, peerId) => mpHandleMessage(data, peerId);
     mp.room.onPeerJoin = peerId => {
         mp.peerId = peerId;
         mp.mySide = (window.__trysteroSelfId < peerId) ? 1 : 2;
+        reliable.onPeerConnected();
         mpLog('Opponent connected!');
         mpSaveSession();
         mpBeginSquadPhase();
@@ -1504,9 +1542,18 @@ function mpFinalizeMatch(peerId) {
     mpLog('Opponent found! Connecting...');
     mp.roomName = privateName;
     mp.room = window.__trysteroJoinRoom(MP_CONFIG, privateName);
-    const msgAction = mp.room.makeAction('msg');
-    mp.sendMsg = msgAction.send;
-    msgAction.onMessage = (data, pid) => mpHandleMessage(data, pid);
+    const reliable = mpWireReliableRoom(mp.room);
+    mp.sendMsg = reliable.send;
+    reliable.msgAction.onMessage = (data, pid) => mpHandleMessage(data, pid);
+    // Both sides call mpBeginSquadPhase() below right away (draft/squad setup
+    // itself is fully deterministic and needs no round-trip), but the actual
+    // private data channel to the peer may still be mid-handshake at that
+    // moment. mpWireReliableRoom queues anything sent before this fires, so
+    // the first draft pick / squad payload no longer gets lost in transit.
+    mp.room.onPeerJoin = pid => {
+        mp.peerId = pid;
+        reliable.onPeerConnected();
+    };
     mpSaveSession();
     mpBeginSquadPhase();
 }
@@ -1693,12 +1740,21 @@ function mpHandleMessage(data, peerId) {
         Object.assign(gameState, mpRestoreFromWire(data.payload));
         abortTargetingSequence();
         mp.phase = 'battle';
-        mpSaveSnapshot();
         if (gameState.isGameOver) {
+            mpSaveSnapshot();
             renderScene();
             return;
         }
+        // Flip to "my turn" BEFORE snapshotting. turnState's payload never
+        // carries currentTurn (mpBuildSwappedStatePayload doesn't include
+        // it), so saving the snapshot before this line persisted whatever
+        // currentTurn was left over from BEFORE this message arrived —
+        // almost always 2 ("opponent's turn"). A refresh landing in that
+        // window restored a snapshot permanently stuck on "opponent's turn"
+        // even though it had just become this device's turn — this was the
+        // bug behind reconnects where both screens showed "opponent's turn".
         gameState.currentTurn = 1;
+        mpSaveSnapshot();
         renderScene();
         startMoveTimer(1);
     } else if (data.type === 'resyncRequest') {
@@ -2813,15 +2869,24 @@ function finalizeActiveTurn() {
     });
     applyTeamPoisonTicks(gameState.p1);
     renderScene();
-    if (mp.isMultiplayer) mpSaveSnapshot();
     if (gameState.isGameOver) {
         // Send final state even on game-over so the opponent's screen
         // reflects the real ending board instead of freezing stale.
-        if (mp.isMultiplayer) mp.sendMsg({ type: 'turnState', payload: mpSanitizeForWire(mpBuildSwappedStatePayload()) });
+        if (mp.isMultiplayer) {
+            mpSaveSnapshot();
+            mp.sendMsg({ type: 'turnState', payload: mpSanitizeForWire(mpBuildSwappedStatePayload()) });
+        }
         return;
     }
     gameState.currentTurn = 2;
     if (mp.isMultiplayer) {
+        // Snapshot only AFTER currentTurn has actually flipped to 2. Saving
+        // it any earlier (while it still read 1, "my turn") meant a refresh
+        // right after making a move restored the game still showing "YOUR
+        // TURN" even though the move had already been sent and it was truly
+        // the opponent's turn now — this was the root cause of reconnects
+        // getting stuck with both screens reading "opponent's turn".
+        mpSaveSnapshot();
         renderScene();
         mp.sendMsg({ type: 'turnState', payload: mpSanitizeForWire(mpBuildSwappedStatePayload()) });
         return;
