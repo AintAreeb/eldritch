@@ -479,6 +479,67 @@
                 font-size: 6px;
             }
         }
+        /* Character Guide modal */
+        .guide-modal {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: #111018;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 16px;
+            border-radius: 12px;
+            z-index: 1200; display: none; flex-direction: column;
+            max-width: 340px; width: 92%; max-height: 82vh;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255,255,255,0.1);
+        }
+        .guide-modal h3 {
+            margin: 0 0 10px 0; font-size: 14px; font-weight: 600; text-align: center;
+            color: #ff5555; letter-spacing: 0.02em;
+        }
+        .guide-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+        .guide-tab-btn {
+            flex: 1; background: #1a1922; color: #8a8f98; border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 6px; padding: 8px 4px; font-size: 10px; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.04em; cursor: pointer;
+        }
+        .guide-tab-btn.guide-tab-active { background: #ff3333; color: #fff; border-color: #ff3333; }
+        .guide-body { overflow-y: auto; flex: 1; min-height: 0; }
+        .guide-section-label {
+            font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: #4af7a7;
+            font-weight: 700; margin: 12px 0 6px 0;
+        }
+        .guide-section-label:first-child { margin-top: 0; }
+        .guide-card-entry {
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 8px; padding: 8px 10px; margin-bottom: 6px;
+        }
+        .guide-card-name { font-size: 12px; font-weight: 700; color: #f7f8f8; }
+        .guide-card-meta { font-size: 9px; color: #8a8f98; margin: 1px 0 4px 0; text-transform: uppercase; letter-spacing: 0.03em; }
+        .guide-card-desc { font-size: 11px; color: #c7c9cf; line-height: 1.45; }
+        .guide-close-btn {
+            margin-top: 12px; background: #2a2932; color: #f7f8f8; border: none; border-radius: 8px;
+            padding: 10px; font-size: 11px; font-weight: 600; cursor: pointer; text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        /* Tutorial ("Learn Mode") bot chat bubble */
+        .tutor-bubble {
+            display: flex; gap: 8px; align-items: flex-start; margin-bottom: 12px;
+        }
+        .tutor-avatar {
+            flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%;
+            background: linear-gradient(135deg, #4af7a7, #00acc1); display: flex; align-items: center;
+            justify-content: center; font-size: 16px;
+        }
+        .tutor-text-box {
+            background: #0d0c14; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px;
+            border-top-left-radius: 2px; padding: 10px 12px; font-size: 12px; color: #f7f8f8; line-height: 1.5; flex: 1;
+        }
+        .tutor-text-box .tutor-card-name { color: #4af7a7; font-weight: 700; }
+        .tutor-nav { display: flex; gap: 8px; align-items: center; justify-content: space-between; margin-top: 4px; }
+        .tutor-nav button {
+            background: #1a1922; color: #f7f8f8; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px;
+            padding: 8px 12px; font-size: 11px; font-weight: 600; cursor: pointer;
+        }
+        .tutor-nav button:disabled { opacity: 0.35; cursor: default; }
+        .tutor-progress { font-size: 10px; color: #5a5f68; letter-spacing: 0.04em; }
     </style>
 
 
@@ -577,6 +638,9 @@
         </div>
 
         <p class="rotate-hint">Rotate your phone for the best experience</p>
+        <p style="text-align:center; margin-top:10px;">
+            <a href="javascript:void(0)" onclick="openGuideModal()" style="color:#5a5f68; font-size:10px; text-decoration:underline; cursor:pointer; letter-spacing:0.03em;">New here? Open the Character Guide</a>
+        </p>
     </div>
 
     <div id="draftView" style="display:none; text-align:center; padding:16px;">
@@ -609,6 +673,27 @@
 
         <div class="squad-title" id="p2Title">Miasma</div>
         <div class="squad" id="p2Field"></div>
+    </div>
+
+    <div id="guideModal" class="guide-modal">
+        <h3>📖 Character Guide</h3>
+        <div class="guide-tabs">
+            <button class="guide-tab-btn guide-tab-active" id="guideTabDirectoryBtn" onclick="switchGuideTab('directory')">Directory</button>
+            <button class="guide-tab-btn" id="guideTabTutorBtn" onclick="switchGuideTab('tutor')">🎓 Guided Tutorial</button>
+        </div>
+        <div class="guide-body" id="guideDirectoryView"></div>
+        <div class="guide-body" id="guideTutorView" style="display:none;">
+            <div class="tutor-bubble">
+                <div class="tutor-avatar">🤖</div>
+                <div class="tutor-text-box" id="tutorTextBox"></div>
+            </div>
+            <div class="tutor-nav">
+                <button id="tutorPrevBtn" onclick="tutorStep(-1)">← Back</button>
+                <span class="tutor-progress" id="tutorProgress"></span>
+                <button id="tutorNextBtn" onclick="tutorStep(1)">Next →</button>
+            </div>
+        </div>
+        <button class="guide-close-btn" onclick="closeGuideModal()">Close</button>
     </div>
 
     <div id="bartenderChoiceModal" class="bartender-modal">
@@ -3995,6 +4080,113 @@ function buildDynamicActionPads(card, isLockedByCooldown) {
     
     html += '</div>';
     return html;
+}
+
+// ============================================================================
+// CHARACTER GUIDE + GUIDED TUTORIAL ("Learn Mode")
+// Plain-language descriptions of every card's real ability, written to match
+// how the game actually behaves in code (not a static rulebook that can go
+// stale as the game changes). Used for both the scrollable Directory tab and
+// the step-by-step Tutor walkthrough.
+// ============================================================================
+const GUIDE_DATA = {
+    Bloodbane: [
+        { name: 'Killer', tag: 'Criminal', blood: 2, desc: "Instantly takes out one enemy. Can't target Entities." },
+        { name: 'Robber', tag: 'Criminal', blood: 3, desc: "Drains 1 blood from an enemy (not a Criminal or an Entity). Down to its last blood, it can instead instantly finish off an enemy Criminal or the Dictator." },
+        { name: 'Cop', tag: 'Law & Order', blood: 2, desc: "Strikes a Criminal or Law & Order enemy for 1 damage — 2 damage if that enemy already made a move this round." },
+        { name: 'Dementor', tag: 'Entity', blood: 2, desc: "Copies the power of any character that has already died on either team, except Skinwalker, Sorcerer, Watchmaker, or any Heroic. Must sit out a turn after using it." },
+        { name: 'Dictator', tag: 'Law & Order', blood: 2, desc: "Locks an enemy in prison so it can't act. Can't imprison Entities. Must sit out a turn after using it." },
+        { name: 'Hood', tag: 'Assassin', blood: 3, desc: "Steals 1 blood from an enemy and gives it to one of your allies. Can't touch Entities. On its last blood, a hit on Spy instantly finishes it instead." },
+        { name: 'Lawyer', tag: 'Law & Order', blood: 3, desc: "Imprisons an enemy." },
+        { name: 'Ninja', tag: 'Assassin', blood: 2, desc: "Strikes an enemy for 1 damage. Its first kill earns it +2 bonus blood. On its very last blood, landing a hit on Spy is an instant finish. Must sit out a turn after using it." },
+        { name: 'Spy', tag: 'Assassin', blood: '∞', desc: "Strikes any enemy except another Spy for 1 damage — and never spends its own blood to do it. Must sit out a turn after using it." },
+        { name: 'Sorcerer', tag: 'Mystic', blood: 2, desc: "Takes control of one enemy for a single move, forcing it to attack its own side. Can't hijack Skinwalker, Dementor, Watchmaker, or Bartender. Also gets Mystic Purge. Must sit out a turn after using it." },
+        { name: 'Singer', tag: 'Artist', blood: 2, desc: "Hits two different enemies for 1 damage each in one move. Must sit out a turn after using it." },
+        { name: 'Witch', tag: 'Mystic', blood: 2, desc: "Damages an enemy for 1 and poisons it — poison ticks off 1 extra blood every future turn that card acts, until cured. Also gets Mystic Purge." },
+        { name: 'Skinwalker', tag: 'Mystic', blood: 1, desc: "Completely untouchable until it transforms. At any time, for free, it can permanently shapeshift into an unused Bloodbane character and gain +1 max blood. Must sit out a turn after using its normal move." },
+    ],
+    Bloodborne: [
+        { name: 'Mecha', tag: 'Bloodsmith', blood: 2, desc: "Fuses with an ally — Spy, Robber, Hood, Witch, Knight, Cop, or Ninja — letting that pairing land two hits in a single turn. 3-turn cooldown between uses." },
+        { name: 'Knight', tag: 'Law & Order', blood: 2, desc: "First blood: raises a shield that stops your whole team from being killed or imprisoned for the enemy's next 2 turns. Last blood: strikes an enemy for 1 damage, or instantly finishes Spy." },
+        { name: 'Hacker', tag: 'Criminal', blood: 2, desc: "Trades one of your characters with one of the enemy's. Swaps must alternate between Bloodbane-for-Bloodbane and Bloodborne-for-Bloodborne. Both cards return to full blood after the trade. 3-turn cooldown between uses." },
+        { name: 'Imam', tag: 'Mystic', blood: 2, desc: "Reverses the enemy's last kill or imprisonment against your team. Also gets Mystic Purge. Must sit out a turn after using it." },
+        { name: 'Mage', tag: 'Mystic', blood: 3, desc: "Spends its own blood to revive a dead ally with that same amount of blood (reviving Spy always costs 2). Also gets Mystic Purge. Must sit out a turn after using it." },
+        { name: 'Doctor', tag: 'Medic', blood: 3, desc: "Heals an ally for 1 blood. Can also cure poison on any teammate completely for free, without spending its move." },
+        { name: 'Bartender', tag: 'Criminal', blood: 2, desc: "Copies whatever move the enemy used on their last turn. Must sit out a turn after using it." },
+        { name: 'Jinn', tag: 'Entity', blood: 2, desc: "Locks down one enemy, blocking it from acting for its next 3 turns. Must sit out a turn after using it." },
+        { name: 'Watchmaker', tag: 'Bloodsmith', blood: 2, desc: "Rewinds time, undoing whatever the enemy's last attack did to your team. 3-turn cooldown between uses." },
+    ],
+    Heroic: [
+        { name: 'Actor', tag: 'Artist', blood: 1, desc: "Instantly becomes almost any other Bloodbane or Bloodborne character and uses that character's move for one turn." },
+        { name: 'Therapist', tag: 'Medic', blood: 1, desc: "Undoes the enemy's last attack on your team, then immediately fires that same attack straight back at the enemy." },
+        { name: 'Princess', tag: 'Artist', blood: 1, desc: "Sacrifices herself completely to instantly undo the enemy's last attack on your team." },
+        { name: 'Reporter', tag: 'Law & Order', blood: 1, desc: "Frees every one of your imprisoned characters, then can heal up to 4 different allies for 1 blood each before ending its turn." },
+        { name: 'Terrorist', tag: 'Criminal', blood: 1, desc: "Only usable once 2 of your characters have already died. Drains 1 blood from every enemy with more than 1 blood, then sacrifices itself." },
+    ]
+};
+const GUIDE_CATEGORY_LABELS = { Bloodbane: '🩸 Bloodbanes', Bloodborne: '⚙️ Bloodbornes', Heroic: '⭐ Heroics (1 Blood each)' };
+const GUIDE_INTRO_TEXT = "Every character has a Blood total (its health/fuel) and belongs to a category: Bloodbane, Bloodborne, or Heroic. Entities can only be damaged by Mystic-tagged characters, who each carry a small 'Mystic Purge' move just for that.";
+
+let tutorFlatList = [];
+let tutorIndex = 0;
+
+function buildGuideDirectoryHTML() {
+    let html = `<p style="font-size:11px; color:#8a8f98; line-height:1.5; margin:0 0 10px 0;">${GUIDE_INTRO_TEXT}</p>`;
+    Object.keys(GUIDE_DATA).forEach(cat => {
+        html += `<div class="guide-section-label">${GUIDE_SECTION_LABEL(cat)}</div>`;
+        GUIDE_DATA[cat].forEach(card => {
+            html += `<div class="guide-card-entry">
+                <div class="guide-card-name">${card.name}</div>
+                <div class="guide-card-meta">${card.tag} · ${card.blood} Blood</div>
+                <div class="guide-card-desc">${card.desc}</div>
+            </div>`;
+        });
+    });
+    return html;
+}
+function GUIDE_SECTION_LABEL(cat) { return GUIDE_CATEGORY_LABELS[cat] || cat; }
+
+function buildTutorFlatList() {
+    let list = [];
+    Object.keys(GUIDE_DATA).forEach(cat => {
+        GUIDE_DATA[cat].forEach(card => list.push({ ...card, category: cat }));
+    });
+    return list;
+}
+
+function openGuideModal() {
+    document.getElementById('guideDirectoryView').innerHTML = buildGuideDirectoryHTML();
+    tutorFlatList = buildTutorFlatList();
+    tutorIndex = 0;
+    renderTutorStep();
+    switchGuideTab('directory');
+    document.getElementById('guideModal').style.display = 'flex';
+}
+function closeGuideModal() {
+    document.getElementById('guideModal').style.display = 'none';
+}
+function switchGuideTab(tab) {
+    document.getElementById('guideTabDirectoryBtn').classList.toggle('guide-tab-active', tab === 'directory');
+    document.getElementById('guideTabTutorBtn').classList.toggle('guide-tab-active', tab === 'tutor');
+    document.getElementById('guideDirectoryView').style.display = tab === 'directory' ? 'block' : 'none';
+    document.getElementById('guideTutorView').style.display = tab === 'tutor' ? 'block' : 'none';
+}
+function tutorStep(delta) {
+    tutorIndex = Math.max(0, Math.min(tutorFlatList.length - 1, tutorIndex + delta));
+    renderTutorStep();
+}
+function renderTutorStep() {
+    if (tutorFlatList.length === 0) return;
+    let card = tutorFlatList[tutorIndex];
+    let isFirst = tutorIndex === 0;
+    let isLast = tutorIndex === tutorFlatList.length - 1;
+    let intro = isFirst ? `${GUIDE_INTRO_TEXT}<br><br>` : '';
+    document.getElementById('tutorTextBox').innerHTML =
+        `${intro}Meet <span class="tutor-card-name">${card.name}</span> — a ${GUIDE_SECTION_LABEL(card.category)} character with <strong>${card.blood} Blood</strong> and the <strong>${card.tag}</strong> tag.<br><br>${card.desc}`;
+    document.getElementById('tutorProgress').innerText = `${tutorIndex + 1} / ${tutorFlatList.length}`;
+    document.getElementById('tutorPrevBtn').disabled = isFirst;
+    document.getElementById('tutorNextBtn').innerText = isLast ? 'Done ✓' : 'Next →';
+    document.getElementById('tutorNextBtn').onclick = isLast ? closeGuideModal : () => tutorStep(1);
 }
 </script>
 </body>
