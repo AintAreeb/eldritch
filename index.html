@@ -1296,15 +1296,15 @@ function mpConnectDirect(code) {
     mp.isMultiplayer = true;
     mpLog('Waiting for opponent to connect...');
     mp.room = window.__trysteroJoinRoom(MP_CONFIG, 'room-' + code);
-    const [sendMsg, onMsg] = mp.room.makeAction('msg');
-    mp.sendMsg = sendMsg;
-    onMsg((data, peerId) => mpHandleMessage(data, peerId));
-    mp.room.onPeerJoin(peerId => {
+    const msgAction = mp.room.makeAction('msg');
+    mp.sendMsg = msgAction.send;
+    msgAction.onMessage = (data, peerId) => mpHandleMessage(data, peerId);
+    mp.room.onPeerJoin = peerId => {
         mp.peerId = peerId;
         mp.mySide = (window.__trysteroSelfId < peerId) ? 1 : 2;
         mpLog('Opponent connected!');
         mpBeginSquadPhase();
-    });
+    };
 }
 
 // ---- Random Opponent matchmaking (no room code needed) -------------------
@@ -1324,14 +1324,15 @@ function mpFindRandomOpponent() {
 
     const lobbyName = 'lobby-' + mp.squadMode;
     mp.room = window.__trysteroJoinRoom(MP_CONFIG, lobbyName);
-    const [sendClaim, onClaim] = mp.room.makeAction('claim');
+    const claimAction = mp.room.makeAction('claim');
+    const sendClaim = claimAction.send;
 
     const tryClaim = (peerId) => {
         if (mp.matched) return;
         if (window.__trysteroSelfId < peerId) sendClaim({ t: 'propose' }, peerId);
     };
 
-    onClaim((data, peerId) => {
+    claimAction.onMessage = (data, peerId) => {
         if (mp.isMultiplayer === false) return; // cancelled
         if (data.t === 'propose') {
             if (!mp.matched) {
@@ -1348,9 +1349,9 @@ function mpFindRandomOpponent() {
             }
         }
         // 'reject' -> stay in the lobby, we'll try the next peer who joins
-    });
+    };
 
-    mp.room.onPeerJoin(peerId => tryClaim(peerId));
+    mp.room.onPeerJoin = peerId => tryClaim(peerId);
     Object.keys(mp.room.getPeers()).forEach(tryClaim);
 }
 
@@ -1361,9 +1362,9 @@ function mpFinalizeMatch(peerId) {
     try { mp.room.leave(); } catch (e) {}
     mpLog('Opponent found! Connecting...');
     mp.room = window.__trysteroJoinRoom(MP_CONFIG, privateName);
-    const [sendMsg, onMsg] = mp.room.makeAction('msg');
-    mp.sendMsg = sendMsg;
-    onMsg((data, pid) => mpHandleMessage(data, pid));
+    const msgAction = mp.room.makeAction('msg');
+    mp.sendMsg = msgAction.send;
+    msgAction.onMessage = (data, pid) => mpHandleMessage(data, pid);
     mpBeginSquadPhase();
 }
 
