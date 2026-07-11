@@ -713,6 +713,7 @@
             box-shadow: 0 8px 20px rgba(0,0,0,0.5);
             cursor: pointer; user-select: none; -webkit-user-select: none;
             touch-action: none;
+            display: flex; align-items: center; justify-content: center;
         }
         .voice-btn.voice-btn-active {
             background: #4af7a7; border-color: #4af7a7; color: #08130d;
@@ -728,12 +729,22 @@
         /* Music playlist (lives inside the Settings modal, alongside
            Vibration) — each player builds/plays their own list locally. */
         .music-hint { font-size: 9px; color: #5a5f68; margin: -4px 0 10px 0; line-height: 1.4; }
+        .music-tip {
+            font-size: 10px; color: #4af7a7; background: rgba(74, 247, 167, 0.07);
+            border: 1px solid rgba(74, 247, 167, 0.15); border-radius: 8px;
+            padding: 7px 9px; margin: 0 0 10px 0; line-height: 1.4;
+        }
         .music-apikey-row { display: flex; gap: 6px; margin-bottom: 6px; }
         .music-apikey-row input { flex: 1; min-width: 0; }
         .music-apikey-row button {
             flex-shrink: 0; background: #2a2932; color: #f7f8f8; border: 1px solid rgba(255,255,255,0.1);
             border-radius: 8px; padding: 9px 12px; font-size: 11px; font-weight: 600; cursor: pointer;
         }
+        .music-getkey-link {
+            display: block; font-size: 10px; color: #4af7a7; text-decoration: none;
+            margin: 4px 0 8px 0; font-weight: 600;
+        }
+        .music-getkey-link:active { opacity: 0.7; }
         .music-search-row { display: flex; gap: 6px; margin-bottom: 8px; }
         .music-search-row input { flex: 1; min-width: 0; }
         .music-search-btn {
@@ -764,6 +775,7 @@
         .music-play-btn, .music-skip-btn {
             flex-shrink: 0; background: #1a1922; border: 1px solid rgba(255,255,255,0.12);
             color: #f7f8f8; font-size: 14px; border-radius: 50%; width: 34px; height: 34px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
         }
         .music-volume-row { display: flex; align-items: center; gap: 6px; flex: 1; }
         .music-volume-row input[type="range"] { flex: 1; accent-color: #4af7a7; }
@@ -1165,9 +1177,9 @@
                     onpointerleave="pttEnd(event)" onpointercancel="pttEnd(event)">🗣️ Talk</button>
                 <button id="muteOpponentBtn" class="voice-btn" style="display:none;" onclick="toggleOpponentMute()">🔊 Opp</button>
                 <button id="chatOpenBtn" class="voice-btn" onclick="openChatModal()">💬 Chat</button>
-                <button id="musicPrevBtnBar" class="voice-btn" onclick="musicPrev()">⏮️</button>
-                <button id="musicPlayBtnBar" class="voice-btn" onclick="musicTogglePlay()">▶️</button>
-                <button id="musicNextBtnBar" class="voice-btn" onclick="musicSkip()">⏭️</button>
+                <button id="musicPrevBtnBar" class="voice-btn" onclick="musicPrev()"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M6 6h2v12H6V6zm3.5 6L18 18V6l-8.5 6z"/></svg></button>
+                <button id="musicPlayBtnBar" class="voice-btn" onclick="musicTogglePlay()"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
+                <button id="musicNextBtnBar" class="voice-btn" onclick="musicSkip()"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg></button>
             </div>
         </div>
     </div>
@@ -1249,10 +1261,12 @@
 
             <div class="guide-section-label">🎵 Your Playlist</div>
             <div class="music-hint">Only you hear this — it plays locally and isn't shared with your opponent.</div>
+            <div class="music-tip">💡 Tip: lyric videos and fan uploads tend to play more reliably than "Official Video" uploads, which often block embedding elsewhere.</div>
             <div class="music-apikey-row">
                 <input type="password" id="musicPersonalKeyInput" class="account-input" style="margin-bottom:0;" placeholder="Your own YouTube API key (optional)">
                 <button onclick="musicSavePersonalKey()">Save</button>
             </div>
+            <a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noopener" class="music-getkey-link">Get your API key →</a>
             <div class="music-hint">Optional — if you add your own key, it's tried first and only counts against your own quota, so you're never affected by other players' searches.</div>
             <div class="music-search-row">
                 <input type="text" id="musicSearchInput" class="account-input" style="margin-bottom:0;" placeholder="Search a song..." onkeydown="if(event.key==='Enter') musicSearch()">
@@ -1262,9 +1276,9 @@
             <div class="guide-section-label">Playlist (checked = plays on repeat)</div>
             <div class="music-playlist-list" id="musicPlaylistList"></div>
             <div class="music-player-controls">
-                <button class="music-skip-btn" onclick="musicPrev()">⏮️</button>
-                <button class="music-play-btn" id="musicPlayBtn" onclick="musicTogglePlay()">▶️</button>
-                <button class="music-skip-btn" onclick="musicSkip()">⏭️</button>
+                <button class="music-skip-btn" onclick="musicPrev()"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M6 6h2v12H6V6zm3.5 6L18 18V6l-8.5 6z"/></svg></button>
+                <button class="music-play-btn" id="musicPlayBtn" onclick="musicTogglePlay()"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
+                <button class="music-skip-btn" onclick="musicSkip()"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg></button>
                 <div class="music-volume-row">
                     <span style="font-size:11px;">🔉</span>
                     <input type="range" id="musicVolumeSlider" min="0" max="100" value="50" oninput="musicSetVolume(this.value)">
@@ -6947,19 +6961,28 @@ function musicUpdateNowPlaying() {
     const track = musicCheckedTracks()[musicCurrentIndex];
     el.innerText = track ? `Now playing: ${track.title}` : '';
 }
+const MUSIC_ICON_PLAY = '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+const MUSIC_ICON_PAUSE = '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
 function musicUpdatePlayBtn() {
-    const icon = musicIsPlaying ? '⏸️' : '▶️';
+    const icon = musicIsPlaying ? MUSIC_ICON_PAUSE : MUSIC_ICON_PLAY;
     const btn = document.getElementById('musicPlayBtn');
-    if (btn) btn.innerText = icon;
+    if (btn) btn.innerHTML = icon;
     const barBtn = document.getElementById('musicPlayBtnBar');
-    if (barBtn) barBtn.innerText = icon;
+    if (barBtn) barBtn.innerHTML = icon;
 }
 
 function musicTogglePlay() {
     const checkedTracks = musicCheckedTracks();
     if (checkedTracks.length === 0 || !musicYtReady) return;
     if (musicIsPlaying) { musicYtPlayer.pauseVideo(); return; }
-    if (musicCurrentIndex === -1 || musicCurrentIndex >= checkedTracks.length) musicCurrentIndex = 0;
+    const hasValidIndex = musicCurrentIndex !== -1 && musicCurrentIndex < checkedTracks.length;
+    if (hasValidIndex) {
+        // A track is already loaded (just paused, or finished loading but
+        // never started) — resume it in place instead of restarting it.
+        musicYtPlayer.playVideo();
+        return;
+    }
+    musicCurrentIndex = 0;
     musicYtPlayer.loadVideoById(checkedTracks[musicCurrentIndex].videoId);
     musicRenderPlaylist();
 }
