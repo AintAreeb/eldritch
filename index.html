@@ -2284,6 +2284,7 @@ function blRestoreAccountOnLoad() {
         if (raw) blAccount = JSON.parse(raw);
     } catch (e) {}
     blRenderAccountUI();
+    if (blAccount) blPullMusicFromAccount();
 }
 
 async function blRegister() {
@@ -2296,6 +2297,7 @@ async function blRegister() {
         localStorage.setItem(BL_ACCOUNT_KEY, JSON.stringify(blAccount));
         blSetAccountStatus('');
         blRenderAccountUI();
+        blPullMusicFromAccount();
     } else {
         blSetAccountStatus(result.error || 'Could not create account.');
     }
@@ -2311,6 +2313,7 @@ async function blLogin() {
         localStorage.setItem(BL_ACCOUNT_KEY, JSON.stringify(blAccount));
         blSetAccountStatus('');
         blRenderAccountUI();
+        blPullMusicFromAccount();
     } else {
         blSetAccountStatus(result.error || 'Could not log in.');
     }
@@ -6718,10 +6721,56 @@ function musicLoad() {
         if (raw) blMusic = { ...blMusic, ...JSON.parse(raw) };
     } catch (e) { /* ignore corrupt/missing data, keep defaults */ }
 }
+let blMusicSyncTimer = null;
 function musicSave() {
     try { localStorage.setItem(BL_MUSIC_KEY, JSON.stringify(blMusic)); } catch (e) {}
+    // If logged in, mirror to the account so the playlist follows the user
+    // across devices. Debounced so rapid changes (checking several boxes,
+    // dragging the volume slider) don't fire a request per tick.
+    if (blAccount) {
+        clearTimeout(blMusicSyncTimer);
+        blMusicSyncTimer = setTimeout(blPushMusicToAccount, 800);
+    }
 }
 musicLoad();
+
+async function blPushMusicToAccount() {
+    if (!blAccount) return;
+    await blCallAccountRpc('save_music_data', {
+        p_username: blAccount.username,
+        p_playlist: blMusic.playlist,
+        p_personal_api_key: blMusic.personalApiKey,
+        p_volume: blMusic.volume
+    });
+}
+
+// Called right after login/register/page-load-with-existing-session. Pulls
+// whatever's saved on the account and makes it the source of truth on this
+// device. If the account has nothing saved yet (first time syncing), it
+// seeds the account with whatever's currently in localStorage instead.
+async function blPullMusicFromAccount() {
+    if (!blAccount) return;
+    const result = await blCallAccountRpc('get_music_data', { p_username: blAccount.username });
+    if (!result.ok) return;
+    if (result.has_data) {
+        blMusic = {
+            playlist: result.playlist || [],
+            personalApiKey: result.personal_api_key || '',
+            volume: (result.volume ?? blMusic.volume)
+        };
+        try { localStorage.setItem(BL_MUSIC_KEY, JSON.stringify(blMusic)); } catch (e) {}
+        musicExhaustedKeys.clear();
+        musicRenderPlaylist();
+        musicUpdatePlayBtn();
+        if (musicYtReady) musicYtPlayer.setVolume(blMusic.volume);
+        const keyInput = document.getElementById('musicPersonalKeyInput');
+        if (keyInput) keyInput.value = blMusic.personalApiKey ? '••••••••' : '';
+        const volSlider = document.getElementById('musicVolumeSlider');
+        if (volSlider) volSlider.value = blMusic.volume;
+    } else {
+        blPushMusicToAccount();
+    }
+}
 
 let musicYtPlayer = null;
 let musicYtReady = false;
