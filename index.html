@@ -6790,11 +6790,38 @@ function onYouTubeIframeAPIReady() {
             },
             onStateChange: (e) => {
                 if (e.data === YT.PlayerState.ENDED) musicSkip();
-                if (e.data === YT.PlayerState.PLAYING) { musicIsPlaying = true; musicUpdatePlayBtn(); }
+                if (e.data === YT.PlayerState.PLAYING) { musicIsPlaying = true; musicSkipStreak = 0; musicUpdatePlayBtn(); }
                 if (e.data === YT.PlayerState.PAUSED) { musicIsPlaying = false; musicUpdatePlayBtn(); }
+            },
+            // Fires for videos that are removed, private, or (most commonly)
+            // have embedding disabled by the uploader — official music
+            // videos from labels do this a lot. Without this handler the
+            // player just sits there silently with nothing audible.
+            onError: (e) => {
+                const reasons = { 2: 'invalid video', 5: 'playback error', 100: 'video not found', 101: "owner disabled embedding", 150: "owner disabled embedding" };
+                const track = musicCheckedTracks()[musicCurrentIndex];
+                musicShowPlaybackError(track, reasons[e.data] || 'playback error');
+                musicSkipStreak++;
+                const total = musicCheckedTracks().length;
+                if (musicSkipStreak >= total) {
+                    // Every track in the rotation just failed back-to-back —
+                    // stop instead of looping forever.
+                    musicIsPlaying = false;
+                    musicUpdatePlayBtn();
+                    musicSkipStreak = 0;
+                    return;
+                }
+                musicSkip();
             }
         }
     });
+}
+let musicSkipStreak = 0;
+function musicShowPlaybackError(track, reason) {
+    const el = document.getElementById('musicNowPlaying');
+    if (!el) return;
+    const name = track ? track.title : 'Track';
+    el.innerText = `Can't play "${name}" (${reason}) — skipping…`;
 }
 
 function musicCheckedTracks() {
