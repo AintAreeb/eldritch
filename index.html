@@ -352,6 +352,50 @@
             border-color: rgba(0, 170, 0, 0.4);
         }
 
+        .undo-btn {
+            background: rgba(255, 170, 0, 0.1);
+            color: #ffaa00;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 8px;
+            border: 1px solid rgba(255, 170, 0, 0.25);
+            border-radius: 6px;
+            display: block;
+            margin: 4px auto 8px auto;
+            width: 100%;
+            text-transform: uppercase;
+            cursor: pointer;
+            letter-spacing: 0.04em;
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .undo-btn:hover {
+            background: rgba(255, 170, 0, 0.2);
+            border-color: rgba(255, 170, 0, 0.45);
+        }
+
+        .undo-request-banner {
+            background: rgba(255, 170, 0, 0.1);
+            border: 1px solid rgba(255, 170, 0, 0.3);
+            border-radius: 8px;
+            padding: 10px;
+            margin: 4px auto 8px auto;
+            text-align: center;
+        }
+        .undo-request-banner-text {
+            font-size: 11px;
+            font-weight: 600;
+            color: #ffaa00;
+            margin-bottom: 8px;
+            letter-spacing: 0.02em;
+        }
+        .undo-request-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .undo-request-actions .btn {
+            flex: 1;
+        }
+
         .back-fab-btn {
             position: fixed; top: 14px; left: 14px; z-index: 950;
             width: 36px; height: 36px; border-radius: 50%;
@@ -361,6 +405,36 @@
             box-shadow: 0 8px 20px rgba(0,0,0,0.5);
         }
         .back-fab-btn:active { background: #2a2932; }
+
+        .settings-fab-btn {
+            position: fixed; top: 14px; right: 14px; z-index: 950;
+            width: 36px; height: 36px; border-radius: 50%;
+            background: #1a1922; border: 1px solid rgba(255,255,255,0.12);
+            color: #f7f8f8; font-size: 16px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+        }
+        .settings-fab-btn:active { background: #2a2932; }
+
+        .settings-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 2px;
+        }
+        .settings-row-label { font-size: 12px; font-weight: 600; color: #f7f8f8; }
+        .settings-row-hint { font-size: 10px; color: #8a8f98; margin-top: 2px; }
+        .settings-toggle-btn {
+            width: 50px; height: 28px; border-radius: 14px; flex-shrink: 0;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: #2a2932; position: relative; cursor: pointer; padding: 0;
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .settings-toggle-btn::after {
+            content: ''; position: absolute; top: 2px; left: 2px;
+            width: 22px; height: 22px; border-radius: 50%; background: #f7f8f8;
+            transition: left 0.2s;
+        }
+        .settings-toggle-btn.settings-toggle-on { background: #4af7a7; border-color: #4af7a7; }
+        .settings-toggle-btn.settings-toggle-on::after { left: 24px; background: #08130d; }
 
         /* Glassmorphic Overlay Modals */
         .bartender-modal {
@@ -706,6 +780,7 @@
     </div>
 
     <div id="setupView" class="setup-screen">
+        <button class="settings-fab-btn" onclick="openSettingsModal()" title="Settings">⚙️</button>
         <h1>BLOODLUST</h1>
 
         <div id="accountBox" class="account-box">
@@ -793,7 +868,16 @@
         
         <div class="targeting-status" id="targetBar"></div>
         <button id="cancelActionBtn" class="btn cancel-btn" style="display:none;" onclick="abortTargetingSequence()">❌ ABORT ADVANCED MANEUVER</button>
-        
+
+        <button id="undoButton" class="undo-btn" style="display:none;" onclick="handleUndoButtonClick()"></button>
+        <div id="undoRequestBanner" class="undo-request-banner" style="display:none;">
+            <div class="undo-request-banner-text" id="undoRequestText">↩️ Your opponent wants to undo their last move.</div>
+            <div class="undo-request-actions">
+                <button class="btn" style="background:#059669;" onclick="respondToUndoRequest(true)">✅ Accept</button>
+                <button class="btn" style="background:#ff3333;" onclick="respondToUndoRequest(false)">❌ Decline</button>
+            </div>
+        </div>
+
         <button id="resetButton" class="reset-btn" style="display:none;" onclick="resetToSetup()">RETURN TO ROOT SCREEN</button>
         <button id="rematchButton" class="rematch-btn" style="display:none;" onclick="initializeMatch()">🔁 INSTANT REMATCH</button>
 
@@ -865,6 +949,20 @@
             <div id="friendAddStatus" class="account-status"></div>
         </div>
         <button class="guide-close-btn" onclick="closeFriendsModal()">Close</button>
+    </div>
+
+    <div id="settingsModal" class="guide-modal" style="max-width:300px;">
+        <h3>⚙️ Settings</h3>
+        <div class="guide-body">
+            <div class="settings-row">
+                <div>
+                    <div class="settings-row-label">📳 Vibration</div>
+                    <div class="settings-row-hint">Buzzes on moves and the final 5s of your clock</div>
+                </div>
+                <button id="vibrationToggleBtn" class="settings-toggle-btn" onclick="toggleVibrationSetting()"></button>
+            </div>
+        </div>
+        <button class="guide-close-btn" onclick="closeSettingsModal()">Close</button>
     </div>
 
     <div id="bartenderChoiceModal" class="bartender-modal">
@@ -1011,6 +1109,89 @@ let gameState = {
     moveTimer: { secondsLeft: 0, intervalId: null, forSide: null }
 };
 
+// ============================================================================
+// SETTINGS & HAPTICS
+// A tiny persisted settings object (currently just vibration) plus a thin
+// wrapper around the Vibration API. iOS Safari has no Vibration API at all,
+// so blVibrate/blVibrateStop just silently no-op there rather than erroring
+// — there's no reliable way to give haptic feedback on iOS web from here.
+// ============================================================================
+const BL_SETTINGS_KEY = 'bloodlust_settings';
+let blSettings = { vibration: true }; // vibration defaults ON
+function blLoadSettings() {
+    try {
+        const raw = localStorage.getItem(BL_SETTINGS_KEY);
+        if (raw) blSettings = { ...blSettings, ...JSON.parse(raw) };
+    } catch (e) { /* ignore corrupt/missing settings, keep defaults */ }
+}
+function blSaveSettings() {
+    try { localStorage.setItem(BL_SETTINGS_KEY, JSON.stringify(blSettings)); } catch (e) {}
+}
+blLoadSettings();
+
+// Fires a device vibration if the setting is on and the browser supports it.
+// `pattern` is anything navigator.vibrate() accepts: a single ms duration,
+// or an array of alternating vibrate/pause durations.
+function blVibrate(pattern) {
+    if (!blSettings.vibration) return;
+    if (typeof navigator === 'undefined' || !navigator.vibrate) return;
+    try { navigator.vibrate(pattern); } catch (e) {}
+}
+// Cancels whatever vibration is currently running — used when a countdown
+// stops so the "5 seconds left" buzz doesn't ring on past the moment the
+// player actually acts.
+function blVibrateStop() {
+    if (typeof navigator === 'undefined' || !navigator.vibrate) return;
+    try { navigator.vibrate(0); } catch (e) {}
+}
+// True once this match's win/loss vibration has already fired, so repeated
+// renderScene() calls after the game ends don't keep re-triggering it.
+let gameOverVibrated = false;
+
+// ============================================================================
+// UNDO REQUEST SYSTEM
+// Lets a player take back their most recently completed move. In solo (vs
+// bot) play this stays available through the bot's automatic reply — since
+// the bot answers almost instantly, an anchor that only lived until the bot
+// moved would never realistically get clicked, so Undo there rolls back
+// BOTH the player's last move and the bot's response to it, staying open
+// until the player commits their next move. Multiplayer instead sends a
+// request over the wire that the opponent must Accept or Decline before
+// either device's board actually changes, and must be sent before they
+// reply — see mpHandleMessage for 'undoRequest'/'undoResponse'/'undoApplied'/'undoCancel'.
+//
+// Two snapshot slots do the work:
+//   - pendingSnapshot: refreshed every time a fresh player turn begins
+//     (startMoveTimer(1)) — "state right before whatever I do next."
+//   - snapshot: the actual undo target, only promoted from pendingSnapshot
+//     at the moment a move is finalized (see finalizeActiveTurn). This is
+//     what keeps it stable through the bot's reply instead of getting wiped
+//     the instant the bot hands the turn back.
+// ============================================================================
+let undoState = {
+    snapshot: null,          // state to revert to — "before my last completed move"
+    pendingSnapshot: null,   // state captured at the start of my current turn, not yet promoted
+    awaitingResponse: false, // true while I'm waiting on my OWN undo request (multiplayer only)
+    incomingRequest: false,  // true while the OPPONENT is waiting on ME to accept/decline (multiplayer only)
+    waitingForSync: false    // true after I accept an opponent's request, until the reverted board arrives
+};
+
+// Handle for the setTimeout that kicks off the bot's turn, so an undo
+// clicked during that ~800ms window can cancel it before it fires against
+// the (about to be discarded) post-move state.
+let botTurnTimeoutHandle = null;
+
+// structuredClone preserves Spy's Infinity blood value correctly, unlike a
+// JSON round-trip. Falls back to the existing wire-sanitizers (already used
+// to ship state over the P2P connection) for any environment without it.
+function deepCloneGameState(obj) {
+    try {
+        return structuredClone(obj);
+    } catch (e) {
+        return mpRestoreFromWire(JSON.parse(JSON.stringify(mpSanitizeForWire(obj))));
+    }
+}
+
 // --- Per-move countdown timer -------------------------------------------
 // aliveCharacterCount() counts every card across both squads that still has
 // Blood > 0 AND is not imprisoned (dead cards don't count towards the pool,
@@ -1028,6 +1209,7 @@ function stopMoveTimer() {
         clearInterval(gameState.moveTimer.intervalId);
         gameState.moveTimer.intervalId = null;
     }
+    blVibrateStop();
     let el = document.getElementById('moveTimer');
     if (el) { el.innerText = ''; el.classList.remove('timer-warning', 'timer-critical'); }
 }
@@ -1042,11 +1224,24 @@ function renderMoveTimerDisplay() {
     else if (secs <= 10) el.classList.add('timer-warning');
 }
 
+// Captures the exact board state at the moment my turn begins, before I've
+// made any move this round. Held as "pending" rather than the live undo
+// anchor — finalizeActiveTurn() promotes it once I actually commit a move.
+// Any undo negotiation left over from the move that just concluded is stale
+// the instant a new turn starts, so that's cleared here too.
+function captureUndoSnapshot() {
+    undoState.pendingSnapshot = deepCloneGameState(gameState);
+    undoState.awaitingResponse = false;
+}
+
 // Starts the countdown for whichever side (1 = player, 2 = bot) is about to
 // move. Duration = 2 seconds * total characters still alive right now.
 function startMoveTimer(side) {
     stopMoveTimer();
     if (gameState.isGameOver) return;
+    // side === 1 fires exactly when a fresh player turn begins (nothing
+    // acted on yet) — the correct moment to snapshot for a later Undo.
+    if (side === 1) captureUndoSnapshot();
     let duration = aliveCharacterCount() * 2;
     gameState.moveTimer.secondsLeft = duration;
     gameState.moveTimer.forSide = side;
@@ -1059,6 +1254,13 @@ function startMoveTimer(side) {
             return;
         }
         renderMoveTimerDisplay();
+        // Only for the player's own clock (side 1) — the bot's countdown
+        // isn't something the person holding the phone needs to feel.
+        // Re-firing a ~1s buzz every tick keeps it going almost seamlessly
+        // for the last 5 seconds (each new call replaces the tail end of
+        // the previous one), and stopMoveTimer() cuts it off the instant
+        // the player acts or the clock is otherwise stopped.
+        if (side === 1 && gameState.moveTimer.secondsLeft <= 5) blVibrate(950);
     }, 1000);
 }
 
@@ -1345,7 +1547,7 @@ function bl_bootIntoGameScreen() {
     bl_pushState({ screen: 'game', modal: null });
 }
 function bl_hideModalUI(name) {
-    const ids = { guide: 'guideModal', chat: 'chatModal', friends: 'friendsModal' };
+    const ids = { guide: 'guideModal', chat: 'chatModal', friends: 'friendsModal', settings: 'settingsModal' };
     const el = document.getElementById(ids[name]);
     if (el) el.style.display = 'none';
 }
@@ -1484,6 +1686,27 @@ function openFriendsModal() {
 function closeFriendsModal() {
     document.getElementById('friendsModal').style.display = 'none';
     if (bl_hist.modal === 'friends') history.back();
+}
+
+function openSettingsModal() {
+    renderSettingsModal();
+    bl_pushState({ modal: 'settings' });
+    document.getElementById('settingsModal').style.display = 'flex';
+}
+function closeSettingsModal() {
+    document.getElementById('settingsModal').style.display = 'none';
+    if (bl_hist.modal === 'settings') history.back();
+}
+function renderSettingsModal() {
+    const btn = document.getElementById('vibrationToggleBtn');
+    if (!btn) return;
+    btn.classList.toggle('settings-toggle-on', !!blSettings.vibration);
+}
+function toggleVibrationSetting() {
+    blSettings.vibration = !blSettings.vibration;
+    blSaveSettings();
+    renderSettingsModal();
+    if (blSettings.vibration) blVibrate(60); // immediate confirmation it's on
 }
 
 function switchFriendsTab(tab) {
@@ -1883,6 +2106,9 @@ function resetToSetup(fromPopstate) {
     stopMoveTimer();
     mpTeardownConnection();
     clearSoloSnapshot();
+    if (botTurnTimeoutHandle) { clearTimeout(botTurnTimeoutHandle); botTurnTimeoutHandle = null; }
+    undoState = { snapshot: null, pendingSnapshot: null, awaitingResponse: false, incomingRequest: false, waitingForSync: false };
+    gameOverVibrated = false;
     document.getElementById('gameView').style.display = 'none';
     document.getElementById('draftView').style.display = 'none';
     document.getElementById('setupView').style.display = 'block';
@@ -1978,6 +2204,9 @@ function startBattleWithSquads(p1Squad, p2Squad, p1Hex, p2Hex, opts = {}) {
     gameState.forcedPlayerActorName = null;
     gameState.botExecutionSequenceOverride = null;
     gameState.lastHackerSwapCategory = null;
+    if (botTurnTimeoutHandle) { clearTimeout(botTurnTimeoutHandle); botTurnTimeoutHandle = null; }
+    undoState = { snapshot: null, pendingSnapshot: null, awaitingResponse: false, incomingRequest: false, waitingForSync: false };
+    gameOverVibrated = false;
     abortTargetingSequence();
 
     document.getElementById('setupView').style.display = 'none';
@@ -2009,7 +2238,7 @@ function startBattleWithSquads(p1Squad, p2Squad, p1Hex, p2Hex, opts = {}) {
     if (opts.vsBot) {
         if (gameState.currentTurn === 2) {
             startMoveTimer(2);
-            setTimeout(processBotTurnRoutine, 800);
+            botTurnTimeoutHandle = setTimeout(processBotTurnRoutine, 800);
         } else {
             startMoveTimer(1);
         }
@@ -2194,7 +2423,7 @@ function attemptSoloRestoreOnLoad() {
             } else {
                 // It was the bot's turn when we left — let it carry on.
                 startMoveTimer(2);
-                setTimeout(processBotTurnRoutine, 800);
+                botTurnTimeoutHandle = setTimeout(processBotTurnRoutine, 800);
             }
         }
         return true;
@@ -2674,6 +2903,11 @@ function mpHandleMessage(data, peerId) {
         // Opponent just finished their turn — their message is already
         // mirrored to my perspective (see mpBuildSwappedStatePayload), so
         // applying it directly makes it my turn.
+        // A real move landing means any undo negotiation about the PREVIOUS
+        // move is moot — clear it rather than leave the UI stuck.
+        undoState.incomingRequest = false;
+        undoState.awaitingResponse = false;
+        undoState.waitingForSync = false;
         Object.assign(gameState, mpRestoreFromWire(data.payload));
         abortTargetingSequence();
         mp.phase = 'battle';
@@ -2694,6 +2928,7 @@ function mpHandleMessage(data, peerId) {
         mpSaveSnapshot();
         renderScene();
         startMoveTimer(1);
+        blVibrate(40); // opponent's move landed
     } else if (data.type === 'resyncRequest') {
         mpHandleResyncRequest(peerId);
     } else if (data.type === 'resyncResponseDraft') {
@@ -2711,6 +2946,9 @@ function mpHandleMessage(data, peerId) {
         mp.isMultiplayer = true;
         mp.phase = 'battle';
         mp.draft = null;
+        undoState.incomingRequest = false;
+        undoState.awaitingResponse = false;
+        undoState.waitingForSync = false;
         Object.assign(gameState, mpRestoreFromWire(data.payload));
         abortTargetingSequence();
         document.getElementById('setupView').style.display = 'none';
@@ -2727,6 +2965,47 @@ function mpHandleMessage(data, peerId) {
     } else if (data.type === 'resyncResponseNone') {
         mpHideReconnectBanner();
         mpLog("Couldn't find your match anymore — it may have ended.");
+    } else if (data.type === 'undoRequest') {
+        // The opponent wants to take back their last move. Only genuinely
+        // open for debate if it's currently my turn and I haven't replied
+        // yet — otherwise (a crossed-in-flight race) auto-decline instead
+        // of risking a desync neither side would recover from cleanly.
+        if (gameState.currentTurn === 1 && !gameState.isGameOver && !undoState.incomingRequest) {
+            undoState.incomingRequest = true;
+            stopMoveTimer();
+            renderScene();
+            blVibrate([100, 80, 100]); // attention: opponent wants a takeback
+        } else {
+            mp.sendMsg({ type: 'undoResponse', accepted: false });
+        }
+    } else if (data.type === 'undoResponse') {
+        undoState.awaitingResponse = false;
+        if (data.accepted) {
+            applyUndoLocally();
+            writeLog('↩️ Opponent accepted — your last move was undone.');
+            blVibrate(60);
+            mp.sendMsg({ type: 'undoApplied', payload: mpSanitizeForWire(mpBuildUndoAppliedPayload()) });
+        } else {
+            writeLog('❌ Opponent declined your undo request.');
+            renderUndoUI();
+        }
+    } else if (data.type === 'undoApplied') {
+        // The board I asked to accept a takeback on has now actually been
+        // reverted by the requester — apply the same reverted state here.
+        undoState.incomingRequest = false;
+        undoState.waitingForSync = false;
+        Object.assign(gameState, mpRestoreFromWire(data.payload));
+        abortTargetingSequence();
+        mpSaveSnapshot();
+        renderScene();
+        writeLog("↩️ Opponent's move was undone — it's their turn again.");
+        blVibrate(60);
+    } else if (data.type === 'undoCancel') {
+        if (undoState.incomingRequest) {
+            undoState.incomingRequest = false;
+            renderScene();
+            if (gameState.currentTurn === 1 && !gameState.isGameOver) startMoveTimer(1);
+        }
     }
 }
 
@@ -4029,6 +4308,13 @@ function mpBuildSwappedStatePayload() {
 }
 
 function finalizeActiveTurn() {
+    // This move is now locked in — the state captured at the start of THIS
+    // turn (before the move that just happened) becomes what Undo targets,
+    // replacing whatever the previous anchor was. Promoting here (rather
+    // than back when the turn started) is what lets the anchor survive the
+    // bot's automatic reply in solo play instead of being wiped the instant
+    // the bot hands the turn back.
+    if (undoState.pendingSnapshot) undoState.snapshot = undoState.pendingSnapshot;
     if (gameState.pendingSorcererFeedback) {
         let fbId = gameState.pendingSorcererFeedback;
         gameState.pendingSorcererFeedback = null;
@@ -4056,6 +4342,7 @@ function finalizeActiveTurn() {
         }
         return;
     }
+    blVibrate(40); // my move landed and the game continues
     gameState.currentTurn = 2;
     if (mp.isMultiplayer) {
         // Snapshot only AFTER currentTurn has actually flipped to 2. Saving
@@ -4070,7 +4357,141 @@ function finalizeActiveTurn() {
         return;
     }
     startMoveTimer(2);
-    setTimeout(processBotTurnRoutine, 800);
+    botTurnTimeoutHandle = setTimeout(processBotTurnRoutine, 800);
+}
+
+// ============================================================================
+// UNDO REQUEST — flow control
+// The Undo button is only ever offered while currentTurn === 2, i.e. right
+// after I've submitted my move and before the other side has replied (bot
+// mode) or acted (multiplayer). Once the reply lands, startMoveTimer(1)
+// overwrites undoState.snapshot with a fresh one and that window closes.
+// ============================================================================
+
+// Solo: instant, nobody to ask. Multiplayer: kicks off a request instead.
+function requestUndo() {
+    if (!undoState.snapshot || gameState.isGameOver) return;
+    if (mp.isMultiplayer) {
+        // A human opponent needs time to reply, so the request has to go
+        // out before they act — once it's my turn again, they've moved.
+        if (gameState.currentTurn !== 2) return;
+        undoState.awaitingResponse = true;
+        mp.sendMsg({ type: 'undoRequest' });
+        writeLog('↩️ Undo request sent — waiting for your opponent to respond.');
+        renderUndoUI();
+    } else {
+        // Solo: no currentTurn restriction — the bot replies near-instantly,
+        // so this stays available through its reply until my next move.
+        applyUndoLocally();
+        writeLog('↩️ Your last move was undone.');
+        blVibrate(60);
+    }
+}
+
+function cancelUndoRequest() {
+    if (!undoState.awaitingResponse) return;
+    undoState.awaitingResponse = false;
+    if (mp.sendMsg) mp.sendMsg({ type: 'undoCancel' });
+    writeLog('You cancelled your undo request.');
+    renderUndoUI();
+}
+
+// Single entry point for the one on-screen Undo button, since what a click
+// should do changes depending on which phase of the flow I'm in.
+function handleUndoButtonClick() {
+    if (undoState.awaitingResponse) {
+        cancelUndoRequest();
+    } else if (undoState.waitingForSync || undoState.incomingRequest) {
+        return; // mid-sync, or the Accept/Decline banner is showing instead
+    } else {
+        requestUndo();
+    }
+}
+
+// Rolls my own board back to the snapshot taken at the start of my last
+// turn (before my most recent move). Used directly for solo/bot undo, and
+// by the requester's side of a multiplayer undo once the opponent accepts.
+function applyUndoLocally() {
+    stopMoveTimer();
+    if (botTurnTimeoutHandle) { clearTimeout(botTurnTimeoutHandle); botTurnTimeoutHandle = null; }
+    Object.assign(gameState, deepCloneGameState(undoState.snapshot));
+    // The anchor is spent — nothing left to undo until the next move is
+    // made and finalizeActiveTurn() promotes a fresh one.
+    undoState.snapshot = null;
+    undoState.pendingSnapshot = null;
+    undoState.awaitingResponse = false;
+    undoState.waitingForSync = false;
+    abortTargetingSequence(); // also re-renders
+    renderScene();
+    mpSaveSnapshot(); // no-op outside multiplayer
+    startMoveTimer(1);
+}
+
+// Builds the payload sent to the opponent once their undo request has been
+// accepted — a mirror of mpBuildSwappedStatePayload's normal turn handoff,
+// except it explicitly marks the turn as mine again (I'm the one re-doing
+// the move that just got taken back), not theirs.
+function mpBuildUndoAppliedPayload() {
+    let payload = mpBuildSwappedStatePayload();
+    payload.currentTurn = 2;
+    return payload;
+}
+
+// Called from the Accept/Decline buttons on the incoming-request banner.
+function respondToUndoRequest(accepted) {
+    if (!undoState.incomingRequest) return;
+    undoState.incomingRequest = false;
+    if (accepted) {
+        undoState.waitingForSync = true;
+        writeLog('↩️ You accepted the undo request — syncing the board...');
+        renderScene();
+        mp.sendMsg({ type: 'undoResponse', accepted: true });
+        // The actual reverted board arrives next as 'undoApplied' (see
+        // mpHandleMessage) — nothing more to do locally until then.
+    } else {
+        mp.sendMsg({ type: 'undoResponse', accepted: false });
+        writeLog('❌ You declined the undo request.');
+        renderScene();
+        if (gameState.currentTurn === 1 && !gameState.isGameOver) startMoveTimer(1);
+    }
+}
+
+// Shows/hides the Undo button and the incoming-request banner. Called from
+// renderScene() so it always stays in sync with the rest of the board.
+function renderUndoUI() {
+    const btn = document.getElementById('undoButton');
+    const banner = document.getElementById('undoRequestBanner');
+    if (!btn || !banner) return;
+    if (gameState.isGameOver) {
+        btn.style.display = 'none';
+        banner.style.display = 'none';
+        return;
+    }
+    if (undoState.incomingRequest) {
+        btn.style.display = 'none';
+        banner.style.display = 'block';
+        return;
+    }
+    banner.style.display = 'none';
+    if (undoState.waitingForSync) {
+        btn.style.display = 'block';
+        btn.innerText = '⏳ Syncing board...';
+        return;
+    }
+    if (undoState.awaitingResponse) {
+        btn.style.display = 'block';
+        btn.innerText = '⏳ Cancel undo request';
+        return;
+    }
+    let canOfferUndo = mp.isMultiplayer
+        ? (gameState.currentTurn === 2 && !!undoState.snapshot)
+        : !!undoState.snapshot;
+    if (canOfferUndo) {
+        btn.style.display = 'block';
+        btn.innerText = mp.isMultiplayer ? '↩️ Request Undo' : '↩️ Undo Last Move';
+    } else {
+        btn.style.display = 'none';
+    }
 }
 
 // Restricts the bot's target pool to whatever the acting card's real rules
@@ -4694,7 +5115,10 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
                             gameState.currentTurn = 1;
                             stopMoveTimer();
                             renderScene();
-                            if (!gameState.isGameOver) startMoveTimer(1);
+                            if (!gameState.isGameOver) {
+                                startMoveTimer(1);
+                                blVibrate(40); // bot's move landed
+                            }
                         }
                         return;
                     } else {
@@ -4771,7 +5195,10 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
     gameState.currentTurn = 1;
     stopMoveTimer();
     renderScene();
-    if (!gameState.isGameOver) startMoveTimer(1);
+    if (!gameState.isGameOver) {
+        startMoveTimer(1);
+        blVibrate(40); // bot's move landed
+    }
 }
 
 function evaluateWinThresholds() {
@@ -4811,9 +5238,18 @@ function renderScene() {
         document.getElementById('turnIndicator').innerText = "🏁 SIMULATION CONCLUDED";
         document.getElementById('resetButton').style.display = 'block';
         document.getElementById('rematchButton').style.display = 'block';
+        if (!gameOverVibrated) {
+            gameOverVibrated = true;
+            let p1Alive = gameState.p1.some(c => c.blood > 0 && !c.imprisoned);
+            blVibrate(p1Alive ? [80, 60, 80, 60, 160] : [300]);
+        }
     } else {
         document.getElementById('turnIndicator').innerText = gameState.currentTurn === 1 ? "YOUR TURN" : (mp.isMultiplayer ? "OPPONENT'S TURN..." : "BOT PROCESSING...");
     }
+    renderUndoUI();
+    // Blocks acting while I'm mid-decision on an incoming undo request, or
+    // waiting for the board to resync after accepting one.
+    let blockedByUndoFlow = undoState.incomingRequest || undoState.waitingForSync;
     
     let p1Html = '';
     gameState.p1.forEach(card => {
@@ -4837,14 +5273,14 @@ function renderScene() {
         if (card.name === 'Mecha' && card.mechaCooldown > 0) isLockedByCooldown = true;
         if (card.blockedCounter > 0) isLockedByCooldown = true;
 
-        let canTakeAction = gameState.currentTurn === 1 && !isDead && !card.imprisoned && !gameState.targetingMode.isActive && (!gameState.forcedPlayerActorName || card.name === gameState.forcedPlayerActorName);
+        let canTakeAction = gameState.currentTurn === 1 && !blockedByUndoFlow && !isDead && !card.imprisoned && !gameState.targetingMode.isActive && (!gameState.forcedPlayerActorName || card.name === gameState.forcedPlayerActorName);
         let okMoves = hasValidTargets(card, gameState.p1, gameState.p2);
         
         let heartsDisplay = card.name === 'Spy' ? '🩸 ∞' : '🩸'.repeat(card.blood);
         if (isDead) heartsDisplay = '☠️ DEAD';
 
         let doctorCleanseBtn = '';
-        if (gameState.currentTurn === 1 && !isDead && card.poisoned) {
+        if (gameState.currentTurn === 1 && !blockedByUndoFlow && !isDead && card.poisoned) {
             let activeDoc = gameState.p1.find(c => c.name === 'Doctor' && c.blood > 0 && !c.imprisoned);
             if (activeDoc) {
                 doctorCleanseBtn = `<button class="btn free-btn" onclick="freeDoctorCleanse('${activeDoc.id}','${card.id}')">⚕️ Cleanse</button>`;
