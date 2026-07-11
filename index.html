@@ -598,20 +598,75 @@
         .guide-card-name { font-size: 12px; font-weight: 700; color: #f7f8f8; }
         .guide-card-meta { font-size: 9px; color: #8a8f98; margin: 1px 0 4px 0; text-transform: uppercase; letter-spacing: 0.03em; }
         .guide-card-desc { font-size: 11px; color: #c7c9cf; line-height: 1.45; }
+        /* Match Summary modal */
+        .msum-modal { max-width: 360px; }
+        .msum-result-banner {
+            text-align: center; font-size: 16px; font-weight: 700; padding: 12px;
+            border-radius: 8px; margin-bottom: 12px; letter-spacing: 0.03em;
+        }
+        .msum-result-win { background: rgba(74, 247, 167, 0.12); color: #4af7a7; border: 1px solid rgba(74, 247, 167, 0.3); }
+        .msum-result-loss { background: rgba(255, 51, 51, 0.12); color: #ff5555; border: 1px solid rgba(255, 51, 51, 0.3); }
+        .msum-result-draw { background: rgba(255, 204, 0, 0.12); color: #ffcc00; border: 1px solid rgba(255, 204, 0, 0.3); }
+        .msum-rating-row {
+            display: flex; align-items: center; justify-content: space-between;
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px; padding: 10px 12px; margin-bottom: 12px;
+        }
+        .msum-rating-label { font-size: 11px; color: #8a8f98; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
+        .msum-rating-value { font-size: 20px; font-weight: 700; color: #f7f8f8; }
+        .msum-rating-max { font-size: 11px; color: #5a5f68; font-weight: 500; }
+        .msum-mvp-banner {
+            text-align: center; background: linear-gradient(135deg, rgba(255,204,0,0.14) 0%, rgba(255,170,0,0.06) 100%);
+            border: 1px solid rgba(255,204,0,0.35); border-radius: 8px; padding: 10px; margin-bottom: 14px;
+        }
+        .msum-mvp-title { font-size: 10px; color: #ffcc00; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; }
+        .msum-mvp-name { font-size: 14px; font-weight: 700; color: #f7f8f8; margin: 3px 0; }
+        .msum-mvp-scores { font-size: 10px; color: #c7c9cf; }
+        .msum-section-label {
+            font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: #ff5555;
+            font-weight: 700; margin: 14px 0 8px 0; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 4px;
+        }
+        .msum-section-label:first-of-type { margin-top: 0; }
+        .msum-empty-note { font-size: 11px; color: #5a5f68; margin: 0 0 8px 0; }
+        .msum-card-entry {
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 8px; padding: 8px 10px; margin-bottom: 8px;
+        }
+        .msum-mvp-entry { border-color: rgba(255,204,0,0.4); background: rgba(255,204,0,0.05); }
+        .msum-card-entry-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
+        .msum-card-name { font-size: 12px; font-weight: 700; color: #f7f8f8; }
+        .msum-card-side { font-size: 9px; color: #8a8f98; text-transform: uppercase; letter-spacing: 0.03em; }
+        .msum-bar-row { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+        .msum-bar-label { font-size: 9px; color: #8a8f98; width: 44px; flex-shrink: 0; }
+        .msum-bar-track { flex: 1; height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; }
+        .msum-bar-fill { height: 100%; border-radius: 3px; }
+        .msum-fill-attack { background: #ff5555; }
+        .msum-fill-heal { background: #4af7a7; }
+        .msum-fill-tactical { background: #ffcc00; }
+        .msum-bar-value { font-size: 9px; color: #c7c9cf; width: 22px; text-align: right; flex-shrink: 0; }
         .guide-close-btn {
             margin-top: 12px; background: #2a2932; color: #f7f8f8; border: none; border-radius: 8px;
             padding: 10px; font-size: 11px; font-weight: 600; cursor: pointer; text-transform: uppercase;
             letter-spacing: 0.04em;
         }
         /* Quick-chat text presets */
-        .chat-fab-btn {
-            position: fixed; bottom: 18px; right: 18px; z-index: 900;
-            width: 44px; height: 44px; border-radius: 50%;
+        .comms-bar {
+            position: fixed; bottom: 18px; left: 18px; z-index: 900;
+            display: flex; flex-direction: row; align-items: center; gap: 8px;
+            max-width: calc(100vw - 36px);
+        }
+        .comms-toggle-btn {
+            flex-shrink: 0; width: 44px; height: 44px; border-radius: 50%;
             background: #1a1922; border: 1px solid rgba(255,255,255,0.12);
-            color: #f7f8f8; font-size: 18px; cursor: pointer;
+            color: #f7f8f8; font-size: 16px; letter-spacing: -1px; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
             box-shadow: 0 8px 20px rgba(0,0,0,0.5);
         }
+        .comms-toggle-btn.comms-toggle-active { background: #ff3333; border-color: #ff3333; }
+        .comms-buttons-row {
+            display: none; flex-direction: row; gap: 6px; overflow-x: auto;
+        }
+        .comms-buttons-row.comms-buttons-row-open { display: flex; }
         .chat-modal {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background: #111018;
@@ -648,16 +703,13 @@
             background: #ff3333; color: #fff; border: none; border-radius: 8px;
             padding: 9px 12px; font-size: 11px; font-weight: 600; cursor: pointer;
         }
-        /* Voice chat controls */
-        .voice-bar {
-            position: fixed; bottom: 18px; left: 18px; z-index: 900;
-            display: none; flex-direction: column; gap: 8px;
-        }
+        /* Voice chat controls (now buttons inside .comms-buttons-row) */
         .voice-btn {
-            width: 96px;
+            flex-shrink: 0;
+            width: 62px;
             background: #1a1922; border: 1px solid rgba(255,255,255,0.12);
-            color: #f7f8f8; font-size: 11px; font-weight: 600;
-            border-radius: 22px; padding: 10px 6px;
+            color: #f7f8f8; font-size: 9px; font-weight: 600;
+            border-radius: 18px; padding: 9px 4px;
             box-shadow: 0 8px 20px rgba(0,0,0,0.5);
             cursor: pointer; user-select: none; -webkit-user-select: none;
             touch-action: none;
@@ -892,7 +944,17 @@
         <div class="squad-title" id="p2Title">Miasma</div>
         <div class="squad" id="p2Field"></div>
 
-        <button class="chat-fab-btn" onclick="openChatModal()" title="Quick Chat">💬</button>
+        <div id="commsBar" class="comms-bar">
+            <button id="commsToggleBtn" class="comms-toggle-btn" onclick="toggleCommsMenu()" title="Voice & Chat">•••</button>
+            <div id="commsButtonsRow" class="comms-buttons-row">
+                <button id="micToggleBtn" class="voice-btn" style="display:none;" onclick="toggleMic()">🔇 Mic Off</button>
+                <button id="pttBtn" class="voice-btn" style="display:none;"
+                    onpointerdown="pttStart(event)" onpointerup="pttEnd(event)"
+                    onpointerleave="pttEnd(event)" onpointercancel="pttEnd(event)">🗣️ Talk</button>
+                <button id="muteOpponentBtn" class="voice-btn" style="display:none;" onclick="toggleOpponentMute()">🔊 Opp</button>
+                <button id="chatOpenBtn" class="voice-btn" onclick="openChatModal()">💬 Chat</button>
+            </div>
+        </div>
     </div>
 
     <div id="chatModal" class="chat-modal">
@@ -905,12 +967,10 @@
         <button class="chat-close-btn" onclick="closeChatModal()">Close</button>
     </div>
 
-    <div id="voiceBar" class="voice-bar">
-        <button id="micToggleBtn" class="voice-btn" onclick="toggleMic()">🔇 Mic Off</button>
-        <button id="pttBtn" class="voice-btn"
-            onpointerdown="pttStart(event)" onpointerup="pttEnd(event)"
-            onpointerleave="pttEnd(event)" onpointercancel="pttEnd(event)">🗣️ Hold to Talk</button>
-        <button id="muteOpponentBtn" class="voice-btn" onclick="toggleOpponentMute()">🔊 Opponent</button>
+    <div id="matchSummaryModal" class="guide-modal msum-modal">
+        <h3>📊 MATCH SUMMARY</h3>
+        <div class="guide-body" id="matchSummaryBody"></div>
+        <button class="guide-close-btn" onclick="closeMatchSummaryModal()">Close</button>
     </div>
 
     <div id="guideModal" class="guide-modal">
@@ -1147,6 +1207,192 @@ function blVibrateStop() {
 // True once this match's win/loss vibration has already fired, so repeated
 // renderScene() calls after the game ends don't keep re-triggering it.
 let gameOverVibrated = false;
+
+// ============================================================================
+// MATCH STATISTICS TRACKER
+// Builds a per-card performance record for the post-match "Match Summary"
+// screen (Attack / Heal / Tactical scores + MVP + overall rating). Rather
+// than hand-instrumenting every individual ability branch, this piggybacks
+// on the board-state snapshots the game already takes before a move
+// resolves (captureEffectSnapshot) and diffs the board afterward: whichever
+// card's `hasActivity` flag flipped from false->true is treated as the
+// actor, and every OTHER card's blood/imprisoned/poisoned/blockedCounter
+// change is attributed to that actor as attack, heal, or tactical impact.
+// This is a best-effort heuristic, not a perfectly hand-tuned ledger, but it
+// covers the overwhelming majority of moves (player, bot, and multiplayer
+// opponent alike) without needing a bespoke hook in every ability.
+// ============================================================================
+let matchStats = {};
+let matchSummaryShown = false;
+
+function statsEnsureEntry(card, side) {
+    if (!matchStats[card.id]) {
+        matchStats[card.id] = { id: card.id, name: card.name, side: side, attackDmg: 0, kills: 0, healAmt: 0, revives: 0, tactical: 0, moves: 0 };
+    }
+    return matchStats[card.id];
+}
+function statsBump(card, side, deltas) {
+    if (!card) return;
+    let s = statsEnsureEntry(card, side);
+    Object.keys(deltas).forEach(k => { s[k] = (s[k] || 0) + deltas[k]; });
+}
+// Diffs the current board against a `before` snapshot (as produced by
+// captureEffectSnapshot) and attributes the changes to whichever card's
+// hasActivity flag just flipped on. Safe to call with a snapshot that has
+// no obvious actor (e.g. nothing happened) — it will simply no-op.
+function statsRecordFromSnapshot(before) {
+    if (!before || !before.cards) return;
+    let allCards = [...gameState.p1, ...gameState.p2];
+    let actor = allCards.find(c => {
+        let b = before.cards[c.id];
+        return b && !b.hasActivity && c.hasActivity;
+    });
+    if (!actor) return;
+    let actorIsP1 = gameState.p1.indexOf(actor) !== -1;
+    let side = actorIsP1 ? 'p1' : 'p2';
+    let stat = statsEnsureEntry(actor, side);
+    stat.moves++;
+    allCards.forEach(c => {
+        if (c.id === actor.id) return;
+        let b = before.cards[c.id];
+        if (!b) return;
+        let cIsP1 = gameState.p1.indexOf(c) !== -1;
+        let sameSide = (cIsP1 === actorIsP1);
+        if (sameSide) {
+            let healed = c.blood - b.blood;
+            if (healed > 0) {
+                stat.healAmt += healed;
+                if (b.blood <= 0) stat.revives++;
+            }
+            if (b.imprisoned && !c.imprisoned) stat.tactical++;
+            if (b.poisoned && !c.poisoned) stat.tactical++;
+        } else {
+            let dmg = b.blood - c.blood;
+            if (dmg > 0) {
+                stat.attackDmg += dmg;
+                if (c.blood <= 0 && b.blood > 0) stat.kills++;
+            }
+            if (!b.imprisoned && c.imprisoned) stat.tactical++;
+            if (c.blockedCounter > (b.blockedCounter || 0)) stat.tactical++;
+            if (!b.poisoned && c.poisoned) stat.tactical++;
+        }
+    });
+    let ownShieldBefore = actorIsP1 ? before.p1KnightShields : before.p2KnightShields;
+    let ownShieldAfter = actorIsP1 ? gameState.p1KnightShields : gameState.p2KnightShields;
+    if ((ownShieldAfter || 0) > (ownShieldBefore || 0)) stat.tactical++;
+    let actorBefore = before.cards[actor.id];
+    if (actorBefore && actorBefore.maxBlood !== undefined && actor.maxBlood > actorBefore.maxBlood) stat.tactical++;
+}
+// Converts raw tallies into the 0-100 scores shown on the Match Summary.
+function statsComputeScores(s) {
+    let attackScore = Math.max(0, Math.min(100, Math.round(s.attackDmg * 14 + s.kills * 20)));
+    let healScore = Math.max(0, Math.min(100, Math.round(s.healAmt * 16 + s.revives * 25)));
+    let tacticalScore = Math.max(0, Math.min(100, Math.round(s.tactical * 22)));
+    return { attackScore, healScore, tacticalScore };
+}
+function statsFindMVP() {
+    let entries = Object.values(matchStats);
+    if (entries.length === 0) return null;
+    let scored = entries.map(s => {
+        let sc = statsComputeScores(s);
+        return { ...s, ...sc, composite: sc.attackScore + sc.healScore + sc.tacticalScore };
+    });
+    scored.sort((a, b) => b.composite - a.composite);
+    return scored[0];
+}
+// A single 0-100 rating summarizing how well the local player (p1) did
+// overall — not just raw damage, but damage traded, cards preserved,
+// healing/utility contributed, and the actual match outcome.
+function statsComputeOverallRating() {
+    let entries = Object.values(matchStats);
+    let mine = entries.filter(s => s.side === 'p1');
+    let theirs = entries.filter(s => s.side === 'p2');
+    let sum = (arr, key) => arr.reduce((a, s) => a + (s[key] || 0), 0);
+    let myDmg = sum(mine, 'attackDmg'), myKills = sum(mine, 'kills');
+    let myHeal = sum(mine, 'healAmt'), myRevives = sum(mine, 'revives'), myTactical = sum(mine, 'tactical');
+    let theirDmg = sum(theirs, 'attackDmg'), theirKills = sum(theirs, 'kills');
+    let p1Alive = gameState.p1.filter(c => c.blood > 0 && !c.imprisoned).length;
+    let p2Alive = gameState.p2.filter(c => c.blood > 0 && !c.imprisoned).length;
+    let didWin = p1Alive > 0 && p2Alive === 0;
+    let didLose = p2Alive > 0 && p1Alive === 0;
+    let rating = 50;
+    rating += (myDmg - theirDmg) * 1.5;
+    rating += myKills * 6 - theirKills * 4;
+    rating += myHeal * 2 + myRevives * 5 + myTactical * 3;
+    rating += (p1Alive - p2Alive) * 6;
+    rating += didWin ? 15 : (didLose ? -15 : 0);
+    return Math.max(0, Math.min(100, Math.round(rating)));
+}
+
+// Builds the little labeled progress bar used for each score row.
+function statsScoreBarHTML(label, value, colorClass) {
+    return `<div class="msum-bar-row">
+        <div class="msum-bar-label">${label}</div>
+        <div class="msum-bar-track"><div class="msum-bar-fill ${colorClass}" style="width:${value}%;"></div></div>
+        <div class="msum-bar-value">${value}</div>
+    </div>`;
+}
+function statsCardRowHTML(entry, isMVP) {
+    let sc = statsComputeScores(entry);
+    return `<div class="msum-card-entry ${isMVP ? 'msum-mvp-entry' : ''}">
+        <div class="msum-card-entry-head">
+            <span class="msum-card-name">${isMVP ? '⭐ ' : ''}${entry.name}</span>
+            <span class="msum-card-side">${entry.side === 'p1' ? 'Your Squad' : 'Enemy Squad'}</span>
+        </div>
+        ${statsScoreBarHTML('Attack', sc.attackScore, 'msum-fill-attack')}
+        ${statsScoreBarHTML('Heal', sc.healScore, 'msum-fill-heal')}
+        ${statsScoreBarHTML('Tactical', sc.tacticalScore, 'msum-fill-tactical')}
+    </div>`;
+}
+function buildMatchSummaryHTML() {
+    let p1Alive = gameState.p1.some(c => c.blood > 0 && !c.imprisoned);
+    let p2Alive = gameState.p2.some(c => c.blood > 0 && !c.imprisoned);
+    let resultLabel = p1Alive && !p2Alive ? '🏆 VICTORY' : (!p1Alive && p2Alive ? '💀 DEFEAT' : '⚔️ MUTUAL WIPEOUT');
+    let resultClass = p1Alive && !p2Alive ? 'msum-result-win' : (!p1Alive && p2Alive ? 'msum-result-loss' : 'msum-result-draw');
+    let overall = statsComputeOverallRating();
+    let mvp = statsFindMVP();
+    let entries = Object.values(matchStats);
+    let mine = entries.filter(e => e.side === 'p1').sort((a, b) => {
+        let sa = statsComputeScores(a), sb = statsComputeScores(b);
+        return (sb.attackScore + sb.healScore + sb.tacticalScore) - (sa.attackScore + sa.healScore + sa.tacticalScore);
+    });
+    let theirs = entries.filter(e => e.side === 'p2').sort((a, b) => {
+        let sa = statsComputeScores(a), sb = statsComputeScores(b);
+        return (sb.attackScore + sb.healScore + sb.tacticalScore) - (sa.attackScore + sa.healScore + sa.tacticalScore);
+    });
+
+    let html = `<div class="msum-result-banner ${resultClass}">${resultLabel}</div>
+    <div class="msum-rating-row">
+        <div class="msum-rating-label">Your Overall Match Rating</div>
+        <div class="msum-rating-value">${overall}<span class="msum-rating-max">/100</span></div>
+    </div>`;
+
+    if (mvp) {
+        let sc = statsComputeScores(mvp);
+        html += `<div class="msum-mvp-banner">
+            <div class="msum-mvp-title">⭐ MATCH MVP</div>
+            <div class="msum-mvp-name">${mvp.name} <span class="msum-card-side">(${mvp.side === 'p1' ? 'Your Squad' : 'Enemy Squad'})</span></div>
+            <div class="msum-mvp-scores">Attack ${sc.attackScore} · Heal ${sc.healScore} · Tactical ${sc.tacticalScore}</div>
+        </div>`;
+    }
+
+    html += `<div class="msum-section-label">🩸 Your Squad</div>`;
+    html += mine.length > 0 ? mine.map(e => statsCardRowHTML(e, mvp && e.id === mvp.id)).join('') : `<p class="msum-empty-note">No recorded actions.</p>`;
+
+    html += `<div class="msum-section-label">☠️ Enemy Squad</div>`;
+    html += theirs.length > 0 ? theirs.map(e => statsCardRowHTML(e, mvp && e.id === mvp.id)).join('') : `<p class="msum-empty-note">No recorded actions.</p>`;
+
+    return html;
+}
+function showMatchSummaryModal() {
+    document.getElementById('matchSummaryBody').innerHTML = buildMatchSummaryHTML();
+    document.getElementById('matchSummaryModal').style.display = 'flex';
+    bl_pushState({ modal: 'summary' });
+}
+function closeMatchSummaryModal() {
+    document.getElementById('matchSummaryModal').style.display = 'none';
+    if (bl_hist.modal === 'summary') history.back();
+}
 
 // ============================================================================
 // UNDO REQUEST SYSTEM
@@ -1394,10 +1640,10 @@ function isWitchMoveWasted(target) {
 function captureEffectSnapshot(actorId) {
     let cards = {};
     [...gameState.p1, ...gameState.p2].forEach(c => {
-        cards[c.id] = { blood: c.blood, imprisoned: c.imprisoned, poisoned: c.poisoned, blockedCounter: c.blockedCounter, maxBlood: c.maxBlood };
+        cards[c.id] = { blood: c.blood, imprisoned: c.imprisoned, poisoned: c.poisoned, blockedCounter: c.blockedCounter, maxBlood: c.maxBlood, hasActivity: c.hasActivity };
     });
     let actor = gameState.p1.find(c => c.id === actorId) || gameState.p2.find(c => c.id === actorId);
-    return { cards: cards, botOverride: gameState.botExecutionSequenceOverride, actor: actor ? { ...actor } : null };
+    return { cards: cards, botOverride: gameState.botExecutionSequenceOverride, actor: actor ? { ...actor } : null, p1KnightShields: gameState.p1KnightShields, p2KnightShields: gameState.p2KnightShields };
 }
 
 function moveHadNoRealEffect(actorId, selfTargeted) {
@@ -1502,6 +1748,7 @@ function concludeTargetedMove(actorId, baseMove, selfTargeted) {
         return;
     }
     recordPlayerAttack(actorId, baseMove);
+    statsRecordFromSnapshot(gameState.targetingMode.preEffectSnapshot);
     gameState.p1LastMoveRole = deriveMoveRoleForTracking(actorId, baseMove);
     abortTargetingSequence();
     finalizeActiveTurn();
@@ -1547,7 +1794,7 @@ function bl_bootIntoGameScreen() {
     bl_pushState({ screen: 'game', modal: null });
 }
 function bl_hideModalUI(name) {
-    const ids = { guide: 'guideModal', chat: 'chatModal', friends: 'friendsModal', settings: 'settingsModal' };
+    const ids = { guide: 'guideModal', chat: 'chatModal', friends: 'friendsModal', settings: 'settingsModal', summary: 'matchSummaryModal' };
     const el = document.getElementById(ids[name]);
     if (el) el.style.display = 'none';
 }
@@ -2065,8 +2312,7 @@ function attachVoiceToRoom(room) {
         audioEl.srcObject = stream;
     };
     if (voice.localStream && room.addStream) room.addStream(voice.localStream);
-    const bar = document.getElementById('voiceBar');
-    if (bar) bar.style.display = 'flex';
+    setVoiceButtonsVisible(true);
 }
 
 function teardownVoice() {
@@ -2079,9 +2325,27 @@ function teardownVoice() {
     voice.opponentMuted = false;
     Object.values(voice.remoteAudioEls).forEach(el => { el.srcObject = null; });
     voice.remoteAudioEls = {};
-    const bar = document.getElementById('voiceBar');
-    if (bar) bar.style.display = 'none';
+    setVoiceButtonsVisible(false);
     updateMicButtonUI();
+}
+// Shows/hides just the 3 voice-specific buttons inside the merged comms
+// row (the folder toggle + the Chat button stay available regardless,
+// since quick chat works with or without an active voice room).
+function setVoiceButtonsVisible(show) {
+    ['micToggleBtn', 'pttBtn', 'muteOpponentBtn'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.style.display = show ? 'inline-flex' : 'none';
+    });
+}
+// Toggles the bottom-left "folder" button: expands to reveal the 4 comms
+// buttons (mic, push-to-talk, mute opponent, quick chat) laid out left to
+// right along the bottom, or collapses back down to just the folder icon.
+function toggleCommsMenu() {
+    const row = document.getElementById('commsButtonsRow');
+    const toggleBtn = document.getElementById('commsToggleBtn');
+    const isOpen = row.classList.toggle('comms-buttons-row-open');
+    toggleBtn.classList.toggle('comms-toggle-active', isOpen);
+    toggleBtn.innerText = isOpen ? '✕' : '•••';
 }
 function sendChatPreset(msg) {
     writeLog(`🗨️ You: ${msg}`);
@@ -2207,6 +2471,8 @@ function startBattleWithSquads(p1Squad, p2Squad, p1Hex, p2Hex, opts = {}) {
     if (botTurnTimeoutHandle) { clearTimeout(botTurnTimeoutHandle); botTurnTimeoutHandle = null; }
     undoState = { snapshot: null, pendingSnapshot: null, awaitingResponse: false, incomingRequest: false, waitingForSync: false };
     gameOverVibrated = false;
+    matchStats = {};
+    matchSummaryShown = false;
     abortTargetingSequence();
 
     document.getElementById('setupView').style.display = 'none';
@@ -2908,7 +3174,9 @@ function mpHandleMessage(data, peerId) {
         undoState.incomingRequest = false;
         undoState.awaitingResponse = false;
         undoState.waitingForSync = false;
+        let _mpStatsSnapshot = captureEffectSnapshot(null);
         Object.assign(gameState, mpRestoreFromWire(data.payload));
+        statsRecordFromSnapshot(_mpStatsSnapshot);
         abortTargetingSequence();
         mp.phase = 'battle';
         if (gameState.isGameOver) {
@@ -3155,6 +3423,7 @@ function executeKnightFirstMove(actorId) {
     actor.hasActivity = true;
     gameState.p1KnightShields = 2;
     writeLog(`🛡️ Your Knight activated a global protection shield.`);
+    statsBump(actor, 'p1', { tactical: 1, moves: 1 });
     gameState.p1LastMoveRole = null;
     finalizeActiveTurn();
 }
@@ -3183,6 +3452,7 @@ function executeWatchmakerTimeTravel(actorId) {
     actor.lastUsedRound = gameState.roundCount;
 
     writeLog(`⏳ Watchmaker initiates localized chronoshift protocol.`);
+    let statDeltas = { tactical: 1, moves: 1 };
     if (gameState.botLastAttackRecord) {
         let record = gameState.botLastAttackRecord;
         let affectedCard = gameState.p1.find(c => c.id === record.targetId);
@@ -3191,8 +3461,10 @@ function executeWatchmakerTimeTravel(actorId) {
             writeLog(record.wasImprisoned
                 ? `⏳ Chronoshift Overturn: Imprisonment of ${affectedCard.name} has been erased.`
                 : `⏳ Chronoshift Overturn: Restored ${record.damageDealt} Blood and state modifiers to ${affectedCard.name}.`);
+            if (!record.wasImprisoned && record.damageDealt > 0) statDeltas.healAmt = record.damageDealt;
         }
     }
+    statsBump(actor, 'p1', statDeltas);
     if (actor.blood <= 0) actor.blood = 0;
     gameState.p1LastMoveRole = null;
     finalizeActiveTurn();
@@ -3204,6 +3476,7 @@ function executeImamDefensiveBlock(actorId) {
     actor.hasActivity = true;
     
     writeLog(`🕌 Imam calls upon divine intervention.`);
+    let statDeltas = { tactical: 1, moves: 1 };
     
     if (gameState.botLastAttackRecord) {
         let record = gameState.botLastAttackRecord;
@@ -3214,14 +3487,18 @@ function executeImamDefensiveBlock(actorId) {
                 targetCard.imprisoned = false;
                 writeLog(`🕌 Imam divine block! Reversal of time released ${targetCard.name} from prison.`);
             } else if ((record.isDirectKill || record.isSorcererAction || record.damageDealt > 0) && !record.isNormalAttack) {
+                let wasDead = targetCard.blood <= 0;
                 targetCard.blood += record.damageDealt;
                 if (targetCard.blood > targetCard.maxBlood && targetCard.maxBlood !== Infinity) {
                     targetCard.blood = targetCard.maxBlood;
                 }
                 writeLog(`🕌 Imam divine block! Resurrected/Restored ${targetCard.name} by returning +${record.damageDealt} Blood.`);
+                statDeltas.healAmt = record.damageDealt;
+                if (wasDead) statDeltas.revives = 1;
             }
         }
     }
+    statsBump(actor, 'p1', statDeltas);
     
     gameState.p1LastMoveRole = null;
     finalizeActiveTurn();
@@ -3233,12 +3510,15 @@ function executePrincessSacrifice(actorId) {
     actor.hasActivity = true;
     if (gameState.forcedPlayerActorName === 'Princess') gameState.forcedPlayerActorName = null;
     writeLog(`👸 Princess sacrifices her sacred soul to nullify the bot's last assault!`);
+    let statDeltas = { tactical: 2, moves: 1 };
     if (gameState.botLastAttackRecord) {
         let record = gameState.botLastAttackRecord;
         let affectedCard = gameState.p1.find(c => c.id === record.targetId);
         restoreFromRecord(record, affectedCard);
         if (affectedCard) writeLog(`👸 Restored ${affectedCard.name} back to operational safety.`);
+        if (affectedCard && !record.wasImprisoned && record.damageDealt > 0) statDeltas.healAmt = record.damageDealt;
     }
+    statsBump(actor, 'p1', statDeltas);
     gameState.botLastAttackRecord = null;
     renderScene();
 }
@@ -3254,6 +3534,7 @@ function executeReporterRelease(cardId) {
     });
     actor.releasedImprisoned = true;
     writeLog(`📰 Reporter expose released ${freedCount} imprisoned cards.`);
+    if (freedCount > 0) statsBump(actor, 'p1', { tactical: freedCount });
     renderScene();
 }
 
@@ -3284,14 +3565,17 @@ function executeTherapistReboundPrep(actorId) {
 
 function executeTerroristDrain(actorId) {
     let actor = gameState.p1.find(c => c.id === actorId);
+    let drainedCount = 0;
     gameState.p2.forEach(c => {
         if (c.blood > 1 && !c.isHeroic) {
             c.blood -= 1;
+            drainedCount++;
         }
     });
     actor.blood = 0;
     actor.hasActivity = true;
     writeLog(`💥 Terrorist drained 1 blood from eligible opponent cards and died instantly.`);
+    statsBump(actor, 'p1', { attackDmg: drainedCount, tactical: 1, moves: 1 });
     gameState.p1LastMoveRole = null;
     finalizeActiveTurn();
 }
@@ -3717,6 +4001,7 @@ function handleSkinwalkerTransform(actorId, templateIdx) {
     actor.lastUsedRound = 0;
 
     writeLog(`🐺 Your Skinwalker permanently shifted into ${template.name}, gaining +1 extra Blood!`);
+    statsBump(actor, 'p1', { tactical: 1 });
     // Free action: doesn't cost the turn's move, so the turn continues
     // and the newly-transformed card can still act this same turn.
     renderScene();
@@ -4701,6 +4986,7 @@ function pickBotActor(usableBots, activePlayers, difficulty) {
 // through to the turn-ending code at the bottom.
 function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
     if(gameState.isGameOver) return;
+    let _statsSnapshot = captureEffectSnapshot(null);
 
     let aliveBots = gameState.p2.filter(c => c.blood > 0 && !c.imprisoned);
     let activePlayers = gameState.p1.filter(c => c.blood > 0 && !c.imprisoned && !c.isHeroic);
@@ -5106,6 +5392,7 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
                         // usable card, instead of its whole turn being skipped.
                         aiActor.lastUsedRound = 0;
                         writeLog(`🐺 Bot Skinwalker permanently shifted into ${template.name}, gaining +1 extra Blood! It acts again immediately.`);
+                        statsBump(aiActor, 'p2', { tactical: 1 });
                         renderScene();
                         if (freeActionDepth < 8) {
                             processBotTurnRoutine(true, freeActionDepth + 1);
@@ -5120,6 +5407,7 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
                                 blVibrate(40); // bot's move landed
                             }
                         }
+                        statsRecordFromSnapshot(_statsSnapshot);
                         return;
                     } else {
                         writeLog(`🐺 Bot Skinwalker found no remaining Bloodbane forms and held its ground.`);
@@ -5188,6 +5476,7 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
         }
     }
 
+    statsRecordFromSnapshot(_statsSnapshot);
     if (gameState.p1KnightShields > 0) gameState.p1KnightShields--;
     applyTeamPoisonTicks(gameState.p2);
     
@@ -5242,6 +5531,10 @@ function renderScene() {
             gameOverVibrated = true;
             let p1Alive = gameState.p1.some(c => c.blood > 0 && !c.imprisoned);
             blVibrate(p1Alive ? [80, 60, 80, 60, 160] : [300]);
+        }
+        if (!matchSummaryShown) {
+            matchSummaryShown = true;
+            setTimeout(showMatchSummaryModal, 650);
         }
     } else {
         document.getElementById('turnIndicator').innerText = gameState.currentTurn === 1 ? "YOUR TURN" : (mp.isMultiplayer ? "OPPONENT'S TURN..." : "BOT PROCESSING...");
