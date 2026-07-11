@@ -563,6 +563,20 @@
                 font-size: 6px;
             }
         }
+
+        /* Mobile portrait only: "Skinwalker", "Bartender", "Dementor" and
+           "Watchmaker" are long enough to wrap onto a 2nd line at narrow
+           portrait widths, which pushes the move button down and truncates
+           its label (e.g. "ACTIO…"). Shrinking just these 4 names' font
+           size (adaptively, via clamp()) lets them fit without affecting
+           any other card's name styling, and without touching landscape or
+           tablet/desktop layouts at all. */
+        @media (orientation: portrait) and (max-width: 600px) {
+            .card-title-long {
+                font-size: clamp(7.5px, 2.6vw, 10px);
+                line-height: 1.05;
+            }
+        }
         /* Character Guide modal */
         .guide-modal {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -849,6 +863,13 @@
         }
         .music-playlist-item input[type="checkbox"] { flex-shrink: 0; width: 16px; height: 16px; accent-color: #ff3333; }
         .music-playlist-item.music-item-playing .music-item-title { color: #ff5555; }
+        .music-track-play-btn {
+            flex-shrink: 0; background: #1a1922; border: 1px solid rgba(255,255,255,0.12);
+            color: #f7f8f8; border-radius: 50%; width: 22px; height: 22px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; padding: 0;
+        }
+        .music-track-play-btn svg { width: 10px; height: 10px; }
+        .music-item-playing .music-track-play-btn { border-color: #ff3333; color: #ff5555; }
         .music-empty-note { font-size: 11px; color: #5a5f68; margin: 4px 0 10px 0; text-align: center; }
         .music-player-controls { display: flex; align-items: center; gap: 8px; margin-top: 2px; }
         .music-play-btn, .music-skip-btn {
@@ -858,6 +879,12 @@
         }
         .music-volume-row { display: flex; align-items: center; gap: 6px; flex: 1; }
         .music-volume-row input[type="range"] { flex: 1; accent-color: #ff3333; }
+        /* Timeline/seek bar for the currently playing track — Settings
+           modal only, deliberately not mirrored into the compact in-game
+           comms bar (which just has prev/play/next, no room for it). */
+        .music-timeline-row { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+        .music-timeline-row input[type="range"] { flex: 1; accent-color: #ff3333; height: 4px; }
+        .music-time { font-size: 9px; color: #8a8f98; flex-shrink: 0; width: 30px; text-align: center; }
         .music-now-playing {
             font-size: 10px; color: #8a8f98; text-align: center; margin-top: 8px;
             overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -1367,6 +1394,12 @@
                     <span style="font-size:11px;">🔉</span>
                     <input type="range" id="musicVolumeSlider" min="0" max="100" value="50" oninput="musicSetVolume(this.value)">
                 </div>
+            </div>
+            <div class="music-timeline-row">
+                <span class="music-time" id="musicTimeCurrent">0:00</span>
+                <input type="range" id="musicSeekSlider" min="0" max="0" value="0"
+                    onpointerdown="musicSeekStart()" oninput="musicSeekPreview(this.value)" onchange="musicSeekCommit(this.value)">
+                <span class="music-time" id="musicTimeTotal">0:00</span>
             </div>
             <div class="music-now-playing" id="musicNowPlaying"></div>
         </div>
@@ -1947,7 +1980,7 @@ function renderProfileInfo() {
             <div><div class="profile-record-num">${p.win_rate}%</div><div class="profile-record-label">Win Rate</div></div>
         </div>
         <div class="guide-section-label">Performance Breakdown</div>
-        <div class="profile-radar-wrap"><canvas id="profileRadarCanvas" width="220" height="220"></canvas></div>
+        <div class="profile-radar-wrap"><canvas id="profileRadarCanvas" width="260" height="260"></canvas></div>
         <div class="profile-stats-legend">
             <span class="profile-stats-legend-item"><span class="profile-legend-dot" style="background:#ff5555;"></span>Attack ${p.avg_attack}</span>
             <span class="profile-stats-legend-item"><span class="profile-legend-dot" style="background:#4af7a7;"></span>Heal ${p.avg_heal}</span>
@@ -2008,7 +2041,7 @@ function drawStatsRadar(canvasId, values, labels, colors) {
     const ctx = canvas.getContext('2d');
     const w = canvas.width, h = canvas.height;
     ctx.clearRect(0, 0, w, h);
-    const cx = w / 2, cy = h / 2, radius = Math.min(w, h) / 2 - 28;
+    const cx = w / 2, cy = h / 2, radius = Math.min(w, h) / 2 - 36;
     const n = values.length;
     const angleFor = (i) => (Math.PI * 2 * i / n) - Math.PI / 2;
 
@@ -2026,13 +2059,32 @@ function drawStatsRadar(canvasId, values, labels, colors) {
     }
     ctx.fillStyle = '#8a8f98';
     ctx.font = '9px -apple-system, sans-serif';
+    const pad = 2; // minimum breathing room from the canvas edge, in px
     for (let i = 0; i < n; i++) {
         const a = angleFor(i);
         const x = cx + Math.cos(a) * radius, y = cy + Math.sin(a) * radius;
         ctx.strokeStyle = 'rgba(255,255,255,0.1)';
         ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(x, y); ctx.stroke();
-        const lx = cx + Math.cos(a) * (radius + 14), ly = cy + Math.sin(a) * (radius + 14);
-        ctx.textAlign = Math.abs(Math.cos(a)) < 0.3 ? 'center' : (Math.cos(a) > 0 ? 'left' : 'right');
+
+        let lx = cx + Math.cos(a) * (radius + 14);
+        const ly = cy + Math.sin(a) * (radius + 14);
+        const textW = ctx.measureText(labels[i]).width;
+        let align;
+        // Clamp each label's drawn position so it never extends past the
+        // canvas edge — canvas silently clips anything outside its own
+        // bounds, which was cutting "Heal" and "Win Rate" off mid-word on
+        // the left/right axes.
+        if (Math.abs(Math.cos(a)) < 0.3) {
+            align = 'center';
+            lx = Math.max(textW / 2 + pad, Math.min(w - textW / 2 - pad, lx));
+        } else if (Math.cos(a) > 0) {
+            align = 'left';
+            lx = Math.min(lx, w - textW - pad);
+        } else {
+            align = 'right';
+            lx = Math.max(lx, textW + pad);
+        }
+        ctx.textAlign = align;
         ctx.fillText(labels[i], lx, ly + 3);
     }
     ctx.beginPath();
@@ -6608,6 +6660,17 @@ function evaluateWinThresholds() {
     }
 }
 
+// A few card names ("Skinwalker", "Bartender", "Dementor", "Watchmaker")
+// are just long enough that on a narrow mobile-portrait screen they wrap to
+// 2 lines and push the move button down, truncating its label. This flags
+// only those specific names for a smaller, adaptive font — see the
+// `.card-title-long` rule under the portrait media query — while leaving
+// every other card's name styling untouched.
+const CARD_LONG_NAMES = ['Skinwalker', 'Bartender', 'Dementor', 'Watchmaker'];
+function cardTitleClass(name) {
+    return CARD_LONG_NAMES.includes(name) ? ' card-title-long' : '';
+}
+
 function renderScene() {
     // Skinwalker can't be killed before it changes form - its 1 Hex is untouchable.
     [...gameState.p1, ...gameState.p2].forEach(c => {
@@ -6708,7 +6771,7 @@ function renderScene() {
         p1Html += `
             <div class="card ${isDead ? 'dead' : ''} ${card.imprisoned ? 'imprisoned' : ''} ${canTakeAction && !isLockedByCooldown && okMoves ? 'active-turn' : ''} ${isEligibleAlly ? 'valid-target' : ''}">
                 <span class="cooldown-badge">${(card.cooldown === 'consecutive' && card.lastUsedRound && (gameState.roundCount - card.lastUsedRound < 2)) ? '🚫' : ''}${card.name==='Mecha'&&card.mechaCooldown>0?'⏳':''}${card.blockedCounter>0?'🔒':''}</span>
-                <div class="card-title">${card.name}</div>
+                <div class="card-title${cardTitleClass(card.name)}">${card.name}</div>
                 <span class="card-tag">${card.tag}</span>
                 ${card.poisoned ? `<span class="poison-badge">☣️ POISON</span>` : ''}
                 ${card.blockedCounter > 0 ? `<span style="font-size:8px; color:#ff3333;">BLOCKED (${card.blockedCounter-1})</span><br>` : ''}
@@ -6824,7 +6887,7 @@ function renderScene() {
 
         p2Html += `
             <div class="card ${isDead ? 'dead' : ''} ${card.imprisoned ? 'imprisoned' : ''} ${isEligibleEnemy ? 'valid-target' : ''} ${isSelectedFirst ? 'selected-first' : ''}">
-                <div class="card-title">${card.name}</div>
+                <div class="card-title${cardTitleClass(card.name)}">${card.name}</div>
                 <span class="card-tag">${card.tag}</span>
                 ${card.poisoned ? `<span class="poison-badge">☣️ POISON</span>` : ''}
                 ${card.blockedCounter > 0 ? `<span style="font-size:8px; color:#ff3333;">BLOCKED (${card.blockedCounter-1})</span><br>` : ''}
@@ -7178,8 +7241,10 @@ async function blPullMusicFromAccount() {
 
 let musicYtPlayer = null;
 let musicYtReady = false;
-let musicCurrentIndex = -1; // index into the checked-tracks rotation, not the full playlist
+let musicCurrentIndex = -1; // index into the checked-tracks rotation, used by skip/prev to auto-advance
+let musicCurrentVideoId = null; // whichever video is actually loaded right now — may be outside the checked rotation if played directly from its row's play button
 let musicIsPlaying = false;
+let musicSeeking = false; // true while the user is actively dragging the Settings-modal seek bar
 
 // Called automatically by the YouTube IFrame API once its script finishes
 // loading (window.onYouTubeIframeAPIReady is its required hook name).
@@ -7203,7 +7268,7 @@ function onYouTubeIframeAPIReady() {
             // player just sits there silently with nothing audible.
             onError: (e) => {
                 const reasons = { 2: 'invalid video', 5: 'playback error', 100: 'video not found', 101: "owner disabled embedding", 150: "owner disabled embedding" };
-                const track = musicCheckedTracks()[musicCurrentIndex];
+                const track = blMusic.playlist.find(t => t.videoId === musicCurrentVideoId);
                 musicShowPlaybackError(track, reasons[e.data] || 'playback error');
                 musicSkipStreak++;
                 const total = musicCheckedTracks().length;
@@ -7330,12 +7395,12 @@ function musicRenderPlaylist() {
         musicUpdateNowPlaying();
         return;
     }
-    const checkedTracks = musicCheckedTracks();
-    const currentTrack = checkedTracks[musicCurrentIndex];
     list.innerHTML = blMusic.playlist.map(t => {
-        const isPlaying = currentTrack && currentTrack.videoId === t.videoId;
+        const isPlaying = musicCurrentVideoId === t.videoId;
+        const icon = (isPlaying && musicIsPlaying) ? MUSIC_ICON_PAUSE : MUSIC_ICON_PLAY;
         return `<div class="music-playlist-item${isPlaying ? ' music-item-playing' : ''}">
             <input type="checkbox" ${t.checked ? 'checked' : ''} onchange="musicToggleChecked('${t.videoId}', this.checked)">
+            <button class="music-track-play-btn" onclick="musicPlayTrack('${t.videoId}')" title="Play this track">${icon}</button>
             <div class="music-item-title">${musicEscape(t.title)}<span class="music-item-channel">${musicEscape(t.channel)}</span></div>
             <button class="music-remove-btn" onclick="musicRemoveTrack('${t.videoId}')">✕</button>
         </div>`;
@@ -7346,7 +7411,7 @@ function musicRenderPlaylist() {
 function musicUpdateNowPlaying() {
     const el = document.getElementById('musicNowPlaying');
     if (!el) return;
-    const track = musicCheckedTracks()[musicCurrentIndex];
+    const track = blMusic.playlist.find(t => t.videoId === musicCurrentVideoId);
     el.innerText = track ? `Now playing: ${track.title}` : '';
 }
 const MUSIC_ICON_PLAY = '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
@@ -7357,6 +7422,7 @@ function musicUpdatePlayBtn() {
     if (btn) btn.innerHTML = icon;
     const barBtn = document.getElementById('musicPlayBtnBar');
     if (barBtn) barBtn.innerHTML = icon;
+    musicRenderPlaylist(); // keeps each row's own play/pause icon in sync
 }
 
 function musicTogglePlay() {
@@ -7371,6 +7437,7 @@ function musicTogglePlay() {
         return;
     }
     musicCurrentIndex = 0;
+    musicCurrentVideoId = checkedTracks[musicCurrentIndex].videoId;
     musicYtPlayer.loadVideoById(checkedTracks[musicCurrentIndex].videoId);
     musicRenderPlaylist();
 }
@@ -7378,6 +7445,7 @@ function musicSkip() {
     const checkedTracks = musicCheckedTracks();
     if (checkedTracks.length === 0 || !musicYtReady) return;
     musicCurrentIndex = (musicCurrentIndex + 1) % checkedTracks.length;
+    musicCurrentVideoId = checkedTracks[musicCurrentIndex].videoId;
     musicYtPlayer.loadVideoById(checkedTracks[musicCurrentIndex].videoId);
     musicRenderPlaylist();
 }
@@ -7385,7 +7453,22 @@ function musicPrev() {
     const checkedTracks = musicCheckedTracks();
     if (checkedTracks.length === 0 || !musicYtReady) return;
     musicCurrentIndex = (musicCurrentIndex - 1 + checkedTracks.length) % checkedTracks.length;
+    musicCurrentVideoId = checkedTracks[musicCurrentIndex].videoId;
     musicYtPlayer.loadVideoById(checkedTracks[musicCurrentIndex].videoId);
+    musicRenderPlaylist();
+}
+// Plays one specific track straight from its row in the playlist — works
+// whether or not that track is currently checked. If it's part of the
+// checked rotation, skip/prev continue on from it normally; if not, it
+// just plays on its own (skip/prev pick back up from the rotation as
+// usual once the track ends or another one is chosen).
+function musicPlayTrack(videoId) {
+    if (!musicYtReady) return;
+    const checkedTracks = musicCheckedTracks();
+    musicCurrentIndex = checkedTracks.findIndex(t => t.videoId === videoId);
+    musicCurrentVideoId = videoId;
+    musicYtPlayer.loadVideoById(videoId);
+    musicYtPlayer.playVideo();
     musicRenderPlaylist();
 }
 function musicSetVolume(v) {
@@ -7393,6 +7476,45 @@ function musicSetVolume(v) {
     musicSave();
     if (musicYtReady) musicYtPlayer.setVolume(blMusic.volume);
 }
+
+// ---- Timeline / seek bar (Settings modal only) -----------------------------
+function musicFormatTime(sec) {
+    sec = Math.max(0, Math.floor(sec || 0));
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+}
+function musicSeekStart() { musicSeeking = true; }
+function musicSeekPreview(v) {
+    const curEl = document.getElementById('musicTimeCurrent');
+    if (curEl) curEl.innerText = musicFormatTime(v);
+}
+function musicSeekCommit(v) {
+    if (musicYtReady) musicYtPlayer.seekTo(Number(v), true);
+    musicSeeking = false;
+}
+// Polls playback position twice a second and drives the Settings-modal
+// timeline. Harmless to run even while the modal is closed/hidden — it
+// just no-ops once the slider/labels aren't found in the DOM. Skipped
+// entirely while the user has a finger on the slider so it doesn't fight
+// their drag.
+function musicUpdateTimeline() {
+    if (!musicYtReady || musicSeeking) return;
+    const slider = document.getElementById('musicSeekSlider');
+    const curEl = document.getElementById('musicTimeCurrent');
+    const totEl = document.getElementById('musicTimeTotal');
+    if (!slider || !curEl || !totEl) return;
+    let duration = 0, current = 0;
+    try {
+        duration = musicYtPlayer.getDuration() || 0;
+        current = musicYtPlayer.getCurrentTime() || 0;
+    } catch (e) { return; }
+    slider.max = duration;
+    slider.value = current;
+    curEl.innerText = musicFormatTime(current);
+    totEl.innerText = musicFormatTime(duration);
+}
+setInterval(musicUpdateTimeline, 500);
 </script>
 </body>
 </html>
