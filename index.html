@@ -1268,11 +1268,11 @@
             <div class="music-hint">Only you hear this — it plays locally and isn't shared with your opponent.</div>
             <div class="music-tip">💡 Tip: lyric videos and fan uploads tend to play more reliably than "Official Video" uploads, which often block embedding elsewhere.</div>
             <div class="music-apikey-row">
-                <input type="password" id="musicPersonalKeyInput" class="account-input" style="margin-bottom:0;" placeholder="Your own YouTube API key (optional)">
+                <input type="password" id="musicPersonalKeyInput" class="account-input" style="margin-bottom:0;" placeholder="Your own YouTube API key (required)">
                 <button onclick="musicSavePersonalKey()">Save</button>
             </div>
             <a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noopener" class="music-getkey-link">Get your API key →</a>
-            <div class="music-hint">Optional — if you add your own key, it's tried first and only counts against your own quota, so you're never affected by other players' searches.</div>
+            <div class="music-hint">Required to search — it only counts against your own free quota, so you're never affected by other players' searches.</div>
             <div class="music-search-row">
                 <input type="text" id="musicSearchInput" class="account-input" style="margin-bottom:0;" placeholder="Search a song..." onkeydown="if(event.key==='Enter') musicSearch()">
                 <button class="music-search-btn" onclick="musicSearch()">Search</button>
@@ -6713,20 +6713,12 @@ function renderTutorStep() {
 // per browser, so each player can have a completely different soundtrack
 // playing at the same time.
 // ============================================================================
-// Shared YouTube Data API v3 keys, used only for search — fill these in
-// once in Google Cloud Console (restrict each to the YouTube Data API v3).
-// You can list up to 7-8 keys here. Search tries a player's own personal
-// key first (if they've added one in Settings), then falls through this
-// shared list in order; if a key hits its daily quota, it's skipped for
-// the rest of the session and the next one is tried automatically.
+// Each player must add their own YouTube Data API v3 key in Settings to
+// search for tracks — there's no shared/fallback key baked into the game.
+// This keeps every player's searches on their own free quota, so no one
+// player's usage can ever exhaust search for anyone else.
 // Playback and each player's own playlist stay local to their browser
-// regardless of which key served the search.
-const BL_YT_API_KEYS = [
-    'AIzaSyDsOSsMt5wAm1fn_X1RyQ38CzxqkIVuaHE',
-    // 'PASTE_YOUR_YOUTUBE_API_KEY_2_HERE',
-    // 'PASTE_YOUR_YOUTUBE_API_KEY_3_HERE',
-    // ...add up to 7-8 keys total
-];
+// regardless of whose key served the search.
 
 const BL_MUSIC_KEY = 'eldritch_music';
 let blMusic = { playlist: [], volume: 50, personalApiKey: '' };
@@ -6857,12 +6849,10 @@ function musicSavePersonalKey() {
     input.value = blMusic.personalApiKey ? '••••••••' : '';
 }
 
-// Personal key (if the player added one in Settings) goes first, then the
-// shared keys baked into the game, in order.
+// Search now runs only on the player's own key — no shared fallback list.
 function musicGetKeys() {
     const personal = (blMusic.personalApiKey || '').trim();
-    const shared = BL_YT_API_KEYS.filter(k => k && !k.startsWith('PASTE_'));
-    return personal ? [personal, ...shared] : shared;
+    return personal ? [personal] : [];
 }
 
 // Tries each available key, skipping any already known this session to be
@@ -6873,7 +6863,7 @@ async function musicSearch() {
     if (!q) return;
     const allKeys = musicGetKeys();
     if (allKeys.length === 0) {
-        resultList.innerHTML = '<div class="music-empty-note">Music search isn\'t set up yet — add your own YouTube API key above, or ask the game owner to add one.</div>';
+        resultList.innerHTML = '<div class="music-empty-note">Add your own YouTube API key above to search — it\'s required, see "Get your API key" below the field.</div>';
         return;
     }
     const keys = allKeys.filter(k => !musicExhaustedKeys.has(k));
