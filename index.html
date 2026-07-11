@@ -944,13 +944,14 @@
         </div>
 
         <div id="vsBotPanel">
-            <div class="squad-title" style="margin-top:0; border-bottom:none;">Select Bot Difficulty</div>
-            <div id="difficultyPicker" style="display:flex; gap:8px; justify-content:center; margin:10px 0 18px 0;">
-                <button class="btn diff-btn" data-diff="easy" style="width:auto; padding:8px 14px; font-size:10px;" onclick="setDifficulty('easy', this)">EASY</button>
-                <button class="btn diff-btn" data-diff="mid" style="width:auto; padding:8px 14px; font-size:10px;" onclick="setDifficulty('mid', this)">MID</button>
-                <button class="btn diff-btn" data-diff="hard" style="width:auto; padding:8px 14px; font-size:10px;" onclick="setDifficulty('hard', this)">HARD</button>
-                <button class="btn diff-btn" data-diff="extreme" style="width:auto; padding:8px 14px; font-size:10px;" onclick="setDifficulty('extreme', this)">EXTREME</button>
+            <div class="squad-title" style="margin-top:0; border-bottom:none;">Select Bot Play Style</div>
+            <div id="difficultyPicker" style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin:10px 0 8px 0;">
+                <button class="btn diff-btn" data-diff="aggressive" style="width:auto; padding:8px 14px; font-size:10px;" onclick="setDifficulty('aggressive', this)">🔥 AGGRESSIVE</button>
+                <button class="btn diff-btn" data-diff="tactical" style="width:auto; padding:8px 14px; font-size:10px;" onclick="setDifficulty('tactical', this)">🧠 TACTICAL</button>
+                <button class="btn diff-btn" data-diff="ruthless" style="width:auto; padding:8px 14px; font-size:10px;" onclick="setDifficulty('ruthless', this)">⚔️ RUTHLESS</button>
+                <button class="btn diff-btn" data-diff="mastermind" style="width:auto; padding:8px 14px; font-size:10px;" onclick="setDifficulty('mastermind', this)">👑 MASTERMIND</button>
             </div>
+            <div id="difficultyDescription" style="text-align:center; font-size:10.5px; color:#8a8f98; min-height:28px; margin:0 auto 14px auto; max-width:320px; line-height:1.4;"></div>
             <button class="start-btn" onclick="initializeMatch()">INITIALIZE ELDRITCH</button>
         </div>
 
@@ -1230,7 +1231,7 @@ let gameState = {
     p1: [],
     p2: [],
     isGameOver: false,
-    difficulty: 'mid',
+    difficulty: 'tactical',
     targetingMode: { isActive: false, type: null, actorId: null, firstTargetId: null, metadata: null },
     p1KnightShields: 0,
     p2KnightShields: 0,
@@ -1922,10 +1923,20 @@ function concludeTargetedMove(actorId, baseMove, selfTargeted) {
     finalizeActiveTurn();
 }
 
+// Human-readable blurbs shown under the play-style picker so the person
+// knows what they're actually opting into before a match starts.
+const BOT_STYLE_DESCRIPTIONS = {
+    aggressive: 'Always swings with whatever can attack right now. No focus fire, no defense, no plan — punishes hesitation but is easy to out-maneuver.',
+    tactical: 'Focus-fires whatever is closest to dying and takes a free kill when it sees one, but doesn\'t think many moves ahead.',
+    ruthless: 'Hunts kills first, then disrupts your most dangerous card with imprison/poison/lockdown. Efficient and hard to get free value against.',
+    mastermind: 'Full-board evaluation every turn: secures kills without overextending, targets your biggest threats, and manages its own Hex to stay ahead. The strongest opponent Eldritch has.'
+};
 function setDifficulty(level, btnEl) {
     gameState.difficulty = level;
     document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('diff-active'));
     if (btnEl) btnEl.classList.add('diff-active');
+    const descEl = document.getElementById('difficultyDescription');
+    if (descEl) descEl.textContent = BOT_STYLE_DESCRIPTIONS[level] || '';
 }
 
 // ============================================================================
@@ -2332,6 +2343,8 @@ document.addEventListener('DOMContentLoaded', () => {
     bl_replaceState({ screen: 'setup', modal: null });
     const defaultBtn = document.querySelector(`.diff-btn[data-diff="${gameState.difficulty}"]`);
     if (defaultBtn) defaultBtn.classList.add('diff-active');
+    const descEl = document.getElementById('difficultyDescription');
+    if (descEl) descEl.textContent = BOT_STYLE_DESCRIPTIONS[gameState.difficulty] || '';
     blRestoreAccountOnLoad();
     if (!mpAttemptReconnectOnLoad()) {
         attemptSoloRestoreOnLoad();
@@ -5164,7 +5177,7 @@ function applyMimicRoleEffect(roleName, aiActor, verbPrefix) {
         if (enemyPool.length === 0) return false;
         let t = pickBotTarget(enemyPool, gameState.difficulty);
         applyShieldedDamage(t, 1);
-        let healTarget = allyPool.find(c => c.hex < c.maxHex) || allyPool[0];
+        let healTarget = pickBotHealTarget(allyPool.filter(c => c.hex < c.maxHex), gameState.difficulty) || allyPool[0];
         if (healTarget) {
             healTarget.hex = Math.min(healTarget.maxHex === Infinity ? 99 : healTarget.maxHex, healTarget.hex + 1);
             queueRecap('heal', healTarget);
@@ -5188,7 +5201,7 @@ function applyMimicRoleEffect(roleName, aiActor, verbPrefix) {
         return true;
     }
     if (roleName === 'Doctor') {
-        let healTarget = allyPool.find(c => c.hex < c.maxHex) || allyPool[0];
+        let healTarget = pickBotHealTarget(allyPool.filter(c => c.hex < c.maxHex), gameState.difficulty) || allyPool[0];
         if (!healTarget) return false;
         healTarget.hex = Math.min(healTarget.maxHex === Infinity ? 99 : healTarget.maxHex, healTarget.hex + 1);
         writeLog(`❤️ ${verbPrefix} heals ${healTarget.name}!`);
@@ -5220,18 +5233,123 @@ function applyMimicRoleEffect(roleName, aiActor, verbPrefix) {
 }
 
 
-// mid/hard/extreme increasingly focus-fire the lowest-Hex eligible target.
-function pickBotTarget(pool, difficulty) {
-    if (difficulty === 'easy' || pool.length === 0) return pool[Math.floor(Math.random() * pool.length)];
+// ============================================================================
+// BOT AI — PLAY STYLES
+// Four distinct opponents rather than four "same brain, different dice"
+// tiers. Each style genuinely reasons about the board differently, so the
+// skill gap between them is a product of *how they decide*, not an
+// artificial coin-flip bolted on afterward:
+//   - aggressive: always attacks, never focus-fires, never defends. This is
+//     what makes it legitimately weak — it spreads damage across your whole
+//     squad instead of finishing anything off, and will happily burn its
+//     best card on a wasted swing.
+//   - tactical: solid fundamentals. Focus-fires the lowest-Hex target and
+//     takes a free kill when one's obviously on the table, but doesn't
+//     reason about which enemy card is actually dangerous, doesn't manage
+//     its own resources, and never proactively disrupts.
+//   - ruthless: kill-priority first, then reaches for real disruption
+//     (imprison/lockdown/poison) against whichever live enemy card is
+//     objectively most dangerous, using ROLE_THREAT_VALUE below instead of
+//     raw Hex alone.
+//   - mastermind: everything ruthless does, plus self-preservation (won't
+//     trade a healthy high-value card for a low-value kill when a cheaper
+//     option exists) and board-state awareness (heals/consolidates when
+//     ahead on total Hex instead of overextending).
+// ============================================================================
+
+// Relative danger of each role, independent of its current Hex — how much
+// it's worth prioritizing as a kill/disruption target. Pure damage dealers
+// that can also outright remove a card (execute, imprison, hijack) sit at
+// the top; slow/reactive support sits at the bottom.
+const ROLE_THREAT_VALUE = {
+    Killer: 9, Ninja: 8, Dictator: 8, Sorcerer: 8, Mecha: 8,
+    Spy: 7, Dementor: 7, Hacker: 7,
+    Witch: 6, Cop: 6, Watchmaker: 6, Singer: 6, Lawyer: 6, Mage: 6,
+    Knight: 5, Hood: 5, Robber: 5, Jinn: 5, Bartender: 5, Imam: 5,
+    Skinwalker: 4, Doctor: 4,
+    Actor: 3, Therapist: 3, Princess: 3, Reporter: 3, Terrorist: 4
+};
+function roleThreatValue(name) {
+    return ROLE_THREAT_VALUE[name] !== undefined ? ROLE_THREAT_VALUE[name] : 5;
+}
+
+// Roles that primarily lock down/remove a card rather than just chip Hex —
+// Ruthless/Mastermind reach for these once no kill is available.
+const DISRUPTOR_ROLES = ['Dictator', 'Lawyer', 'Jinn', 'Sorcerer', 'Witch', 'Dementor'];
+// Roles Aggressive considers "not a real attack" and avoids unless forced.
+const SUPPORT_ROLES = ['Doctor', 'Watchmaker', 'Imam', 'Princess', 'Therapist', 'Reporter', 'Actor', 'Bartender'];
+
+// Total effective Hex on a side (Spy's Infinity maxHex is capped so it can't
+// skew the board-state comparison Mastermind uses to decide whether it's
+// ahead or behind).
+function sideBoardHex(side) {
+    return side.filter(c => c.hex > 0 && !c.imprisoned)
+        .reduce((sum, c) => sum + Math.min(c.hex, 5), 0);
+}
+
+// Target selection. Aggressive is pure chaos (no focus fire — this is the
+// single biggest reason it's genuinely beatable). Tactical focus-fires the
+// lowest Hex with a threat-based tiebreak. Ruthless/Mastermind always finish
+// a kill that's on the table first, preferring the most dangerous finishable
+// card, and otherwise score every candidate on threat-vs-Hex.
+function pickBotTarget(pool, style) {
+    if (!pool || pool.length === 0) return null;
+
+    if (style === 'aggressive') {
+        return pool[Math.floor(Math.random() * pool.length)];
+    }
+
+    if (style === 'tactical') {
+        let minHex = Math.min(...pool.map(c => c.hex));
+        let lowest = pool.filter(c => c.hex === minHex);
+        let maxThreat = Math.max(...lowest.map(c => roleThreatValue(c.name)));
+        let top = lowest.filter(c => roleThreatValue(c.name) === maxThreat);
+        return top[Math.floor(Math.random() * top.length)];
+    }
+
+    // ruthless & mastermind
     let minHex = Math.min(...pool.map(c => c.hex));
-    let lowest = pool.filter(c => c.hex === minHex);
-    return lowest[Math.floor(Math.random() * lowest.length)];
+    let finishable = pool.filter(c => c.hex === minHex && c.hex <= 1);
+    if (finishable.length > 0) {
+        let maxThreat = Math.max(...finishable.map(c => roleThreatValue(c.name)));
+        let top = finishable.filter(c => roleThreatValue(c.name) === maxThreat);
+        return top[Math.floor(Math.random() * top.length)];
+    }
+    let scored = pool.map(c => ({ c, score: roleThreatValue(c.name) * 3 - c.hex * 2 }));
+    let bestScore = Math.max(...scored.map(s => s.score));
+    let bestPool = scored.filter(s => s.score === bestScore).map(s => s.c);
+    return bestPool[Math.floor(Math.random() * bestPool.length)];
+}
+
+// Threat-only pick (no kill/Hex weighting) — used when a move steals or
+// suppresses control of an enemy card rather than damaging it (Sorcerer
+// hijack, Lawyer's operational targets), where "which target is dying
+// soonest" isn't the relevant question — "which target is scariest" is.
+function pickBestByThreat(pool, style) {
+    if (!pool || pool.length === 0) return null;
+    if (style === 'aggressive') return pool[Math.floor(Math.random() * pool.length)];
+    let maxThreat = Math.max(...pool.map(c => roleThreatValue(c.name)));
+    let top = pool.filter(c => roleThreatValue(c.name) === maxThreat);
+    return top[Math.floor(Math.random() * top.length)];
+}
+
+// Heal target selection — Aggressive heals randomly (it barely ever does
+// this anyway), everyone else patches up whoever is closest to dying,
+// breaking ties toward the more valuable card.
+function pickBotHealTarget(pool, style) {
+    if (!pool || pool.length === 0) return null;
+    if (style === 'aggressive') return pool[Math.floor(Math.random() * pool.length)];
+    let withDeficit = pool.map(c => ({ c, deficit: (c.maxHex === Infinity ? 5 : c.maxHex) - c.hex }));
+    let maxDeficit = Math.max(...withDeficit.map(m => m.deficit));
+    let candidates = withDeficit.filter(m => m.deficit === maxDeficit).map(m => m.c);
+    candidates.sort((a, b) => roleThreatValue(b.name) - roleThreatValue(a.name));
+    return candidates[0];
 }
 
 // Whether this bot card, if it acts, has a real chance to outright kill something.
 function canBotActorSecureKill(actor, enemies) {
     // A shielded card can't actually be killed, so it never counts as a
-    // securable kill for the difficulty AI's targeting priority.
+    // securable kill for the AI's targeting priority.
     let pool = getBotCandidatePool(actor, enemies).filter(c => !isCardShielded(c));
     if (pool.length === 0) return false;
     if (actor.name === 'Killer') return true;
@@ -5242,18 +5360,60 @@ function canBotActorSecureKill(actor, enemies) {
     return pool.some(c => c.hex <= 1);
 }
 
-// Difficulty-scaled actor choice. Easy/Mid stay random among usable cards
-// (legacy behaviour). Hard/Extreme prefer securing a kill this turn, and
-// Extreme additionally falls back to high-impact disruption (imprison/lock/poison)
-// when no kill is available.
-function pickBotActor(usableBots, activePlayers, difficulty) {
-    if (difficulty === 'easy' || difficulty === 'mid') return usableBots[Math.floor(Math.random() * usableBots.length)];
-    let lethal = usableBots.filter(b => canBotActorSecureKill(b, activePlayers));
-    if (lethal.length > 0) return lethal[Math.floor(Math.random() * lethal.length)];
-    if (difficulty === 'extreme') {
-        let disruptors = usableBots.filter(b => ['Dictator', 'Lawyer', 'Jinn', 'Sorcerer', 'Witch', 'Dementor'].includes(b.name));
-        if (disruptors.length > 0) return disruptors[Math.floor(Math.random() * disruptors.length)];
+// Actor selection — this is where the four styles diverge the most.
+function pickBotActor(usableBots, activePlayers, style) {
+    if (style === 'aggressive') {
+        // Always attacks over defending/supporting if it possibly can — and
+        // picks *which* attacker at random, so it never reliably lines up
+        // its hardest hitter with the kill that's actually available.
+        let attackers = usableBots.filter(b => !SUPPORT_ROLES.includes(b.name));
+        let pool = attackers.length > 0 ? attackers : usableBots;
+        return pool[Math.floor(Math.random() * pool.length)];
     }
+
+    if (style === 'tactical') {
+        // Takes an obvious free kill, otherwise plays loose.
+        let lethal = usableBots.filter(b => canBotActorSecureKill(b, activePlayers));
+        if (lethal.length > 0) return lethal[Math.floor(Math.random() * lethal.length)];
+        return usableBots[Math.floor(Math.random() * usableBots.length)];
+    }
+
+    // ruthless & mastermind share the same priority order: secure a kill →
+    // disrupt the biggest live threat → (mastermind only) consolidate a lead.
+    let lethal = usableBots.filter(b => canBotActorSecureKill(b, activePlayers));
+    if (lethal.length > 0) {
+        lethal.sort((a, b) => roleThreatValue(b.name) - roleThreatValue(a.name));
+        if (style === 'mastermind') {
+            // Won't burn a healthy, high-value card down to secure a
+            // low-value kill if a card it can better afford to spend exists.
+            let affordable = lethal.filter(b => b.hex > 1 || b.isHeroic || b.name === 'Spy');
+            if (affordable.length > 0) lethal = affordable;
+        }
+        return lethal[0];
+    }
+
+    let disruptors = usableBots.filter(b => DISRUPTOR_ROLES.includes(b.name) && getBotCandidatePool(b, activePlayers).length > 0);
+    if (disruptors.length > 0) {
+        disruptors.sort((a, b) => {
+            let bestA = Math.max(0, ...getBotCandidatePool(a, activePlayers).map(c => roleThreatValue(c.name)));
+            let bestB = Math.max(0, ...getBotCandidatePool(b, activePlayers).map(c => roleThreatValue(c.name)));
+            return bestB - bestA;
+        });
+        return disruptors[0];
+    }
+
+    if (style === 'mastermind') {
+        // Ahead on total board Hex? Consolidate instead of overextending —
+        // top off the most wounded ally rather than throwing another card
+        // into the grinder for marginal chip damage.
+        let myHex = sideBoardHex(gameState.p2);
+        let theirHex = sideBoardHex(gameState.p1);
+        if (myHex >= theirHex) {
+            let healer = usableBots.find(b => b.name === 'Doctor' || b.name === 'Hood');
+            if (healer) return healer;
+        }
+    }
+
     return usableBots[Math.floor(Math.random() * usableBots.length)];
 }
 
@@ -5390,7 +5550,7 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
                 } else if (aiActor.name === 'Doctor') {
                     let healTargets = gameState.p2.filter(c => c.id !== aiActor.id && c.hex > 0 && c.hex < c.maxHex);
                     if (healTargets.length > 0) {
-                        let patient = healTargets[Math.floor(Math.random() * healTargets.length)];
+                        let patient = pickBotHealTarget(healTargets, gameState.difficulty);
                         patient.hex = Math.min(patient.maxHex, patient.hex + 1);
                         writeLog(`❤️ Bot Doctor heals squadmate ${patient.name}.`);
                         queueRecap('heal', patient);
@@ -5446,7 +5606,7 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
                     }
                     let hoodAllies = gameState.p2.filter(c => c.id !== aiActor.id && c.hex > 0);
                     if (hoodAllies.length > 0) {
-                        let recipient = hoodAllies[Math.floor(Math.random() * hoodAllies.length)];
+                        let recipient = pickBotHealTarget(hoodAllies, gameState.difficulty);
                         recipient.hex = Math.min(recipient.maxHex, recipient.hex + 1);
                         writeLog(`🏹 Bot Hood steals hex and re-routes it to revitalize ${recipient.name}.`);
                         queueRecap('heal', recipient);
@@ -5466,7 +5626,7 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
                 } else if (aiActor.name === 'Lawyer') {
                     let validTargets = activePlayers.filter(c => (c.tag === 'Criminal' || c.tag === 'Law & Order') && c.hasActivity);
                     if (validTargets.length > 0) {
-                        let botTarget = validTargets[Math.floor(Math.random() * validTargets.length)];
+                        let botTarget = pickBestByThreat(validTargets, gameState.difficulty);
                         targetPlayer = botTarget; 
                         preAttackHex = targetPlayer.hex;
                         applyShieldedImprison(targetPlayer);
@@ -5479,7 +5639,7 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
                 } else if (aiActor.name === 'Sorcerer') {
                     let hijackPool = gameState.p1.filter(c => c.hex > 0 && !c.imprisoned && !c.isHeroic && !SORCERER_FORBIDDEN_ROLES.includes(c.name));
                     if (hijackPool.length > 0) {
-                        let hijacked = hijackPool[Math.floor(Math.random() * hijackPool.length)];
+                        let hijacked = pickBestByThreat(hijackPool, gameState.difficulty);
                         writeLog(`🔮 Bot Sorcerer hijacks control of your ${hijacked.name}!`);
                         let didSomething = applyMimicRoleEffect(hijacked.name, aiActor, `Bot Sorcerer (as ${hijacked.name})`);
                         applyShieldedDamage(hijacked, 1);
