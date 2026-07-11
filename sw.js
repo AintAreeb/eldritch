@@ -4,12 +4,12 @@
 const CACHE_VERSION = 'v1';
 const CACHE_NAME = `eldritch-shell-${CACHE_VERSION}`;
 
-// The app shell. If you rename Eldritch.html (e.g. to index.html), update
-// this list and the start_url/id in manifest.json to match.
+// The app shell. If you rename index.html to something else, update this
+// list and the start_url in manifest.json to match.
 const PRECACHE_ASSETS = [
-  './Eldritch.html',
+  './index.html',
   './manifest.json',
-  './icon.ico'
+  './icon.png'
 ];
 
 self.addEventListener('install', (event) => {
