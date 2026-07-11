@@ -645,6 +645,79 @@
         .msum-fill-heal { background: #4af7a7; }
         .msum-fill-tactical { background: #ffcc00; }
         .msum-bar-value { font-size: 9px; color: #c7c9cf; width: 22px; text-align: right; flex-shrink: 0; }
+        /* Profile modal */
+        .profile-modal { max-width: 340px; }
+        .profile-header {
+            display: flex; align-items: center; gap: 12px;
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px; padding: 12px; margin-bottom: 12px;
+        }
+        .profile-avatar-circle {
+            width: 52px; height: 52px; border-radius: 50%; flex-shrink: 0;
+            background: #1a1922; border: 1px solid rgba(255,255,255,0.12);
+            display: flex; align-items: center; justify-content: center; font-size: 26px;
+        }
+        .profile-avatar-circle.is-editable { cursor: pointer; }
+        .profile-header-main { flex: 1; min-width: 0; }
+        .profile-username { font-size: 15px; font-weight: 700; color: #f7f8f8; }
+        .profile-fav-badge {
+            display: inline-flex; align-items: center; gap: 4px; margin-top: 4px;
+            background: rgba(255,204,0,0.1); border: 1px solid rgba(255,204,0,0.3); color: #ffcc00;
+            border-radius: 20px; padding: 3px 9px; font-size: 10px; font-weight: 600;
+        }
+        .profile-fav-badge.profile-fav-empty { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.1); color: #8a8f98; }
+        .profile-avatar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin: 10px 0; }
+        .profile-avatar-opt {
+            background: #1a1922; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;
+            font-size: 18px; padding: 6px 0; cursor: pointer; text-align: center;
+        }
+        .profile-avatar-opt.profile-avatar-selected { border-color: #ff3333; background: rgba(255,51,51,0.12); }
+        .profile-bio-textarea {
+            width: 100%; box-sizing: border-box; background: #0d0c14; color: #f7f8f8;
+            border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 8px 10px;
+            font-size: 11.5px; line-height: 1.4; resize: vertical; min-height: 52px; font-family: inherit;
+        }
+        .profile-save-btn {
+            background: #ff3333; color: #fff; border: none; border-radius: 6px;
+            padding: 8px 12px; font-size: 10px; font-weight: 700; cursor: pointer; margin-top: 6px;
+        }
+        .profile-radar-wrap { display: flex; justify-content: center; margin: 6px 0 4px 0; }
+        .profile-stats-legend { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 6px; }
+        .profile-stats-legend-item { font-size: 9.5px; color: #c7c9cf; display: flex; align-items: center; gap: 4px; }
+        .profile-legend-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        .profile-record-row {
+            display: flex; justify-content: space-around; text-align: center;
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px; padding: 8px 0; margin-bottom: 10px;
+        }
+        .profile-record-num { font-size: 15px; font-weight: 700; color: #f7f8f8; }
+        .profile-record-label { font-size: 9px; color: #8a8f98; text-transform: uppercase; letter-spacing: 0.03em; }
+        .mhist-entry {
+            display: flex; align-items: center; gap: 10px;
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+            border-left: 3px solid #5a5f68; border-radius: 6px; padding: 8px 10px; margin-bottom: 6px;
+        }
+        .mhist-entry.mhist-win { border-left-color: #4af7a7; }
+        .mhist-entry.mhist-loss { border-left-color: #ff3333; }
+        .mhist-entry.mhist-draw { border-left-color: #ffcc00; }
+        .mhist-result { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; width: 34px; flex-shrink: 0; }
+        .mhist-win .mhist-result { color: #4af7a7; }
+        .mhist-loss .mhist-result { color: #ff5555; }
+        .mhist-draw .mhist-result { color: #ffcc00; }
+        .mhist-main { flex: 1; min-width: 0; }
+        .mhist-opponent { font-size: 11.5px; font-weight: 600; color: #f7f8f8; }
+        .mhist-meta { font-size: 9px; color: #8a8f98; margin-top: 1px; }
+        .mhist-scores { font-size: 9px; color: #c7c9cf; flex-shrink: 0; text-align: right; }
+        .profile-fav-picker-btn {
+            background: #2a2932; color: #f7f8f8; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px;
+            padding: 6px 10px; font-size: 9.5px; font-weight: 600; cursor: pointer; margin-top: 4px;
+        }
+        .favcard-entry {
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; cursor: pointer;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .favcard-entry.favcard-selected { border-color: #ffcc00; background: rgba(255,204,0,0.08); }
         .guide-close-btn {
             margin-top: 12px; background: #2a2932; color: #f7f8f8; border: none; border-radius: 8px;
             padding: 10px; font-size: 11px; font-weight: 600; cursor: pointer; text-transform: uppercase;
@@ -1076,7 +1149,9 @@
             </div>
             <div id="accountLoggedIn" style="display:none; position:relative;">
                 <span id="accountWelcome"></span>
-                <div style="display:flex; gap:6px;">
+                <span id="accountFavBadge" class="profile-fav-badge profile-fav-empty" style="display:none; margin-left:6px;"></span>
+                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                    <button class="account-btn account-btn-alt" onclick="openProfileModal()">👤 Profile</button>
                     <button class="account-btn account-btn-alt" style="position:relative;" onclick="openFriendsModal()">
                         👥 Friends
                         <span id="friendsReqBadge" style="display:none; position:absolute; top:-6px; right:-6px; background:#ff3333; color:#fff; border-radius:50%; width:16px; height:16px; font-size:9px; line-height:16px; text-align:center; font-weight:700;"></span>
@@ -1296,6 +1371,23 @@
             <div class="music-now-playing" id="musicNowPlaying"></div>
         </div>
         <button class="guide-close-btn" onclick="closeSettingsModal()">Close</button>
+    </div>
+
+    <div id="profileModal" class="guide-modal profile-modal">
+        <h3 id="profileModalTitle">👤 Profile</h3>
+        <div class="guide-tabs">
+            <button class="guide-tab-btn guide-tab-active" id="profileTabInfoBtn" onclick="switchProfileTab('info')">Profile</button>
+            <button class="guide-tab-btn" id="profileTabHistoryBtn" onclick="switchProfileTab('history')">Match History</button>
+        </div>
+        <div class="guide-body" id="profileInfoView"></div>
+        <div class="guide-body" id="profileHistoryView" style="display:none;"></div>
+        <button class="guide-close-btn" onclick="closeProfileModal()">Close</button>
+    </div>
+
+    <div id="favCardModal" class="guide-modal" style="max-width:300px;">
+        <h3>⭐ Choose Favourite Card</h3>
+        <div class="guide-body" id="favCardListView"></div>
+        <button class="guide-close-btn" onclick="closeFavCardModal()">Close</button>
     </div>
 
     <div id="bartenderChoiceModal" class="bartender-modal">
@@ -1566,6 +1658,7 @@ function playDefeatFX() {
 // ============================================================================
 let matchStats = {};
 let matchSummaryShown = false;
+let matchRecorded = false; // guards against recording the same multiplayer match twice to history
 
 function statsEnsureEntry(card, side) {
     if (!matchStats[card.id]) {
@@ -1734,6 +1827,287 @@ function showMatchSummaryModal() {
 function closeMatchSummaryModal() {
     document.getElementById('matchSummaryModal').style.display = 'none';
     if (bl_hist.modal === 'summary') history.back();
+}
+
+// Records a completed match to the logged-in local player's Supabase match
+// history — real multiplayer matches only (solo/vs-bot never calls this).
+// Silently no-ops if the player isn't logged in, since match history is
+// per-account. The opponent's username is only known if they were also
+// logged in and the 'identify' handshake reached us (see mpBeginSquadPhase);
+// otherwise the match is still recorded, just against an unknown opponent.
+function recordMultiplayerMatchIfNeeded() {
+    if (!mp.isMultiplayer || !blAccount) return;
+    let p1Alive = gameState.p1.some(c => c.hex > 0 && !c.imprisoned);
+    let p2Alive = gameState.p2.some(c => c.hex > 0 && !c.imprisoned);
+    let result = (p1Alive && !p2Alive) ? 'win' : ((!p1Alive && p2Alive) ? 'loss' : 'draw');
+    let mine = Object.values(matchStats).filter(s => s.side === 'p1');
+    let sum = (key) => mine.reduce((a, s) => a + (s[key] || 0), 0);
+    let sc = statsComputeScores({ attackDmg: sum('attackDmg'), kills: sum('kills'), healAmt: sum('healAmt'), revives: sum('revives'), tactical: sum('tactical') });
+    blCallAccountRpc('record_match_result', {
+        p_username: blAccount.username,
+        p_opponent_username: mp.opponentUsername || null,
+        p_result: result,
+        p_attack_score: sc.attackScore,
+        p_heal_score: sc.healScore,
+        p_tactical_score: sc.tacticalScore
+    });
+}
+
+// ============================================================================
+// PLAYER PROFILES
+// Avatar + bio + favourite-card badge, plus a performance-breakdown radar
+// chart (Attack / Heal / Tactical / Win Rate, averaged over the last 20
+// recorded multiplayer matches) and the match history list itself. Backed by
+// the same Supabase project as accounts/friends — see
+// eldritch_profiles_setup.sql for the one-time database setup (adds
+// player_profiles + match_history tables and 4 RPC functions).
+// ============================================================================
+const PROFILE_AVATAR_OPTIONS = ['🧙','🧛','🧟','🧞','👹','👺','💀','👻','🤖','🥷','🕵️','🦹','🧑‍⚖️','👑','🐺','🦇','🐍','🔪','⚔️','🛡️','🔮','🩸','⚙️','🎭'];
+
+let blProfileTargetUsername = null; // whose profile is currently open in the modal
+let blProfileIsSelf = true;
+let blProfileData = null;   // last-loaded profile payload for the open modal
+let blProfileMatches = [];  // last-loaded match history for the open modal
+let blMyFavouriteCard = null; // cached so the account badge can show without opening the modal
+
+// `username` omitted (or null) opens the logged-in player's own profile;
+// passing a friend's username opens a read-only view of theirs.
+async function openProfileModal(username) {
+    const target = username || (blAccount ? blAccount.username : null);
+    if (!target) return;
+    blProfileTargetUsername = target;
+    blProfileIsSelf = !!blAccount && (target === blAccount.username);
+    document.getElementById('profileModalTitle').innerText = blProfileIsSelf ? '👤 Your Profile' : `👤 ${target}`;
+    switchProfileTab('info');
+    document.getElementById('profileInfoView').innerHTML = '<div class="guide-card-desc" style="text-align:center; padding:14px 0;">Loading…</div>';
+    document.getElementById('profileHistoryView').innerHTML = '';
+    bl_pushState({ modal: 'profile' });
+    document.getElementById('profileModal').style.display = 'flex';
+    await blLoadProfile(target);
+}
+function closeProfileModal() {
+    document.getElementById('profileModal').style.display = 'none';
+    if (bl_hist.modal === 'profile') history.back();
+}
+function switchProfileTab(tab) {
+    document.getElementById('profileTabInfoBtn').classList.toggle('guide-tab-active', tab === 'info');
+    document.getElementById('profileTabHistoryBtn').classList.toggle('guide-tab-active', tab === 'history');
+    document.getElementById('profileInfoView').style.display = tab === 'info' ? 'block' : 'none';
+    document.getElementById('profileHistoryView').style.display = tab === 'history' ? 'block' : 'none';
+}
+
+async function blLoadProfile(username) {
+    const [profResult, historyResult] = await Promise.all([
+        blCallAccountRpc('get_player_profile', { p_username: username }),
+        blCallAccountRpc('get_match_history', { p_username: username })
+    ]);
+    if (blProfileTargetUsername !== username) return; // navigated away before this resolved
+    if (!profResult.ok) {
+        document.getElementById('profileInfoView').innerHTML = `<div class="guide-card-desc" style="text-align:center; padding:14px 0; color:#ff8888;">${blEscapeHtml(profResult.error || 'Could not load profile.')}</div>`;
+        return;
+    }
+    blProfileData = profResult;
+    blProfileMatches = (historyResult.ok && historyResult.matches) ? historyResult.matches : [];
+    if (blProfileIsSelf) {
+        blMyFavouriteCard = profResult.favourite_card || null;
+        blRenderAccountFavBadge();
+    }
+    renderProfileInfo();
+    renderProfileHistory();
+}
+
+function renderProfileInfo() {
+    const p = blProfileData;
+    if (!p) return;
+    const favLabel = p.favourite_card ? `⭐ ${blEscapeHtml(p.favourite_card)}` : 'No favourite card set';
+    let html = `
+        <div class="profile-header">
+            <div class="profile-avatar-circle${blProfileIsSelf ? ' is-editable' : ''}" ${blProfileIsSelf ? 'onclick="toggleAvatarPicker()"' : ''}>${p.avatar || '🧙'}</div>
+            <div class="profile-header-main">
+                <div class="profile-username">${blEscapeHtml(p.username)}</div>
+                <div><span class="profile-fav-badge${p.favourite_card ? '' : ' profile-fav-empty'}">${favLabel}</span></div>
+                ${blProfileIsSelf ? `<button class="profile-fav-picker-btn" onclick="openFavCardModal()">Change favourite card</button>` : ''}
+            </div>
+        </div>`;
+    if (blProfileIsSelf) {
+        html += `<div id="avatarPickerRow" style="display:none;">
+            <div class="profile-avatar-grid">${PROFILE_AVATAR_OPTIONS.map(a => `<div class="profile-avatar-opt${a === p.avatar ? ' profile-avatar-selected' : ''}" onclick="selectAvatar('${a}')">${a}</div>`).join('')}</div>
+        </div>
+        <div class="guide-section-label">Bio</div>
+        <textarea id="profileBioInput" class="profile-bio-textarea" maxlength="140" placeholder="Say something about yourself...">${blEscapeHtml(p.bio || '')}</textarea>
+        <div><button class="profile-save-btn" onclick="saveProfileBio()">Save Bio</button></div>`;
+    } else if (p.bio) {
+        html += `<div class="guide-section-label">Bio</div><div class="guide-card-desc">${blEscapeHtml(p.bio)}</div>`;
+    }
+    html += `
+        <div class="guide-section-label">Record (last 20 multiplayer matches)</div>
+        <div class="profile-record-row">
+            <div><div class="profile-record-num">${p.matches_played}</div><div class="profile-record-label">Played</div></div>
+            <div><div class="profile-record-num">${p.wins}</div><div class="profile-record-label">Wins</div></div>
+            <div><div class="profile-record-num">${p.win_rate}%</div><div class="profile-record-label">Win Rate</div></div>
+        </div>
+        <div class="guide-section-label">Performance Breakdown</div>
+        <div class="profile-radar-wrap"><canvas id="profileRadarCanvas" width="220" height="220"></canvas></div>
+        <div class="profile-stats-legend">
+            <span class="profile-stats-legend-item"><span class="profile-legend-dot" style="background:#ff5555;"></span>Attack ${p.avg_attack}</span>
+            <span class="profile-stats-legend-item"><span class="profile-legend-dot" style="background:#4af7a7;"></span>Heal ${p.avg_heal}</span>
+            <span class="profile-stats-legend-item"><span class="profile-legend-dot" style="background:#ffcc00;"></span>Tactical ${p.avg_tactical}</span>
+            <span class="profile-stats-legend-item"><span class="profile-legend-dot" style="background:#3388ff;"></span>Win Rate ${p.win_rate}</span>
+        </div>`;
+    document.getElementById('profileInfoView').innerHTML = html;
+    drawStatsRadar('profileRadarCanvas', [p.avg_attack, p.avg_heal, p.avg_tactical, p.win_rate], ['Attack', 'Heal', 'Tactical', 'Win Rate'], ['#ff5555', '#4af7a7', '#ffcc00', '#3388ff']);
+}
+
+function toggleAvatarPicker() {
+    const row = document.getElementById('avatarPickerRow');
+    if (row) row.style.display = (row.style.display === 'none') ? 'block' : 'none';
+}
+async function selectAvatar(avatar) {
+    if (!blAccount) return;
+    const result = await blCallAccountRpc('update_player_profile', { p_username: blAccount.username, p_avatar: avatar });
+    if (result.ok) blLoadProfile(blAccount.username);
+}
+async function saveProfileBio() {
+    if (!blAccount) return;
+    const input = document.getElementById('profileBioInput');
+    const bio = (input ? input.value : '').trim().slice(0, 140);
+    const result = await blCallAccountRpc('update_player_profile', { p_username: blAccount.username, p_bio: bio });
+    if (!result.ok) alert(result.error || 'Could not save bio.');
+    else blLoadProfile(blAccount.username);
+}
+
+function renderProfileHistory() {
+    const el = document.getElementById('profileHistoryView');
+    if (!blProfileMatches || blProfileMatches.length === 0) {
+        el.innerHTML = '<div class="guide-card-desc" style="text-align:center; padding:14px 0;">No multiplayer matches recorded yet.</div>';
+        return;
+    }
+    el.innerHTML = blProfileMatches.map(m => {
+        const cls = m.result === 'win' ? 'mhist-win' : (m.result === 'loss' ? 'mhist-loss' : 'mhist-draw');
+        const label = m.result === 'win' ? 'WIN' : (m.result === 'loss' ? 'LOSS' : 'DRAW');
+        const when = m.played_at ? new Date(m.played_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '';
+        return `<div class="mhist-entry ${cls}">
+            <div class="mhist-result">${label}</div>
+            <div class="mhist-main">
+                <div class="mhist-opponent">vs ${blEscapeHtml(m.opponent_username || 'Unknown')}</div>
+                <div class="mhist-meta">${when}</div>
+            </div>
+            <div class="mhist-scores">A${m.attack_score} · H${m.heal_score} · T${m.tactical_score}</div>
+        </div>`;
+    }).join('');
+}
+
+// Draws a simple N-axis radar chart on a canvas: one polygon connecting each
+// 0-100 value at equal angular spacing, filled translucent, with spokes and
+// short labels. No chart library — just enough canvas math for a compact
+// stat-breakdown visual in the Profile modal (deliberately similar in spirit
+// to a HEXACO-style radar, just with 4 axes instead of 6).
+function drawStatsRadar(canvasId, values, labels, colors) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    const cx = w / 2, cy = h / 2, radius = Math.min(w, h) / 2 - 28;
+    const n = values.length;
+    const angleFor = (i) => (Math.PI * 2 * i / n) - Math.PI / 2;
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctx.lineWidth = 1;
+    for (let ring = 1; ring <= 4; ring++) {
+        ctx.beginPath();
+        for (let i = 0; i <= n; i++) {
+            const a = angleFor(i % n);
+            const r = radius * (ring / 4);
+            const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+    }
+    ctx.fillStyle = '#8a8f98';
+    ctx.font = '9px -apple-system, sans-serif';
+    for (let i = 0; i < n; i++) {
+        const a = angleFor(i);
+        const x = cx + Math.cos(a) * radius, y = cy + Math.sin(a) * radius;
+        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+        ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(x, y); ctx.stroke();
+        const lx = cx + Math.cos(a) * (radius + 14), ly = cy + Math.sin(a) * (radius + 14);
+        ctx.textAlign = Math.abs(Math.cos(a)) < 0.3 ? 'center' : (Math.cos(a) > 0 ? 'left' : 'right');
+        ctx.fillText(labels[i], lx, ly + 3);
+    }
+    ctx.beginPath();
+    for (let i = 0; i <= n; i++) {
+        const idx = i % n;
+        const a = angleFor(idx);
+        const v = Math.max(0, Math.min(100, values[idx] || 0)) / 100;
+        const x = cx + Math.cos(a) * radius * v, y = cy + Math.sin(a) * radius * v;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255, 51, 51, 0.18)';
+    ctx.fill();
+    ctx.strokeStyle = '#ff3333';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    for (let i = 0; i < n; i++) {
+        const a = angleFor(i);
+        const v = Math.max(0, Math.min(100, values[i] || 0)) / 100;
+        const x = cx + Math.cos(a) * radius * v, y = cy + Math.sin(a) * radius * v;
+        ctx.beginPath();
+        ctx.arc(x, y, 3, 0, Math.PI * 2);
+        ctx.fillStyle = (colors && colors[i]) || '#ff3333';
+        ctx.fill();
+    }
+}
+
+// ---- Favourite card picker -------------------------------------------------
+function openFavCardModal() {
+    if (!blAccount) return;
+    document.getElementById('favCardListView').innerHTML = buildFavCardListHTML();
+    bl_pushState({ modal: 'favcard' });
+    document.getElementById('favCardModal').style.display = 'flex';
+}
+function closeFavCardModal() {
+    document.getElementById('favCardModal').style.display = 'none';
+    if (bl_hist.modal === 'favcard') history.back();
+}
+function buildFavCardListHTML() {
+    const current = blProfileData ? blProfileData.favourite_card : null;
+    const categories = [['Bloodbane', '🩸 Bloodbanes'], ['Bloodborne', '⚙️ Bloodbornes'], ['Heroic', '⭐ Heroics']];
+    return categories.map(([cat, label]) => {
+        const cards = CARD_POOL.filter(c => c.category === cat);
+        return `<div class="guide-section-label">${label}</div>` + cards.map(c => `
+            <div class="favcard-entry${c.name === current ? ' favcard-selected' : ''}" onclick="selectFavouriteCard('${blEscapeJs(c.name)}')">
+                <span class="guide-card-name">${c.name}</span>
+                <span class="guide-card-meta">${c.tag}</span>
+            </div>`).join('');
+    }).join('');
+}
+async function selectFavouriteCard(cardName) {
+    if (!blAccount) return;
+    const result = await blCallAccountRpc('update_player_profile', { p_username: blAccount.username, p_favourite_card: cardName });
+    if (!result.ok) { alert(result.error || 'Could not set favourite card.'); return; }
+    closeFavCardModal();
+    blLoadProfile(blAccount.username);
+}
+
+// Small badge next to the account welcome line showing the logged-in
+// player's favourite card at a glance, without needing to open the modal.
+function blRenderAccountFavBadge() {
+    const el = document.getElementById('accountFavBadge');
+    if (!el) return;
+    if (blMyFavouriteCard) {
+        el.style.display = 'inline-flex';
+        el.classList.remove('profile-fav-empty');
+        el.innerText = `⭐ ${blMyFavouriteCard}`;
+    } else {
+        el.style.display = 'none';
+    }
+}
+async function blRefreshOwnFavBadge() {
+    if (!blAccount) return;
+    const result = await blCallAccountRpc('get_player_profile', { p_username: blAccount.username });
+    if (result.ok) { blMyFavouriteCard = result.favourite_card || null; blRenderAccountFavBadge(); }
 }
 
 // ============================================================================
@@ -2228,7 +2602,7 @@ function bl_bootIntoGameScreen() {
     bl_pushState({ screen: 'game', modal: null });
 }
 function bl_hideModalUI(name) {
-    const ids = { guide: 'guideModal', chat: 'chatModal', friends: 'friendsModal', settings: 'settingsModal', summary: 'matchSummaryModal' };
+    const ids = { guide: 'guideModal', chat: 'chatModal', friends: 'friendsModal', settings: 'settingsModal', summary: 'matchSummaryModal', profile: 'profileModal', favcard: 'favCardModal' };
     const el = document.getElementById(ids[name]);
     if (el) el.style.display = 'none';
 }
@@ -2293,11 +2667,13 @@ function blRenderAccountUI() {
         document.getElementById('accountWelcome').innerText = `👤 Logged in as ${blAccount.username}`;
         blRefreshFriends();
         blStartInvitePolling();
+        blRefreshOwnFavBadge();
     } else {
         loggedOut.style.display = 'block';
         loggedIn.style.display = 'none';
         blStopInvitePolling();
         blHideInviteBanner();
+        blMyFavouriteCard = null;
     }
 }
 
@@ -2433,8 +2809,9 @@ function blRenderFriendsList() {
         <div class="guide-card-entry">
             <div style="display:flex; align-items:center; justify-content:space-between;">
                 <span class="guide-card-name">${blEscapeHtml(name)}</span>
-                <div style="display:flex; gap:4px;">
+                <div style="display:flex; gap:4px; flex-wrap:wrap;">
                     <button class="account-btn" style="flex:none; padding:6px 8px; font-size:10px;" onclick="blToggleInviteChooser(${i})">🎮 Invite</button>
+                    <button class="account-btn account-btn-alt" style="flex:none; padding:6px 8px; font-size:10px;" onclick="openProfileModal('${blEscapeJs(name)}')">👤</button>
                     <button class="account-btn account-btn-alt" style="flex:none; padding:6px 8px; font-size:10px;" onclick="blRemoveFriend('${blEscapeJs(name)}')">Remove</button>
                 </div>
             </div>
@@ -2920,6 +3297,7 @@ function startBattleWithSquads(p1Squad, p2Squad, p1Tier, p2Tier, opts = {}) {
     gameState.lowTimeAnimationsOff = false;
     matchStats = {};
     matchSummaryShown = false;
+    matchRecorded = false;
     abortTargetingSequence();
 
     document.getElementById('setupView').style.display = 'none';
@@ -3010,7 +3388,8 @@ let mp = {
     squadMode: 'random', // 'random' | 'draft'
     matched: false,
     draft: null,
-    phase: 'lobby'      // 'lobby' | 'draft' | 'battle' — used for reconnect/resync
+    phase: 'lobby',     // 'lobby' | 'draft' | 'battle' — used for reconnect/resync
+    opponentUsername: null // filled in via the 'identify' handshake, if both sides are logged in
 };
 
 function mpLog(text) {
@@ -3498,6 +3877,10 @@ function mpFinalizeMatch(peerId) {
 // ---- Squad phase: routes to draft or randomized-sync ---------------------
 function mpBeginSquadPhase() {
     document.getElementById('setupView').style.display = 'none';
+    // Tell the opponent who I am (if logged in) so a completed match can be
+    // recorded to both accounts' match history under each other's real
+    // username instead of just "Opponent".
+    if (blAccount && mp.sendMsg) mp.sendMsg({ type: 'identify', payload: { username: blAccount.username } });
     if (mp.squadMode === 'draft') {
         mpStartDraft();
     } else {
@@ -3682,7 +4065,9 @@ function mpHandleMessage(data, peerId) {
     // yank an already-in-battle device back into the draft screen. Rank
     // guards below make sure a resync can only ever move you forward.
     const mpPhaseRank = (phase) => phase === 'battle' ? 2 : (phase === 'draft' ? 1 : 0);
-    if (data.type === 'squadsReady') {
+    if (data.type === 'identify') {
+        mp.opponentUsername = (data.payload && data.payload.username) || null;
+    } else if (data.type === 'squadsReady') {
         mpStartBattleFromPayload(mpRestoreFromWire(data.payload));
     } else if (data.type === 'draftPick') {
         mpApplyDraftPick(data.cardName, mp.draft ? mp.draft.turnSide : null);
@@ -6271,6 +6656,10 @@ function renderScene() {
         if (!matchSummaryShown) {
             matchSummaryShown = true;
             setTimeout(showMatchSummaryModal, 650);
+        }
+        if (!matchRecorded) {
+            matchRecorded = true;
+            recordMultiplayerMatchIfNeeded();
         }
     } else {
         document.getElementById('turnIndicator').innerText = gameState.currentTurn === 1 ? "YOUR TURN" : (mp.isMultiplayer ? "OPPONENT'S TURN..." : "BOT PROCESSING...");
