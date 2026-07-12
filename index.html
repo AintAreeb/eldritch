@@ -708,6 +708,18 @@
         }
         .profile-record-num { font-size: 15px; font-weight: 700; color: #f7f8f8; }
         .profile-record-label { font-size: 9px; color: #8a8f98; text-transform: uppercase; letter-spacing: 0.03em; }
+        .title-badge {
+            display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; width: fit-content;
+            background: rgba(255,51,51,0.1); border: 1px solid rgba(255,51,51,0.3); color: #ff8888;
+            border-radius: 20px; padding: 3px 9px; font-size: 10px; font-weight: 600;
+        }
+        .title-entry.title-locked { opacity: 0.55; }
+        .title-equip-btn {
+            background: #1a1922; color: #c7c9cf; border: 1px solid rgba(255,255,255,0.12); border-radius: 6px;
+            padding: 4px 9px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
+            cursor: pointer; flex-shrink: 0;
+        }
+        .title-equip-btn.title-equip-active { background: #ff3333; color: #fff; border-color: #ff3333; }
         .mhist-entry {
             display: flex; align-items: center; gap: 10px;
             background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
@@ -1428,9 +1440,11 @@
         <div class="guide-tabs">
             <button class="guide-tab-btn guide-tab-active" id="profileTabInfoBtn" onclick="switchProfileTab('info')">Profile</button>
             <button class="guide-tab-btn" id="profileTabHistoryBtn" onclick="switchProfileTab('history')">Match History</button>
+            <button class="guide-tab-btn" id="profileTabTitlesBtn" onclick="switchProfileTab('titles')">Titles</button>
         </div>
         <div class="guide-body" id="profileInfoView"></div>
         <div class="guide-body" id="profileHistoryView" style="display:none;"></div>
+        <div class="guide-body" id="profileTitlesView" style="display:none;"></div>
         <button class="guide-close-btn" onclick="closeProfileModal()">Close</button>
     </div>
 
@@ -2162,6 +2176,168 @@ async function loadLeaderboard() {
 }
 
 // ============================================================================
+// TITLES & MASTERY
+// 50 collectible titles — named after lost treasures and relics from history
+// and mythology — earned by hitting lifetime milestones. 30 are stat-based
+// (wins, kills, healing, etc.) and 20 are character-mastery (win enough
+// matches with a specific character on your squad). Only one title can be
+// equipped at a time; every earned (and unearned, locked) title is browsable
+// in the Mastery tab of the Profile modal. Backed by the same Supabase
+// project as accounts/profiles/ranking — see eldritch_titles_setup.sql for
+// the one-time database setup (adds a single additive player_titles table
+// + 3 RPC functions; nothing existing is touched).
+// ============================================================================
+const TITLE_DEFS = [
+    // --- Wins ---
+    { id: 'gjallarhorn', name: 'Gjallarhorn', category: 'stat', stat: 'wins', goal: 1, desc: 'Win your first match.' },
+    { id: 'naglfar', name: 'Naglfar', category: 'stat', stat: 'wins', goal: 10, desc: 'Win 10 matches.' },
+    { id: 'skidbladnir', name: 'Skidbladnir', category: 'stat', stat: 'wins', goal: 25, desc: 'Win 25 matches.' },
+    { id: 'prydwen', name: 'Prydwen', category: 'stat', stat: 'wins', goal: 50, desc: 'Win 50 matches.' },
+    { id: 'chrysomallos', name: 'Chrysomallos', category: 'stat', stat: 'wins', goal: 100, desc: 'Win 100 matches.' },
+    // --- Kills ---
+    { id: 'tyrfing', name: 'Tyrfing', category: 'stat', stat: 'kills', goal: 25, desc: 'Land 25 kills.' },
+    { id: 'durendal', name: 'Durendal', category: 'stat', stat: 'kills', goal: 75, desc: 'Land 75 kills.' },
+    { id: 'joyeuse', name: 'Joyeuse', category: 'stat', stat: 'kills', goal: 150, desc: 'Land 150 kills.' },
+    { id: 'balmung', name: 'Balmung', category: 'stat', stat: 'kills', goal: 300, desc: 'Land 300 kills.' },
+    { id: 'kusanagi', name: 'Kusanagi', category: 'stat', stat: 'kills', goal: 500, desc: 'Land 500 kills.' },
+    // --- Healing ---
+    { id: 'sampo', name: 'Sampo', category: 'stat', stat: 'healAmt', goal: 50, desc: 'Heal 50 total hex.' },
+    { id: 'kalpavriksha', name: 'Kalpavriksha', category: 'stat', stat: 'healAmt', goal: 150, desc: 'Heal 150 total hex.' },
+    { id: 'cintamani', name: 'Cintamani', category: 'stat', stat: 'healAmt', goal: 350, desc: 'Heal 350 total hex.' },
+    { id: 'ruyi', name: 'Ruyi', category: 'stat', stat: 'healAmt', goal: 600, desc: 'Heal 600 total hex.' },
+    // --- Imprisons ---
+    { id: 'andvaranaut', name: 'Andvaranaut', category: 'stat', stat: 'imprisons', goal: 10, desc: 'Imprison 10 enemies.' },
+    { id: 'harmonia', name: 'Harmonia', category: 'stat', stat: 'imprisons', goal: 30, desc: 'Imprison 30 enemies.' },
+    { id: 'nibelungenhort', name: 'Nibelungenhort', category: 'stat', stat: 'imprisons', goal: 60, desc: 'Imprison 60 enemies.' },
+    // --- Tactical plays ---
+    { id: 'muramasa', name: 'Muramasa', category: 'stat', stat: 'tactical', goal: 40, desc: 'Make 40 tactical plays.' },
+    { id: 'moralltach', name: 'Moralltach', category: 'stat', stat: 'tactical', goal: 120, desc: 'Make 120 tactical plays.' },
+    { id: 'beagalltach', name: 'Beagalltach', category: 'stat', stat: 'tactical', goal: 300, desc: 'Make 300 tactical plays.' },
+    // --- Matches played ---
+    { id: 'magatama', name: 'Magatama', category: 'stat', stat: 'matches', goal: 20, desc: 'Play 20 matches.' },
+    { id: 'yasakani', name: 'Yasakani', category: 'stat', stat: 'matches', goal: 75, desc: 'Play 75 matches.' },
+    { id: 'heshibi', name: 'Heshibi', category: 'stat', stat: 'matches', goal: 150, desc: 'Play 150 matches.' },
+    // --- Revives ---
+    { id: 'svalinn', name: 'Svalinn', category: 'stat', stat: 'revives', goal: 10, desc: 'Revive 10 allies.' },
+    { id: 'adamant', name: 'Adamant', category: 'stat', stat: 'revives', goal: 40, desc: 'Revive 40 allies.' },
+    // --- Perfect win ---
+    { id: 'aegis', name: 'Aegis', category: 'stat', stat: 'perfectWins', goal: 1, desc: "Win a match without losing a single card." },
+    // --- MVP count ---
+    { id: 'palladium', name: 'Palladium', category: 'stat', stat: 'mvpCount', goal: 5, desc: 'Earn Match MVP 5 times.' },
+    { id: 'gorgoneion', name: 'Gorgoneion', category: 'stat', stat: 'mvpCount', goal: 20, desc: 'Earn Match MVP 20 times.' },
+    // --- Win streaks ---
+    { id: 'rhongomiant', name: 'Rhongomiant', category: 'stat', stat: 'bestWinStreak', goal: 3, desc: 'Win 3 matches in a row.' },
+    { id: 'caladbolg', name: 'Caladbolg', category: 'stat', stat: 'bestWinStreak', goal: 8, desc: 'Win 8 matches in a row.' },
+    // --- Character mastery (win 10 matches with the character in your squad) ---
+    { id: 'zulfiqar', name: 'Zulfiqar', category: 'character', character: 'Killer', goal: 10 },
+    { id: 'draupnir', name: 'Draupnir', category: 'character', character: 'Robber', goal: 10 },
+    { id: 'hofund', name: 'Hofund', category: 'character', character: 'Cop', goal: 10 },
+    { id: 'mistilteinn', name: 'Mistilteinn', category: 'character', character: 'Dementor', goal: 10 },
+    { id: 'djed', name: 'Djed', category: 'character', character: 'Dictator', goal: 10 },
+    { id: 'carnwennan', name: 'Carnwennan', category: 'character', character: 'Hood', goal: 10 },
+    { id: 'uraeus', name: 'Uraeus', category: 'character', character: 'Lawyer', goal: 10 },
+    { id: 'totsuka', name: 'Totsuka', category: 'character', character: 'Ninja', goal: 10 },
+    { id: 'tarnkappe', name: 'Tarnkappe', category: 'character', character: 'Spy', goal: 10 },
+    { id: 'trishula', name: 'Trishula', category: 'character', character: 'Sorcerer', goal: 10 },
+    { id: 'thyrsus', name: 'Thyrsus', category: 'character', character: 'Singer', goal: 10 },
+    { id: 'sudarshana', name: 'Sudarshana', category: 'character', character: 'Witch', goal: 10 },
+    { id: 'laevateinn', name: 'Laevateinn', category: 'character', character: 'Wendigo', goal: 10 },
+    { id: 'gungnir', name: 'Gungnir', category: 'character', character: 'Mecha', goal: 10 },
+    { id: 'skofnung', name: 'Skofnung', category: 'character', character: 'Knight', goal: 10 },
+    { id: 'fragarach', name: 'Fragarach', category: 'character', character: 'Imam', goal: 10 },
+    { id: 'masamune', name: 'Masamune', category: 'character', character: 'Mage', goal: 10 },
+    { id: 'brisingamen', name: 'Brisingamen', category: 'character', character: 'Doctor', goal: 10 },
+    { id: 'dyrnwyn', name: 'Dyrnwyn', category: 'character', character: 'Bartender', goal: 10 },
+    { id: 'labrys', name: 'Labrys', category: 'character', character: 'Jinn', goal: 10 }
+];
+
+const TITLE_BY_ID_MAP = {};
+TITLE_DEFS.forEach(t => { TITLE_BY_ID_MAP[t.id] = t; });
+
+function titleDesc(t) { return t.category === 'character' ? `Win ${t.goal} matches with ${t.character} in your squad.` : t.desc; }
+function titleIsMet(t, stats) {
+    if (!stats) return false;
+    if (t.category === 'character') return ((stats.charWins && stats.charWins[t.character]) || 0) >= t.goal;
+    return (stats[t.stat] || 0) >= t.goal;
+}
+function titleCurrentProgress(t, stats) {
+    if (!stats) return 0;
+    return t.category === 'character' ? ((stats.charWins && stats.charWins[t.character]) || 0) : (stats[t.stat] || 0);
+}
+
+// Called once per finished match (solo, vs-bot, or multiplayer alike — this
+// is account-bound lifetime progress, not tied to any one match mode) right
+// alongside recordMultiplayerMatchIfNeeded(). No-ops if nobody is logged in.
+async function recordTitleProgressIfNeeded() {
+    if (!blAccount) return;
+    let p1Alive = gameState.p1.some(c => c.hex > 0 && !c.imprisoned);
+    let p2Alive = gameState.p2.some(c => c.hex > 0 && !c.imprisoned);
+    let result = (p1Alive && !p2Alive) ? 'win' : ((!p1Alive && p2Alive) ? 'loss' : 'draw');
+    let mine = Object.values(matchStats).filter(s => s.side === 'p1');
+    let sum = (key) => mine.reduce((a, s) => a + (s[key] || 0), 0);
+    let mvp = statsFindMVP();
+    let isPerfect = result === 'win' && gameState.p1.every(c => c.hex > 0 && !c.imprisoned);
+    let charNames = gameState.p1.map(c => c.name);
+
+    let rpcResult = await blCallAccountRpc('record_title_progress', {
+        p_username: blAccount.username,
+        p_result: result,
+        p_kills: sum('kills'),
+        p_heal_amt: sum('healAmt'),
+        p_revives: sum('revives'),
+        p_tactical: sum('tactical'),
+        p_imprisons: sum('imprisons'),
+        p_is_mvp: !!(mvp && mvp.side === 'p1'),
+        p_is_perfect: isPerfect,
+        p_char_names: result === 'win' ? charNames : []
+    });
+    if (!rpcResult || !rpcResult.ok) return;
+    let stats = rpcResult.stats || {};
+    let alreadyEarned = rpcResult.earned_titles || [];
+    let newlyEarned = TITLE_DEFS.filter(t => !alreadyEarned.includes(t.id) && titleIsMet(t, stats));
+    if (newlyEarned.length > 0) {
+        await blCallAccountRpc('grant_titles', { p_username: blAccount.username, p_title_ids: newlyEarned.map(t => t.id) });
+        newlyEarned.forEach(t => writeLog(`🏅 Title earned: ${t.name}`));
+    }
+}
+
+// Only earned titles can be equipped; passing null/empty un-equips.
+async function equipTitle(titleId) {
+    if (!blAccount || !blProfileTitles) return;
+    if (titleId && !(blProfileTitles.earned_titles || []).includes(titleId)) return;
+    const result = await blCallAccountRpc('equip_title', { p_username: blAccount.username, p_title_id: titleId || null });
+    if (result && result.ok) blLoadProfile(blProfileTargetUsername);
+}
+
+function renderProfileTitles() {
+    const view = document.getElementById('profileTitlesView');
+    if (!view) return;
+    if (!blProfileTitles) {
+        view.innerHTML = `<p class="guide-card-desc" style="text-align:center; padding:14px 0;">${blProfileIsSelf ? 'Log in to earn titles.' : 'No titles yet.'}</p>`;
+        return;
+    }
+    const stats = blProfileTitles.stats || {};
+    const earned = blProfileTitles.earned_titles || [];
+    const equipped = blProfileTitles.equipped_title || null;
+    let rows = TITLE_DEFS.map(t => {
+        const isEarned = earned.includes(t.id);
+        const isEquipped = equipped === t.id;
+        const current = titleCurrentProgress(t, stats);
+        const pct = Math.max(0, Math.min(100, Math.round(current / t.goal * 100)));
+        return `<div class="guide-card-entry title-entry${isEarned ? ' title-earned' : ' title-locked'}">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:6px;">
+                <span class="guide-card-name">${isEarned ? '🏅' : '🔒'} ${t.name}</span>
+                ${blProfileIsSelf && isEarned ? `<button class="title-equip-btn${isEquipped ? ' title-equip-active' : ''}" onclick="equipTitle('${isEquipped ? '' : t.id}')">${isEquipped ? 'Equipped' : 'Equip'}</button>` : ''}
+            </div>
+            <div class="guide-card-meta">${t.category === 'character' ? t.character + ' Mastery' : 'Milestone'}</div>
+            <div class="guide-card-desc">${titleDesc(t)}</div>
+            ${!isEarned ? `<div class="msum-bar-track" style="height:5px; margin-top:6px;"><div class="msum-bar-fill" style="width:${pct}%; background:#5a5f68;"></div></div><div style="font-size:9px; color:#5a5f68; margin-top:3px;">${Math.min(current, t.goal)} / ${t.goal}</div>` : ''}
+        </div>`;
+    }).join('');
+    view.innerHTML = `<div class="guide-section-label">Mastery — ${earned.length} / ${TITLE_DEFS.length} Earned</div>${rows}`;
+}
+
+// ============================================================================
 // PLAYER PROFILES
 // Avatar + bio + favourite-card badge, plus a performance-breakdown radar
 
@@ -2178,6 +2354,7 @@ let blProfileIsSelf = true;
 let blProfileData = null;   // last-loaded profile payload for the open modal
 let blProfileMatches = [];  // last-loaded match history for the open modal
 let blProfileRanking = null; // last-loaded World Ranking data for the open modal
+let blProfileTitles = null; // last-loaded titles/mastery payload for the open modal
 let blMyFavouriteCard = null; // cached so the account badge can show without opening the modal
 
 // `username` omitted (or null) opens the logged-in player's own profile;
@@ -2202,15 +2379,18 @@ function closeProfileModal() {
 function switchProfileTab(tab) {
     document.getElementById('profileTabInfoBtn').classList.toggle('guide-tab-active', tab === 'info');
     document.getElementById('profileTabHistoryBtn').classList.toggle('guide-tab-active', tab === 'history');
+    document.getElementById('profileTabTitlesBtn').classList.toggle('guide-tab-active', tab === 'titles');
     document.getElementById('profileInfoView').style.display = tab === 'info' ? 'block' : 'none';
     document.getElementById('profileHistoryView').style.display = tab === 'history' ? 'block' : 'none';
+    document.getElementById('profileTitlesView').style.display = tab === 'titles' ? 'block' : 'none';
 }
 
 async function blLoadProfile(username) {
-    const [profResult, historyResult, rankResult] = await Promise.all([
+    const [profResult, historyResult, rankResult, titlesResult] = await Promise.all([
         blCallAccountRpc('get_player_profile', { p_username: username }),
         blCallAccountRpc('get_match_history', { p_username: username }),
-        blCallAccountRpc('get_my_ranking', { p_username: username })
+        blCallAccountRpc('get_my_ranking', { p_username: username }),
+        blCallAccountRpc('get_player_titles', { p_username: username })
     ]);
     if (blProfileTargetUsername !== username) return; // navigated away before this resolved
     if (!profResult.ok) {
@@ -2220,6 +2400,7 @@ async function blLoadProfile(username) {
     blProfileData = profResult;
     blProfileMatches = (historyResult.ok && historyResult.matches) ? historyResult.matches : [];
     blProfileRanking = rankResult && rankResult.ok ? rankResult : null;
+    blProfileTitles = titlesResult && titlesResult.ok ? titlesResult : null;
     if (blProfileIsSelf) {
         blMyFavouriteCard = profResult.favourite_card || null;
         blRenderAccountFavBadge();
@@ -2230,6 +2411,7 @@ async function blLoadProfile(username) {
     }
     renderProfileInfo();
     renderProfileHistory();
+    renderProfileTitles();
 }
 
 function renderProfileInfo() {
@@ -2242,6 +2424,7 @@ function renderProfileInfo() {
             <div class="profile-avatar-circle${blProfileIsSelf ? ' is-editable' : ''}" ${blProfileIsSelf ? 'onclick="toggleAvatarPicker()"' : ''}>${p.avatar || '🧙'}</div>
             <div class="profile-header-main">
                 <div class="profile-username">${blEscapeHtml(p.username)}</div>
+                ${blProfileTitles && blProfileTitles.equipped_title && TITLE_BY_ID_MAP[blProfileTitles.equipped_title] ? `<div class="title-badge">🏅 ${TITLE_BY_ID_MAP[blProfileTitles.equipped_title].name}</div>` : ''}
                 <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:4px;">
                     <span class="profile-fav-badge${p.favourite_card ? '' : ' profile-fav-empty'}">${favLabel}</span>
                     ${rankTier ? `<span class="profile-fav-badge" style="background:transparent; border-color:${rankTier.color}55; color:${rankTier.color};">${rankTier.icon} ${rankTier.name}${blProfileRanking.world_rank ? ` · #${blProfileRanking.world_rank}` : ''}</span>` : ''}
@@ -3016,6 +3199,7 @@ function blRenderAccountUI() {
         blHideInviteBanner();
         blMyFavouriteCard = null;
         blRanking = null;
+        blProfileTitles = null;
         blRenderRankBadge();
     }
 }
@@ -7017,6 +7201,7 @@ function renderScene() {
         if (!matchRecorded) {
             matchRecorded = true;
             recordMultiplayerMatchIfNeeded();
+            recordTitleProgressIfNeeded();
         }
     } else {
         document.getElementById('turnIndicator').innerText = gameState.currentTurn === 1 ? "YOUR TURN" : (mp.isMultiplayer ? "OPPONENT'S TURN..." : "BOT PROCESSING...");
