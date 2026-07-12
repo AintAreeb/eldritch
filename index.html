@@ -1558,10 +1558,10 @@ const CARD_POOL = [
 ];
 
 // Roles that 'Dementor' is forbidden from reanimating: the entire
-// Heroic/SacredSouls category plus Wendigo, Sorcerer and Chronos.
-const DEMENTOR_FORBIDDEN_ROLES = ['Actor', 'Therapist', 'Princess', 'Reporter', 'Terrorist', 'Wendigo', 'Sorcerer', 'Chronos'];
+// Heroic/SacredSouls category plus Wendigo, Sorcerer, Chronos, Mecha, and Bartender.
+const DEMENTOR_FORBIDDEN_ROLES = ['Actor', 'Therapist', 'Princess', 'Reporter', 'Terrorist', 'Wendigo', 'Sorcerer', 'Chronos', 'Mecha', 'Bartender'];
 // Cards that 'Sorcerer' is forbidden from hijacking/controlling, beyond Heroics.
-const SORCERER_FORBIDDEN_ROLES = ['Wendigo', 'Dementor', 'Chronos', 'Bartender'];
+const SORCERER_FORBIDDEN_ROLES = ['Wendigo', 'Dementor', 'Chronos', 'Bartender', 'Mecha'];
 
 // The set of roles whose moves Bartender is able to copy (the same set
 // Actor/Dementor are able to mimic). If the opponent's last move wasn't
@@ -7570,13 +7570,13 @@ const GUIDE_DATA = {
         { name: 'Killer', tag: 'Criminal', hex: 2, desc: "Instantly takes out one enemy. Can't target Entities." },
         { name: 'Robber', tag: 'Criminal', hex: 3, desc: "Drains 1 hex from an enemy (not a Criminal or an Entity). Down to its last hex, it can instead instantly finish off an enemy Criminal or the Dictator." },
         { name: 'Cop', tag: 'Law & Order', hex: 2, desc: "Strikes a Criminal or Law & Order enemy for 1 damage — 2 damage if that enemy already made a move this round." },
-        { name: 'Dementor', tag: 'Entity', hex: 2, desc: "Copies the power of any character that has already died on either team, except Wendigo, Sorcerer, Chronos, or any Heroic. Must sit out a turn after using it." },
+        { name: 'Dementor', tag: 'Entity', hex: 2, desc: "Copies the power of any character that has already died on either team, except Wendigo, Sorcerer, Chronos, Mecha, Bartender, or any Heroic. Must sit out a turn after using it." },
         { name: 'Dictator', tag: 'Law & Order', hex: 2, desc: "Locks an enemy in prison so it can't act. Can't imprison Entities. Must sit out a turn after using it." },
         { name: 'Hood', tag: 'Assassin', hex: 3, desc: "Steals 1 hex from an enemy and gives it to one of your allies. Can't touch Entities. On its last hex, a hit on Spy instantly finishes it instead." },
         { name: 'Lawyer', tag: 'Law & Order', hex: 3, desc: "Imprisons an enemy." },
         { name: 'Ninja', tag: 'Assassin', hex: 2, desc: "Strikes an enemy for 1 damage. Its first kill earns it +2 bonus hex. On its very last hex, landing a hit on Spy is an instant finish. Must sit out a turn after using it." },
         { name: 'Spy', tag: 'Assassin', hex: '∞', desc: "Strikes any enemy except another Spy for 1 damage — and never spends its own hex to do it. Must sit out a turn after using it." },
-        { name: 'Sorcerer', tag: 'Mystic', hex: 2, desc: "Takes control of one enemy for a single move, forcing it to attack its own side. Can't hijack Wendigo, Dementor, Chronos, or Bartender. Also gets Mystic Purge. Must sit out a turn after using it." },
+        { name: 'Sorcerer', tag: 'Mystic', hex: 2, desc: "Takes control of one enemy for a single move, forcing it to attack its own side. Can't hijack Wendigo, Dementor, Chronos, Bartender, or Mecha. Also gets Mystic Purge. Must sit out a turn after using it." },
         { name: 'Singer', tag: 'Artist', hex: 2, desc: "Hits two different enemies for 1 damage each in one move. Must sit out a turn after using it." },
         { name: 'Witch', tag: 'Mystic', hex: 2, desc: "Damages an enemy for 1 and poisons it — poison ticks off 1 extra hex every future turn that card acts, until cured. Also gets Mystic Purge." },
         { name: 'Wendigo', tag: 'Entity', hex: 1, desc: "Completely untouchable until it transforms. At any time, for free, it can permanently shapeshift into an unused Bloodbane character and gain +1 max hex. Must sit out a turn after using its normal move." },
