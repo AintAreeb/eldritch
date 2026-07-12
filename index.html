@@ -4969,15 +4969,15 @@ function executeSamuraiStrike(actorId) {
     actor.lastUsedRound = gameState.roundCount;
 
     // Locks out every enemy card currently sitting on exactly 1 hex for
-    // their very next move, then arms a delayed doom: whichever card the
-    // enemy plays the move AFTER that dies instantly the moment its own
-    // ability finishes resolving. See finalizeActiveTurn() for the kill.
+    // their very next move, and marks whichever card they're forced to
+    // play instead to die instantly the moment its own ability finishes
+    // resolving. See the post-action bot turn logic for the kill.
     let lockedDown = gameState.p2.filter(c => c.hex === 1 && !c.imprisoned);
     lockedDown.forEach(c => { c.blockedCounter = 2; });
-    gameState.p2SamuraiDoom = 'blocking';
+    gameState.p2SamuraiDoom = 'active';
 
     if (lockedDown.length > 0) {
-        writeLog(`🗡️ Your Samurai's bushido strike locked ${lockedDown.map(c => c.name).join(', ')} out of the enemy's next move — and marked whichever card they play after that to fall the instant its ability resolves.`);
+        writeLog(`🗡️ Your Samurai's bushido strike locked ${lockedDown.map(c => c.name).join(', ')} out of the enemy's next move — whichever card they play instead will fall the instant its ability resolves.`);
         lockedDown.forEach(c => queueRecap('lockdown', c));
     } else {
         writeLog(`🗡️ Your Samurai found no 1-hex enemies to lock down, but still marked whichever card the enemy plays next to fall the instant its ability resolves.`);
@@ -6377,11 +6377,9 @@ function finalizeActiveTurn(actingCardId) {
             writeLog(`⚠️ Control Loop Feedback: ${hijackedCard.name} lost 1 hex.`);
         }
     }
-    // Samurai's delayed doom: 'blocking' just means THIS move was the one
-    // where the enemy Samurai's lockdown kept certain cards out — nothing
-    // fires yet, just arm for the very next move. 'active' means this move
-    // IS that next move, so whichever card acted dies now that its own
-    // ability has already fully resolved above.
+    // Samurai's doom: the enemy Samurai locked certain cards out of this
+    // move, so whichever card I was forced to play instead dies now that
+    // its own ability has already fully resolved above.
     if (actingCardId && gameState.p1SamuraiDoom === 'active') {
         gameState.p1SamuraiDoom = null;
         let doomedCard = gameState.p1.find(c => c.id === actingCardId);
@@ -6390,8 +6388,6 @@ function finalizeActiveTurn(actingCardId) {
             writeLog(`🗡️ Enemy Samurai's bushido doom strikes down your ${doomedCard.name} the instant its ability resolves!`);
             queueRecap('kill', doomedCard);
         }
-    } else if (actingCardId && gameState.p1SamuraiDoom === 'blocking') {
-        gameState.p1SamuraiDoom = 'active';
     }
     stopMoveTimer();
     gameState.forcedPlayerActorName = null;
@@ -7017,9 +7013,9 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
                     actionType = 'samurai';
                     let lockedDown = gameState.p1.filter(c => c.hex === 1 && !c.imprisoned);
                     lockedDown.forEach(c => { c.blockedCounter = 2; });
-                    gameState.p1SamuraiDoom = 'blocking';
+                    gameState.p1SamuraiDoom = 'active';
                     if (lockedDown.length > 0) {
-                        writeLog(`🗡️ Bot Samurai's bushido strike locked ${lockedDown.map(c => c.name).join(', ')} out of your next move — and marked whichever card you play after that to fall the instant its ability resolves.`);
+                        writeLog(`🗡️ Bot Samurai's bushido strike locked ${lockedDown.map(c => c.name).join(', ')} out of your next move — whichever card you play instead will fall the instant its ability resolves.`);
                         lockedDown.forEach(c => queueRecap('lockdown', c));
                     } else {
                         writeLog(`🗡️ Bot Samurai found no 1-hex cards to lock down, but still marked whichever card you play next to fall the instant its ability resolves.`);
@@ -7538,9 +7534,9 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
             if (aiActor.cooldown === 'consecutive') aiActor.lastUsedRound = gameState.roundCount;
             if (aiActor.cooldown === '3moves') aiActor.lastUsedRound = gameState.roundCount;
 
-            // Samurai's delayed doom (see finalizeActiveTurn for the player-side
-            // mirror): 'blocking' just arms for next move, 'active' means THIS
-            // move is the marked one — kill aiActor now that its ability (above)
+            // Samurai's doom (see finalizeActiveTurn for the player-side
+            // mirror): the player's Samurai locked certain bot cards out of
+            // this move, so kill aiActor now that its own ability (above)
             // has already fully resolved.
             if (gameState.p2SamuraiDoom === 'active') {
                 gameState.p2SamuraiDoom = null;
@@ -7549,8 +7545,6 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
                     writeLog(`🗡️ Your Samurai's bushido doom strikes down Bot ${aiActor.name} the instant its ability resolves!`);
                     queueRecap('kill', aiActor);
                 }
-            } else if (gameState.p2SamuraiDoom === 'blocking') {
-                gameState.p2SamuraiDoom = 'active';
             }
         } else {
             let aiActor = aliveBots[0];
