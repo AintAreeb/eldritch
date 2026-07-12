@@ -1242,8 +1242,9 @@
             </div>
         </div>
 
-        <div id="topModePicker" style="display:flex; gap:8px; justify-content:center; margin:10px 0 18px 0;">
+        <div id="topModePicker" style="display:flex; gap:8px; justify-content:center; margin:10px 0 18px 0; flex-wrap:wrap;">
             <button class="btn picker-btn picker-active" data-top-mode="bot" style="width:auto; padding:8px 14px; font-size:10px;" onclick="showTopMode('bot', this)">VS BOT</button>
+            <button class="btn picker-btn" data-top-mode="local" style="width:auto; padding:8px 14px; font-size:10px;" onclick="showTopMode('local', this)">LOCAL 2P</button>
             <button class="btn picker-btn" data-top-mode="mp" style="width:auto; padding:8px 14px; font-size:10px;" onclick="showTopMode('mp', this)">MULTIPLAYER</button>
         </div>
 
@@ -1257,6 +1258,14 @@
             </div>
             <div id="difficultyDescription" style="text-align:center; font-size:10.5px; color:#8a8f98; min-height:28px; margin:0 auto 14px auto; max-width:320px; line-height:1.4;"></div>
             <button class="start-btn" onclick="initializeMatch()">INITIALIZE ELDRITCH</button>
+        </div>
+
+        <div id="localPanel" style="display:none;">
+            <div class="squad-title" style="margin-top:0; border-bottom:none;">Local 2-Player (Pass & Play)</div>
+            <p style="text-align:center; font-size:11px; color:#8a8f98; max-width:320px; margin:0 auto 16px auto; line-height:1.5;">
+                Two random, tier-balanced squads are dealt — one per player. Take turns on this same device; after each move, a handoff screen pauses the clock until the next player confirms they're holding the device.
+            </p>
+            <button class="start-btn" onclick="initializeLocalMatch()">START LOCAL MATCH</button>
         </div>
 
         <div id="mpPanel" style="display:none;">
@@ -1317,7 +1326,7 @@
         </div>
 
         <button id="resetButton" class="reset-btn" style="display:none;" onclick="resetToSetup()">RETURN TO ROOT SCREEN</button>
-        <button id="rematchButton" class="rematch-btn" style="display:none;" onclick="initializeMatch()">🔁 INSTANT REMATCH</button>
+        <button id="rematchButton" class="rematch-btn" style="display:none;" onclick="handleRematchClick()">🔁 INSTANT REMATCH</button>
 
         <div class="squad-title-row">
             <span class="squad-title" id="p1Title" style="margin-top:0; border-bottom:none; padding-bottom:0;">Arcanum</span>
@@ -1663,7 +1672,14 @@ let gameState = {
     // Per-move countdown: 2 seconds per character still alive (both squads
     // combined) at the moment the move begins. Recalculated fresh at the
     // start of every single move (player's or bot's).
-    moveTimer: { secondsLeft: 0, intervalId: null, forSide: null }
+    moveTimer: { secondsLeft: 0, intervalId: null, forSide: null },
+    // Local (same-device, pass-and-play) multiplayer. When true, there's no
+    // bot AI and no network peer — both squads are played by humans sharing
+    // this one screen, taking turns directly with no handoff step. The
+    // engine still only ever knows "p1" as the acting side, so each turn
+    // change silently swaps p1/p2 in place (see advanceLocalMultiplayerTurn)
+    // instead of the swap being sent to a second device over the network.
+    isLocalMultiplayer: false
 };
 
 // ============================================================================
@@ -3607,6 +3623,7 @@ function showTopMode(mode, btnEl) {
     document.querySelectorAll('#topModePicker .picker-btn').forEach(b => b.classList.remove('picker-active'));
     if (btnEl) btnEl.classList.add('picker-active');
     document.getElementById('vsBotPanel').style.display = (mode === 'bot') ? 'block' : 'none';
+    document.getElementById('localPanel').style.display = (mode === 'local') ? 'block' : 'none';
     document.getElementById('mpPanel').style.display = (mode === 'mp') ? 'block' : 'none';
 }
 
@@ -3893,6 +3910,7 @@ function startBattleWithSquads(p1Squad, p2Squad, p1Tier, p2Tier, opts = {}) {
     gameState.p2TierTotal = p2Tier;
     // Lower total tier level moves first. Ties default to side 1.
     gameState.currentTurn = (p2Tier < p1Tier) ? 2 : 1;
+    gameState.isLocalMultiplayer = !!opts.localMultiplayer;
     gameState.isGameOver = false;
     gameState.p1KnightShields = 0;
     gameState.p2KnightShields = 0;
@@ -3931,6 +3949,22 @@ function startBattleWithSquads(p1Squad, p2Squad, p1Tier, p2Tier, opts = {}) {
         } else {
             writeLog(gameState.currentTurn === 1 ? "💠 Your squad has the lower tier total and moves first!" : "💠 The bot's squad has the lower tier total and moves first!");
         }
+    } else if (opts.localMultiplayer) {
+        writeLog(`💠 Tier totals — Player 1: ${p1Tier} | Player 2: ${p2Tier}.`);
+        if (p1Tier === p2Tier) {
+            writeLog("💠 Tier totals are tied — Player 1 moves first.");
+        } else {
+            writeLog(p2Tier < p1Tier ? "💠 Player 2's squad has the lower tier total and moves first!" : "💠 Player 1's squad has the lower tier total and moves first!");
+        }
+        if (gameState.currentTurn === 2) {
+            // Player 2 goes first. Same swap advanceLocalMultiplayerTurn
+            // performs on every later turn change, done once up front here —
+            // before the very first renderScene() below — so the opening
+            // board already shows through Player 2's "p1 = my squad"
+            // perspective instead of flashing Player 1's board first.
+            Object.assign(gameState, mpBuildSwappedStatePayload());
+            gameState.currentTurn = 1;
+        }
     } else {
         writeLog(`💠 Tier totals — Squad 1: ${p1Tier} | Squad 2: ${p2Tier}.`);
         if (p1Tier === p2Tier) {
@@ -3948,6 +3982,11 @@ function startBattleWithSquads(p1Squad, p2Squad, p1Tier, p2Tier, opts = {}) {
         } else {
             startMoveTimer(1);
         }
+    } else if (opts.localMultiplayer) {
+        // Always "1" — see the perspective-swap note above and in
+        // advanceLocalMultiplayerTurn; the engine's p1 is always whichever
+        // human is currently up.
+        startMoveTimer(1);
     } else {
         // In multiplayer, p1 always means "my squad" on this device (see the
         // mirroring in mpRunRandomizedSquadFlow / mpApplyDraftPick), so
@@ -3965,10 +4004,33 @@ function startBattleWithSquads(p1Squad, p2Squad, p1Tier, p2Tier, opts = {}) {
 function initializeMatch() {
     mp.isMultiplayer = false;
     mpClearSession();
+    gameState.isLocalMultiplayer = false;
     let built = buildRandomBalancedSquads();
     gameState.unusedBloodbanes = built.unusedBloodbanes;
     gameState.unusedBloodbornes = built.unusedBloodbornes;
     startBattleWithSquads(built.p1Squad, built.p2Squad, built.p1Tier, built.p2Tier, { vsBot: true });
+}
+
+// Local (same-device) 2-player: two random tier-balanced squads, no bot and
+// no network peer — see startBattleWithSquads' `localMultiplayer` handling
+// and advanceLocalMultiplayerTurn for how turns alternate between the two
+// humans on this one screen (no handoff prompt — the next player's turn
+// just becomes active immediately).
+function initializeLocalMatch() {
+    mp.isMultiplayer = false;
+    mpClearSession();
+    gameState.isLocalMultiplayer = true;
+    let built = buildRandomBalancedSquads();
+    gameState.unusedBloodbanes = built.unusedBloodbanes;
+    gameState.unusedBloodbornes = built.unusedBloodbornes;
+    startBattleWithSquads(built.p1Squad, built.p2Squad, built.p1Tier, built.p2Tier, { localMultiplayer: true });
+}
+
+// "Instant Rematch" always repeats whatever mode the last match actually
+// was, instead of unconditionally dropping back to vs-bot.
+function handleRematchClick() {
+    if (gameState.isLocalMultiplayer) initializeLocalMatch();
+    else initializeMatch();
 }
 
 // =====================================================================
@@ -4131,6 +4193,9 @@ function attemptSoloRestoreOnLoad() {
                 startMoveTimer(1);
             } else {
                 // It was the bot's turn when we left — let it carry on.
+                // (Local multiplayer never persists mid-turn — its swap to
+                // the next player happens immediately and synchronously, so
+                // currentTurn is always back to 1 by the time this saves.)
                 startMoveTimer(2);
                 botTurnTimeoutHandle = setTimeout(processBotTurnRoutine, 800);
             }
@@ -4535,6 +4600,7 @@ function mpRunRandomizedSquadFlow() {
 }
 
 function mpStartBattleFromPayload(built) {
+    gameState.isLocalMultiplayer = false;
     gameState.unusedBloodbanes = built.unusedBloodbanes || [];
     gameState.unusedBloodbornes = built.unusedBloodbornes || [];
     document.getElementById('draftView').style.display = 'none';
@@ -6421,8 +6487,36 @@ function finalizeActiveTurn(actingCardId) {
         mp.sendMsg({ type: 'turnState', payload: mpSanitizeForWire(mpBuildSwappedStatePayload()) });
         return;
     }
+    if (gameState.isLocalMultiplayer) {
+        // No bot, no network peer, no handoff screen — the other human's
+        // turn just becomes active immediately.
+        advanceLocalMultiplayerTurn();
+        return;
+    }
     startMoveTimer(2);
     botTurnTimeoutHandle = setTimeout(processBotTurnRoutine, 800);
+}
+
+// ============================================================================
+// LOCAL (SAME-SCREEN) MULTIPLAYER — two humans sharing one device, taking
+// turns directly with no pass-the-device prompt. Reuses the exact same
+// "p1 = the side currently allowed to act" engine that solo and online
+// multiplayer already run on: instead of mirroring the swapped perspective
+// to a second device over the network (see mpBuildSwappedStatePayload), the
+// swap is applied to THIS SAME gameState in place, so the next human's turn
+// plays out through the identical "my squad acts, enemy squad gets
+// targeted" code every other mode already uses — no move handler needs a
+// second "p2 acts" code path. The move-timer's existing freeze during
+// kill/action recap animations (see startMoveTimer) already keeps the clock
+// paused for however long that animation is still playing, so no extra
+// pause is needed here.
+// ============================================================================
+function advanceLocalMultiplayerTurn() {
+    Object.assign(gameState, mpBuildSwappedStatePayload());
+    gameState.currentTurn = 1;
+    abortTargetingSequence();
+    renderScene();
+    startMoveTimer(1);
 }
 
 // ============================================================================
