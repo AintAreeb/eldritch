@@ -1537,6 +1537,7 @@ const CARD_POOL = [
     { name: 'Singer', tag: 'Artist', maxHex: 2, tier: 2, cooldown: 'none', category: 'Bloodbane' },
     { name: 'Witch', tag: 'Mystic', maxHex: 2, tier: 2, cooldown: 'none', category: 'Bloodbane' },
     { name: 'Wendigo', tag: 'Entity', maxHex: 1, tier: 3, cooldown: 'consecutive', category: 'Bloodbane' },
+    { name: 'Wraith', tag: 'Entity', maxHex: 3, tier: 3, cooldown: 'none', category: 'Bloodbane' },
 
     // Bloodbornes
     { name: 'Mecha', tag: 'Bloodsmith', maxHex: 2, tier: 3, cooldown: 'none', category: 'Bloodborne' },
@@ -1567,7 +1568,7 @@ const SORCERER_FORBIDDEN_ROLES = ['Wendigo', 'Dementor', 'Chronos', 'Bartender',
 // Actor/Dementor are able to mimic). If the opponent's last move wasn't
 // produced by one of these roles (directly or via a mimic that resolved
 // into one of them), Bartender has nothing to copy.
-const BARTENDER_MIMICABLE_ROLES = ['Killer', 'Robber', 'Doctor', 'Dictator', 'Cop', 'Singer', 'Spy', 'Ninja', 'Hood', 'Witch', 'Lawyer', 'Knight', 'Jinn'];
+const BARTENDER_MIMICABLE_ROLES = ['Killer', 'Robber', 'Doctor', 'Dictator', 'Cop', 'Singer', 'Spy', 'Ninja', 'Hood', 'Witch', 'Lawyer', 'Knight', 'Jinn', 'Wraith'];
 
 // Bartender is not allowed to copy a move if it was actually performed by
 // one of these cards — Dementor, Sorcerer, Chronos, Wendigo, or any
@@ -2264,6 +2265,7 @@ const TITLE_DEFS = [
     { id: 'thyrsus', name: 'Thyrsus', category: 'character', character: 'Singer', goal: 10 },
     { id: 'sudarshana', name: 'Sudarshana', category: 'character', character: 'Witch', goal: 10 },
     { id: 'laevateinn', name: 'Laevateinn', category: 'character', character: 'Wendigo', goal: 10 },
+    { id: 'andvaranaut', name: 'Andvaranaut', category: 'character', character: 'Wraith', goal: 10 },
     { id: 'gungnir', name: 'Gungnir', category: 'character', character: 'Mecha', goal: 10 },
     { id: 'skofnung', name: 'Skofnung', category: 'character', character: 'Knight', goal: 10 },
     { id: 'fragarach', name: 'Fragarach', category: 'character', character: 'Imam', goal: 10 },
@@ -3066,7 +3068,8 @@ function deriveMoveRoleForTracking(actorId, baseMove) {
         'witch_poison': 'Witch',
         'lawyer_lock': 'Lawyer',
         'knight_strike': 'Knight',
-        'jinn_block': 'Jinn'
+        'jinn_block': 'Jinn',
+        'wraith_strike': 'Wraith', 'wraith_execute': 'Wraith'
     };
     if (directRoleMap[baseMove]) return directRoleMap[baseMove];
     if (baseMove === 'mystic_purge') {
@@ -4797,7 +4800,7 @@ function hasValidTargets(card, allies, enemies) {
 
     let harmfulEnemies = aliveEnemies.filter(c => !c.isHeroic);
 
-    if (card.tag !== 'Mystic') {
+    if (card.tag !== 'Mystic' && card.name !== 'Wraith') {
         harmfulEnemies = harmfulEnemies.filter(c => c.tag !== 'Entity');
     }
 
@@ -4841,6 +4844,9 @@ function hasValidTargets(card, allies, enemies) {
         let normalTargets = harmfulEnemies.filter(c => c.tag !== 'Criminal' && c.tag !== 'Entity' && !isHarmMoveWasted(c));
         let executeTargets = card.hex === 1 ? harmfulEnemies.filter(c => (c.tag === 'Criminal' || c.name === 'Dictator') && !isHarmMoveWasted(c)) : [];
         return normalTargets.length > 0 || executeTargets.length > 0;
+    }
+    if (card.name === 'Wraith') {
+        return harmfulEnemies.some(c => (c.tag === 'Mystic' || c.tag === 'Entity') && !isHarmMoveWasted(c));
     }
     if (card.name === 'Doctor') return aliveAllies.some(c => c.id !== card.id && c.hex < c.maxHex);
     if (card.name === 'Dictator') return harmfulEnemies.some(c => !isImprisonMoveWasted(c));
@@ -5059,7 +5065,7 @@ function executeTerroristDrain(actorId) {
 function runActorAbilityPad() {
     let container = document.getElementById('actorOptionsContainer');
     container.innerHTML = '';
-    let roles = ['Killer', 'Robber', 'Doctor', 'Dictator', 'Cop', 'Singer', 'Spy', 'Ninja', 'Hood', 'Witch', 'Lawyer', 'Knight', 'Jinn', 'Bartender'];
+    let roles = ['Killer', 'Robber', 'Doctor', 'Dictator', 'Cop', 'Singer', 'Spy', 'Ninja', 'Hood', 'Witch', 'Lawyer', 'Knight', 'Jinn', 'Wraith', 'Bartender'];
     roles.forEach(role => {
         let b = document.createElement('button');
         b.className = 'btn';
@@ -5090,6 +5096,7 @@ function handleActorRoleSelection(roleName) {
     else if (roleName === 'Lawyer') openTargetingOverlay(actorCard.id, 'lawyer_lock', '⚖️ ACTOR AS LAWYER');
     else if (roleName === 'Knight') openTargetingOverlay(actorCard.id, 'knight_strike', '⚔️ ACTOR AS KNIGHT');
     else if (roleName === 'Jinn') openTargetingOverlay(actorCard.id, 'jinn_block', '🧞 ACTOR AS JINN');
+    else if (roleName === 'Wraith') openTargetingOverlay(actorCard.id, 'wraith_strike', '👻 ACTOR AS WRAITH');
     else if (roleName === 'Bartender') {
         beginBartenderCopyTargeting(actorCard.id, 'Actor (as Bartender)');
     }
@@ -5139,6 +5146,7 @@ function handleDementorRoleSelection(roleName, actorId) {
     else if (roleName === 'Lawyer') openTargetingOverlay(dementorCard.id, 'lawyer_lock', '⚖️ DEMENTOR AS LAWYER');
     else if (roleName === 'Knight') openTargetingOverlay(dementorCard.id, 'knight_strike', '⚔️ DEMENTOR AS KNIGHT');
     else if (roleName === 'Jinn') openTargetingOverlay(dementorCard.id, 'jinn_block', '🧞 DEMENTOR AS JINN');
+    else if (roleName === 'Wraith') openTargetingOverlay(dementorCard.id, 'wraith_strike', '👻 DEMENTOR AS WRAITH');
     else if (roleName === 'Bartender') {
         beginBartenderCopyTargeting(dementorCard.id, 'Dementor (as Bartender)');
     }
@@ -5863,6 +5871,15 @@ function processSelectedTarget(targetId) {
                 actorCard.hasKilled = true;
                 writeLog(`🔮 Control Sequence: Ninja's kill grants +2 hex amplification!`);
             }
+        } else if (originalType === 'Wraith') {
+            applyShieldedDamage(enemy, 1);
+            writeLog(`🔮 Control Sequence: Wraith drains ${enemy.name}.`);
+            if (enemy.hex === 0 && !actorCard.hasKilled) {
+                actorCard.hex += 2;
+                actorCard.maxHex = Math.max(actorCard.maxHex, actorCard.hex);
+                actorCard.hasKilled = true;
+                writeLog(`🔮 Control Sequence: Wraith's kill grants +2 hex amplification!`);
+            }
         } else {
             applyShieldedDamage(enemy, 1);
             writeLog(`🔮 Control Sequence: ${originalType} struck ${enemy.name} for 1 damage.`);
@@ -5969,6 +5986,26 @@ function processSelectedTarget(targetId) {
         applyShieldedExecution(enemy); 
         writeLog(`🪓 Your Robber triggers emergency stand and executes ${enemy.name}.`);
     }
+    else if (baseMove === 'wraith_strike') {
+        applyShieldedDamage(enemy, 1);
+        writeLog(`👻 Your Wraith drains 1 Hex from enemy ${enemy.name}.`);
+        if (enemy.hex === 0 && !actorCard.hasKilled) {
+            actorCard.hex += 2;
+            actorCard.maxHex = Math.max(actorCard.maxHex, actorCard.hex);
+            actorCard.hasKilled = true;
+            writeLog(`👻 Your Wraith claims +2 hex amplification for the kill!`);
+        }
+    }
+    else if (baseMove === 'wraith_execute') {
+        applyShieldedExecution(enemy);
+        writeLog(`🪓 Your Wraith unleashes a last-hex execution on ${enemy.name}.`);
+        if (enemy.hex === 0 && !actorCard.hasKilled) {
+            actorCard.hex += 2;
+            actorCard.maxHex = Math.max(actorCard.maxHex, actorCard.hex);
+            actorCard.hasKilled = true;
+            writeLog(`👻 Your Wraith claims +2 hex amplification for the kill!`);
+        }
+    }
     else if (baseMove === 'dictator_imprison') { 
         applyShieldedImprison(enemy); 
         writeLog(`⛓️ Your Dictator imprisons enemy ${enemy.name}.`);
@@ -6058,6 +6095,7 @@ function beginBartenderCopyTargeting(actorId, cardLabel) {
     else if (copyRole === 'Lawyer') openTargetingOverlay(actorId, 'lawyer_lock', `⚖️ ${tag}`);
     else if (copyRole === 'Knight') openTargetingOverlay(actorId, 'knight_strike', `⚔️ ${tag}`);
     else if (copyRole === 'Jinn') openTargetingOverlay(actorId, 'jinn_block', `🧞 ${tag}`);
+    else if (copyRole === 'Wraith') openTargetingOverlay(actorId, 'wraith_strike', `👻 ${tag}`);
     return true;
 }
 
@@ -6279,7 +6317,7 @@ function renderUndoUI() {
 // Robber's normal siphon can't hit Criminal tags, Hood can't hit Spy at full hex).
 function getBotCandidatePool(actor, enemies) {
     let harmful = enemies.filter(c => !c.isHeroic);
-    if (actor.tag !== 'Mystic') harmful = harmful.filter(c => c.tag !== 'Entity');
+    if (actor.tag !== 'Mystic' && actor.name !== 'Wraith') harmful = harmful.filter(c => c.tag !== 'Entity');
     // Same wasted-move exclusions the player's target list is held to (see
     // isHarmMoveWasted/isImprisonMoveWasted/isWitchMoveWasted) — the bot
     // should never spend its move attacking a K-Shielded card already
@@ -6287,6 +6325,7 @@ function getBotCandidatePool(actor, enemies) {
     // player is allowed to.
     if (actor.name === 'Cop') return harmful.filter(c => (c.tag === 'Criminal' || c.tag === 'Law & Order') && !isHarmMoveWasted(c));
     if (actor.name === 'Robber') return (actor.hex === 0 ? harmful.filter(c => c.tag === 'Criminal' || c.name === 'Dictator') : harmful.filter(c => c.tag !== 'Criminal')).filter(c => !isHarmMoveWasted(c));
+    if (actor.name === 'Wraith') return harmful.filter(c => (c.tag === 'Mystic' || c.tag === 'Entity') && !isHarmMoveWasted(c));
     if (actor.name === 'Hood') return harmful.filter(c => (c.name !== 'Spy' || actor.hex === 0) && !isHarmMoveWasted(c));
     if (actor.name === 'Killer' || actor.name === 'Spy') return harmful.filter(c => !isHarmMoveWasted(c));
     if (actor.name === 'Ninja') return harmful.filter(c => (c.name !== 'Spy' || actor.hex === 1) && !isHarmMoveWasted(c));
@@ -6376,6 +6415,25 @@ function applyMimicRoleEffect(roleName, aiActor, verbPrefix) {
         applyShieldedDamage(t, 1);
         aiActor.hex = Math.min(aiActor.maxHex === Infinity ? 99 : aiActor.maxHex, aiActor.hex + 1);
         writeLog(`💰 ${verbPrefix} siphons 1 Hex from your ${t.name}!`);
+        if (!copyExcluded) gameState.p2LastMoveRole = roleName;
+        return true;
+    }
+    if (roleName === 'Wraith') {
+        // enemyPool was built with the mimicking card's own tag (e.g. Actor,
+        // Dementor), which strips Entity targets unless THAT card is Mystic —
+        // Wraith needs its own Mystic-or-Entity pool regardless of who's
+        // mimicking it, so this is recomputed fresh rather than reusing enemyPool.
+        let wraithPool = gameState.p1.filter(c => c.hex > 0 && !c.imprisoned && !c.isHeroic && (c.tag === 'Mystic' || c.tag === 'Entity') && !isHarmMoveWasted(c));
+        if (wraithPool.length === 0) return false;
+        let t = pickBotTarget(wraithPool, gameState.difficulty);
+        applyShieldedDamage(t, 1);
+        writeLog(`👻 ${verbPrefix} drains your ${t.name}!`);
+        if (t.hex === 0 && !aiActor.hasKilled) {
+            aiActor.hex += 2;
+            aiActor.maxHex = Math.max(aiActor.maxHex, aiActor.hex);
+            aiActor.hasKilled = true;
+            writeLog(`👻 ${aiActor.name} gains +2 Hex for the kill!`);
+        }
         if (!copyExcluded) gameState.p2LastMoveRole = roleName;
         return true;
     }
@@ -6469,7 +6527,7 @@ function applyMimicRoleEffect(roleName, aiActor, verbPrefix) {
 // the top; slow/reactive support sits at the bottom.
 const ROLE_THREAT_VALUE = {
     Killer: 9, Ninja: 8, Dictator: 8, Sorcerer: 8, Mecha: 8,
-    Spy: 7, Dementor: 7, Hacker: 7,
+    Spy: 7, Dementor: 7, Hacker: 7, Wraith: 7,
     Witch: 6, Cop: 6, Chronos: 6, Singer: 6, Lawyer: 6, Mage: 6,
     Knight: 5, Hood: 5, Robber: 5, Jinn: 5, Bartender: 5, Imam: 5,
     Wendigo: 4, Doctor: 4,
@@ -6560,6 +6618,7 @@ function canBotActorSecureKill(actor, enemies) {
     if (pool.length === 0) return false;
     if (actor.name === 'Killer') return true;
     if (actor.name === 'Robber') return actor.hex === 1 && pool.length > 0;
+    if (actor.name === 'Wraith') return actor.hex === 1 && pool.length > 0;
     if (actor.name === 'Ninja') return pool.some(c => c.hex === 1 || (c.name === 'Spy' && actor.hex === 1));
     if (actor.name === 'Cop') return pool.some(c => c.hex <= (c.hasActivity ? 2 : 1));
     if (actor.name === 'Knight' && actor.hex !== 2) return pool.some(c => c.name === 'Spy' || c.hex <= 1);
@@ -6752,6 +6811,25 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
                             aiActor.hex = Math.min(aiActor.maxHex, aiActor.hex + 1);
                         }
                         writeLog(`💰 Bot Robber siphons 1 Hex from enemy ${targetPlayer.name}.`);
+                    }
+                } else if (aiActor.name === 'Wraith') {
+                    let targetIsMysticOrEntity = targetPlayer.tag === 'Mystic' || targetPlayer.tag === 'Entity';
+                    if (aiActor.hex === 0 && targetIsMysticOrEntity) {
+                        applyShieldedExecution(targetPlayer);
+                        isDirectKill = true;
+                        writeLog(`🪓 Bot Wraith unleashes a last-hex execution on ${targetPlayer.name}.`);
+                    } else if (targetIsMysticOrEntity) {
+                        applyShieldedDamage(targetPlayer, 1);
+                        writeLog(`👻 Bot Wraith drains 1 Hex from enemy ${targetPlayer.name}.`);
+                    } else {
+                        writeLog(`👻 Bot Wraith found no valid Mystic/Entity target.`);
+                        executedAction = false;
+                    }
+                    if (targetPlayer.hex === 0 && !aiActor.hasKilled) {
+                        aiActor.hex += 2;
+                        aiActor.maxHex = Math.max(aiActor.maxHex, aiActor.hex);
+                        aiActor.hasKilled = true;
+                        writeLog(`👻 Bot Wraith claims +2 hex amplification for the kill!`);
                     }
                 } else if (aiActor.name === 'Doctor') {
                     let healTargets = gameState.p2.filter(c => c.id !== aiActor.id && c.hex > 0 && c.hex < c.maxHex);
@@ -7003,7 +7081,7 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
                     }
                     aiActor.hex = 0;
                 } else if (aiActor.name === 'Actor') {
-                    let roles = ['Killer', 'Robber', 'Doctor', 'Dictator', 'Cop', 'Singer', 'Spy', 'Ninja', 'Hood', 'Witch', 'Lawyer', 'Knight', 'Jinn', 'Bartender'];
+                    let roles = ['Killer', 'Robber', 'Doctor', 'Dictator', 'Cop', 'Singer', 'Spy', 'Ninja', 'Hood', 'Witch', 'Lawyer', 'Knight', 'Jinn', 'Wraith', 'Bartender'];
                     let randomRole = roles[Math.floor(Math.random() * roles.length)];
                     let didAct = applyMimicRoleEffect(randomRole, aiActor, `Bot Actor (as ${randomRole})`);
                     if (!didAct) {
@@ -7324,7 +7402,7 @@ function renderScene() {
                     } else if (m === 'mecha_click_route_1' || m === 'mecha_click_route_2') {
                         if (m === 'mecha_click_route_2' && card.id === gameState.targetingMode.firstTargetId) isSelectedFirst = true;
                         isEligibleEnemy = true;
-                    } else if (!(card.tag === 'Entity' && act && act.tag !== 'Mystic' && m !== 'knight_strike')) {
+                    } else if (!(card.tag === 'Entity' && act && act.tag !== 'Mystic' && m !== 'knight_strike' && m !== 'wraith_strike' && m !== 'wraith_execute')) {
                         // Each harm/kill move below is additionally gated by
                         // isHarmMoveWasted (K-Shielded card already floored at
                         // 1 Hex, or a not-yet-transformed Wendigo) so a
@@ -7340,6 +7418,7 @@ function renderScene() {
                         if (m === 'therapist_rebound_strike') isEligibleEnemy = true;
                         if (m === 'robber_siphon' && card.tag !== 'Criminal' && card.tag !== 'Entity' && !isHarmMoveWasted(card)) isEligibleEnemy = true;
                         if (m === 'robber_execute' && (card.tag === 'Criminal' || card.name === 'Dictator') && !isHarmMoveWasted(card)) isEligibleEnemy = true;
+                        if ((m === 'wraith_strike' || m === 'wraith_execute') && (card.tag === 'Mystic' || card.tag === 'Entity') && !isHarmMoveWasted(card)) isEligibleEnemy = true;
                         if (m === 'cop_strike' && (card.tag === 'Criminal' || card.tag === 'Law & Order') && !isHarmMoveWasted(card)) isEligibleEnemy = true;
                         if (m === 'spy_strike') {
                             if (card.name === 'Spy') {
@@ -7474,6 +7553,18 @@ function buildDynamicActionPads(card, isLockedByCooldown) {
                 }
             }
         }
+        if (card.name === 'Wraith') {
+            let normalTargetsExist = gameState.p2.some(c => c.hex > 0 && !c.imprisoned && (c.tag === 'Mystic' || c.tag === 'Entity') && !isHarmMoveWasted(c));
+            if (normalTargetsExist) {
+                btns.push(`<button class="btn" onclick="openTargetingOverlay('${card.id}', 'wraith_strike', '👻 WRAITH DRAIN (MYSTIC/ENTITY ONLY)')">Drain</button>`);
+            }
+            if (card.hex === 1) {
+                let targetsExist = gameState.p2.some(c => c.hex > 0 && !c.imprisoned && (c.tag === 'Mystic' || c.tag === 'Entity') && !isHarmMoveWasted(c));
+                if (targetsExist) {
+                    btns.push(`<button class="btn" style="background:#ff5500;" onclick="openTargetingOverlay('${card.id}', 'wraith_execute', '🪓 EXECUTE MYSTIC/ENTITY')">Execute</button>`);
+                }
+            }
+        }
         if (card.name === 'Mage') {
             if (card.hex >= 1) btns.push(`<button class="btn" style="background:#3f51b5;" onclick="openTargetingOverlay('${card.id}', 'mage_revive_1', '🧙‍♂️ MAGE REVIVE (1 HEX)')">Revive 1</button>`);
             if (card.hex >= 2) btns.push(`<button class="btn" style="background:#3f51b5;" onclick="openTargetingOverlay('${card.id}', 'mage_revive_2', '🧙‍♂️ MAGE REVIVE (2 HEX)')">Revive 2</button>`);
@@ -7580,6 +7671,7 @@ const GUIDE_DATA = {
         { name: 'Singer', tag: 'Artist', hex: 2, desc: "Hits two different enemies for 1 damage each in one move. Must sit out a turn after using it." },
         { name: 'Witch', tag: 'Mystic', hex: 2, desc: "Damages an enemy for 1 and poisons it — poison ticks off 1 extra hex every future turn that card acts, until cured. Also gets Mystic Purge." },
         { name: 'Wendigo', tag: 'Entity', hex: 1, desc: "Completely untouchable until it transforms. At any time, for free, it can permanently shapeshift into an unused Bloodbane character and gain +1 max hex. Must sit out a turn after using its normal move." },
+        { name: 'Wraith', tag: 'Entity', hex: 3, desc: "Drains 1 hex from an enemy — but can only target Mystic or Entity enemies. Its first kill earns it +2 bonus hex. Down to its last hex, it can instead instantly finish off an eligible Mystic or Entity enemy." },
     ],
     Bloodborne: [
         { name: 'Mecha', tag: 'Bloodsmith', hex: 2, desc: "Fuses with an ally — Spy, Robber, Hood, Witch, Knight, Cop, or Ninja — letting that pairing land two hits in a single turn. 3-turn cooldown between uses." },
