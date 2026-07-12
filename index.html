@@ -2177,6 +2177,7 @@ let blProfileTargetUsername = null; // whose profile is currently open in the mo
 let blProfileIsSelf = true;
 let blProfileData = null;   // last-loaded profile payload for the open modal
 let blProfileMatches = [];  // last-loaded match history for the open modal
+let blProfileRanking = null; // last-loaded World Ranking data for the open modal
 let blMyFavouriteCard = null; // cached so the account badge can show without opening the modal
 
 // `username` omitted (or null) opens the logged-in player's own profile;
@@ -2206,9 +2207,10 @@ function switchProfileTab(tab) {
 }
 
 async function blLoadProfile(username) {
-    const [profResult, historyResult] = await Promise.all([
+    const [profResult, historyResult, rankResult] = await Promise.all([
         blCallAccountRpc('get_player_profile', { p_username: username }),
-        blCallAccountRpc('get_match_history', { p_username: username })
+        blCallAccountRpc('get_match_history', { p_username: username }),
+        blCallAccountRpc('get_my_ranking', { p_username: username })
     ]);
     if (blProfileTargetUsername !== username) return; // navigated away before this resolved
     if (!profResult.ok) {
@@ -2217,9 +2219,14 @@ async function blLoadProfile(username) {
     }
     blProfileData = profResult;
     blProfileMatches = (historyResult.ok && historyResult.matches) ? historyResult.matches : [];
+    blProfileRanking = rankResult && rankResult.ok ? rankResult : null;
     if (blProfileIsSelf) {
         blMyFavouriteCard = profResult.favourite_card || null;
         blRenderAccountFavBadge();
+        if (blProfileRanking) {
+            blRanking = { points: blProfileRanking.ranking_points || 0, wins: blProfileRanking.wins || 0, losses: blProfileRanking.losses || 0, draws: blProfileRanking.draws || 0, worldRank: blProfileRanking.world_rank || null };
+            blRenderRankBadge();
+        }
     }
     renderProfileInfo();
     renderProfileHistory();
@@ -2229,12 +2236,16 @@ function renderProfileInfo() {
     const p = blProfileData;
     if (!p) return;
     const favLabel = p.favourite_card ? `⭐ ${blEscapeHtml(p.favourite_card)}` : 'No favourite card set';
+    let rankTier = blProfileRanking ? getTierForPoints(blProfileRanking.ranking_points) : null;
     let html = `
         <div class="profile-header">
             <div class="profile-avatar-circle${blProfileIsSelf ? ' is-editable' : ''}" ${blProfileIsSelf ? 'onclick="toggleAvatarPicker()"' : ''}>${p.avatar || '🧙'}</div>
             <div class="profile-header-main">
                 <div class="profile-username">${blEscapeHtml(p.username)}</div>
-                <div><span class="profile-fav-badge${p.favourite_card ? '' : ' profile-fav-empty'}">${favLabel}</span></div>
+                <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:4px;">
+                    <span class="profile-fav-badge${p.favourite_card ? '' : ' profile-fav-empty'}">${favLabel}</span>
+                    ${rankTier ? `<span class="profile-fav-badge" style="background:transparent; border-color:${rankTier.color}55; color:${rankTier.color};">${rankTier.icon} ${rankTier.name}${blProfileRanking.world_rank ? ` · #${blProfileRanking.world_rank}` : ''}</span>` : ''}
+                </div>
                 ${blProfileIsSelf ? `<button class="profile-fav-picker-btn" onclick="openFavCardModal()">Change favourite card</button>` : ''}
             </div>
         </div>`;
@@ -2254,6 +2265,7 @@ function renderProfileInfo() {
             <div><div class="profile-record-num">${p.matches_played}</div><div class="profile-record-label">Played</div></div>
             <div><div class="profile-record-num">${p.wins}</div><div class="profile-record-label">Wins</div></div>
             <div><div class="profile-record-num">${p.win_rate}%</div><div class="profile-record-label">Win Rate</div></div>
+            ${rankTier ? `<div><div class="profile-record-num" style="color:${rankTier.color};">${blProfileRanking.ranking_points}</div><div class="profile-record-label">Ritual Pts</div></div>` : ''}
         </div>
         <div class="guide-section-label">Performance Breakdown</div>
         <div class="profile-radar-wrap"><canvas id="profileRadarCanvas" width="260" height="260"></canvas></div>
