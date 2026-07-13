@@ -242,6 +242,57 @@
             box-shadow: 0 0 14px rgba(255,110,20,0.16), inset 0 1px 1px rgba(255,150,60,0.15);
             clip-path: polygon(6% 0, 100% 0, 100% 94%, 94% 100%, 0 100%, 0 6%);
         }
+        .card-skin-emberwraith {
+            border-color: rgba(255, 90, 20, 0.55);
+            background: linear-gradient(180deg, rgba(140,40,10,0.2) 0%, rgba(255,120,30,0.06) 100%);
+            box-shadow: 0 0 16px rgba(255,100,20,0.2), inset 0 1px 1px rgba(255,180,100,0.15);
+        }
+        .card-skin-glacialomen {
+            border-color: rgba(150, 220, 255, 0.55);
+            background: linear-gradient(180deg, rgba(140,220,255,0.14) 0%, rgba(255,255,255,0.04) 100%);
+            box-shadow: 0 0 16px rgba(150,220,255,0.2), inset 0 1px 1px rgba(220,250,255,0.25);
+        }
+        .card-skin-verdantthorn {
+            border-color: rgba(60, 160, 80, 0.5);
+            background: linear-gradient(180deg, rgba(20,60,30,0.22) 0%, rgba(60,140,70,0.06) 100%);
+            box-shadow: 0 0 14px rgba(60,160,80,0.16), inset 0 1px 1px rgba(140,220,150,0.15);
+        }
+        .card-skin-royalamethyst {
+            border-color: rgba(160, 100, 220, 0.55);
+            background: linear-gradient(180deg, rgba(90,50,150,0.18) 0%, rgba(212,175,55,0.06) 100%);
+            box-shadow: 0 0 18px rgba(160,100,220,0.2), inset 0 1px 1px rgba(230,200,255,0.2);
+        }
+        .card-skin-stormherald {
+            border-color: rgba(120, 170, 255, 0.55);
+            background: linear-gradient(160deg, rgba(40,60,120,0.2) 0%, rgba(180,220,255,0.06) 100%);
+            box-shadow: 0 0 16px rgba(120,170,255,0.2), inset 0 1px 1px rgba(200,220,255,0.2);
+        }
+        .card-skin-plaguedoctor {
+            border-color: rgba(120, 160, 80, 0.5);
+            background: linear-gradient(180deg, rgba(30,35,15,0.3) 0%, rgba(90,110,50,0.08) 100%);
+            box-shadow: 0 0 14px rgba(120,160,80,0.15), inset 0 1px 1px rgba(180,200,120,0.12);
+        }
+        .card-skin-solarflare {
+            border-color: rgba(255, 190, 40, 0.55);
+            background: linear-gradient(180deg, rgba(255,190,40,0.16) 0%, rgba(255,100,20,0.06) 100%);
+            box-shadow: 0 0 18px rgba(255,190,40,0.22), inset 0 1px 1px rgba(255,230,150,0.25);
+        }
+        .card-skin-abyssalink {
+            border-color: rgba(20, 30, 70, 0.6);
+            background: linear-gradient(180deg, rgba(5,8,20,0.4) 0%, rgba(20,30,70,0.1) 100%);
+            box-shadow: 0 0 14px rgba(20,40,100,0.2), inset 0 1px 1px rgba(80,100,160,0.15);
+        }
+        .card-skin-thornsteel {
+            border-color: rgba(140, 30, 40, 0.5);
+            background: linear-gradient(180deg, rgba(50,50,55,0.22) 0%, rgba(100,20,25,0.08) 100%);
+            box-shadow: 0 0 14px rgba(140,30,40,0.16), inset 0 1px 1px rgba(200,200,205,0.15);
+        }
+        .card-skin-phantomveil {
+            border-color: rgba(220, 220, 230, 0.4);
+            background: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.01) 100%);
+            box-shadow: 0 0 16px rgba(220,220,230,0.12), inset 0 1px 1px rgba(255,255,255,0.15);
+            opacity: 0.92;
+        }
 
         /* ====================================================================
            BOARD THEMES — applied as a class on #gameView. Restyles the board
@@ -265,6 +316,26 @@
         #gameView.board-theme-neonunderworld .log { background: #12081a; border-color: rgba(255,0,200,0.3); color: #ff7af0; }
         #gameView.board-theme-aurumsanctum { background: radial-gradient(ellipse at 50% -10%, rgba(212,175,55,0.16) 0%, rgba(8,7,16,0) 60%); }
         #gameView.board-theme-aurumsanctum .log { background: #14110a; border-color: rgba(212,175,55,0.32); color: #f0dc9a; }
+        #gameView.board-theme-crimsonabyss { background: radial-gradient(ellipse at 50% -10%, rgba(150,10,10,0.18) 0%, rgba(8,7,16,0) 60%); }
+        #gameView.board-theme-crimsonabyss .log { background: #150808; border-color: rgba(200,20,20,0.3); color: #ff8080; }
+        #gameView.board-theme-lunarhollow { background: radial-gradient(ellipse at 50% -10%, rgba(150,180,220,0.12) 0%, rgba(8,7,16,0) 60%); }
+        #gameView.board-theme-lunarhollow .log { background: #0c0e14; border-color: rgba(150,180,220,0.25); color: #c8d8ee; }
+        #gameView.board-theme-emberwastes { background: radial-gradient(ellipse at 50% -10%, rgba(255,110,20,0.14) 0%, rgba(8,7,16,0) 60%); }
+        #gameView.board-theme-emberwastes .log { background: #150e08; border-color: rgba(255,110,20,0.28); color: #ffb066; }
+        #gameView.board-theme-glacialexpanse { background: radial-gradient(ellipse at 50% -10%, rgba(150,220,255,0.14) 0%, rgba(8,7,16,0) 60%); }
+        #gameView.board-theme-glacialexpanse .log { background: #0a1216; border-color: rgba(150,220,255,0.3); color: #a8e8ff; }
+        #gameView.board-theme-royalcourt { background: radial-gradient(ellipse at 50% -10%, rgba(160,100,220,0.16) 0%, rgba(8,7,16,0) 60%); }
+        #gameView.board-theme-royalcourt .log { background: #120c16; border-color: rgba(160,100,220,0.3); color: #d8b8ff; }
+        #gameView.board-theme-plagueward { background: radial-gradient(ellipse at 50% -10%, rgba(120,160,80,0.12) 0%, rgba(8,7,16,0) 60%); }
+        #gameView.board-theme-plagueward .log { background: #0e1208; border-color: rgba(120,160,80,0.25); color: #c0d890; }
+        #gameView.board-theme-thunderscar { background: radial-gradient(ellipse at 50% -10%, rgba(120,170,255,0.14) 0%, rgba(8,7,16,0) 60%); }
+        #gameView.board-theme-thunderscar .log { background: #0a0e16; border-color: rgba(120,170,255,0.28); color: #a8c8ff; }
+        #gameView.board-theme-coralruin { background: radial-gradient(ellipse at 50% -10%, rgba(255,120,140,0.14) 0%, rgba(8,7,16,0) 60%); }
+        #gameView.board-theme-coralruin .log { background: #160a0e; border-color: rgba(255,120,140,0.28); color: #ffb0be; }
+        #gameView.board-theme-ashfallbasin { background: radial-gradient(ellipse at 50% -10%, rgba(140,130,120,0.12) 0%, rgba(8,7,16,0) 60%); }
+        #gameView.board-theme-ashfallbasin .log { background: #100f0e; border-color: rgba(140,130,120,0.24); color: #d0c8bc; }
+        #gameView.board-theme-starlitsanctum { background: radial-gradient(ellipse at 50% -10%, rgba(230,230,255,0.12) 0%, rgba(8,7,16,0) 60%); }
+        #gameView.board-theme-starlitsanctum .log { background: #0c0c14; border-color: rgba(230,230,255,0.26); color: #e8e8ff; }
 
         .cooldown-badge { 
             position: absolute; 
@@ -2331,13 +2402,13 @@ const RANK_PTS = {
 // Seven fancy, lore-flavored tiers themed around the game's Bloodbane/
 // Bloodborne/mystic-entity mythos, lowest to highest.
 const RANK_TIERS = [
-    { name: 'Obsidian',     icon: '🖤', min: 0,    color: '#4a4a52' },  // volcanic glass, black
-    { name: 'Larimar',      icon: '🌊', min: 500,  color: '#5ec8d8' },  // Caribbean blue-green
-    { name: 'Alexandrite',  icon: '🔮', min: 1200, color: '#7a4fbf' },  // colour-changing green/purple
-    { name: 'Tanzanite',    icon: '💠', min: 2100, color: '#4d5ed1' },  // deep blue-violet
-    { name: 'Painite',      icon: '🔶', min: 3200, color: '#a0522d' },  // rare brownish-red
-    { name: 'Taaffeite',    icon: '✨', min: 4500, color: '#c9a0dc' },  // pale mauve, ultra-rare
-    { name: 'Kyawthuite',   icon: '👑', min: 6000, color: '#ff7a33' }   // rarest gem on Earth, apex world-tier
+    { name: 'Obsidian',     icon: '🖤', min: 0,     color: '#4a4a52' },  // volcanic glass, black
+    { name: 'Larimar',      icon: '🌊', min: 2500,  color: '#5ec8d8' },  // Caribbean blue-green
+    { name: 'Alexandrite',  icon: '🔮', min: 5500,  color: '#7a4fbf' },  // colour-changing green/purple
+    { name: 'Tanzanite',    icon: '💠', min: 9000,  color: '#4d5ed1' },  // deep blue-violet
+    { name: 'Painite',      icon: '🔶', min: 12000, color: '#a0522d' },  // rare brownish-red
+    { name: 'Taaffeite',    icon: '✨', min: 15000, color: '#c9a0dc' },  // pale mauve, ultra-rare
+    { name: 'Kyawthuite',   icon: '👑', min: 20000, color: '#ff7a33' }   // rarest gem on Earth, apex world-tier
 ];
 
 function getTierForPoints(points) {
@@ -2378,6 +2449,13 @@ async function blRefreshMyRanking() {
         };
     } else {
         blRanking = { points: 0, wins: 0, losses: 0, draws: 0, worldRank: null };
+    }
+    // Permanent "Excalibur" title: the instant a player is #1 in the world,
+    // grant it for life via the existing grant_titles RPC. Idempotent — safe
+    // to call again on every refresh even if already earned.
+    if (blRanking.worldRank === 1) {
+        blCallAccountRpc('grant_titles', { p_username: blAccount.username, p_title_ids: ['excalibur'] })
+            .then(r => { if (r && r.ok && r.newly_granted && r.newly_granted.includes('excalibur')) writeLog('👑 Title earned: Excalibur'); });
     }
     blRenderRankBadge();
     await blRecordCosmeticRankPeak();
@@ -2625,7 +2703,7 @@ const TITLE_DEFS = [
     { id: 'thyrsus', name: 'Thyrsus', category: 'character', character: 'Singer', goal: 10 },
     { id: 'sudarshana', name: 'Sudarshana', category: 'character', character: 'Witch', goal: 10 },
     { id: 'laevateinn', name: 'Laevateinn', category: 'character', character: 'Wendigo', goal: 10 },
-    { id: 'andvaranaut', name: 'Andvaranaut', category: 'character', character: 'Wraith', goal: 10 },
+    { id: 'nidhogg', name: 'Nidhogg', category: 'character', character: 'Wraith', goal: 10 },
     { id: 'gungnir', name: 'Gungnir', category: 'character', character: 'Mecha', goal: 10 },
     { id: 'skofnung', name: 'Skofnung', category: 'character', character: 'Knight', goal: 10 },
     { id: 'fragarach', name: 'Fragarach', category: 'character', character: 'Imam', goal: 10 },
@@ -2635,7 +2713,61 @@ const TITLE_DEFS = [
     { id: 'labrys', name: 'Labrys', category: 'character', character: 'Jinn', goal: 10 },
     { id: 'gaebolg', name: 'Gáe Bolg', category: 'character', character: 'Warlock', goal: 10 },
     { id: 'kogarasumaru', name: 'Kogarasumaru', category: 'character', character: 'Kitsune', goal: 10 },
-    { id: 'zanshin', name: 'Zanshin', category: 'character', character: 'Samurai', goal: 10 }
+    { id: 'zanshin', name: 'Zanshin', category: 'character', character: 'Samurai', goal: 10 },
+    { id: 'ouroboros', name: 'Ouroboros', category: 'character', character: 'Chronos', goal: 10 },
+    { id: 'vajra', name: 'Vajra', category: 'character', character: 'Hacker', goal: 10 },
+    { id: 'persona', name: 'Persona', category: 'character', character: 'Actor', goal: 10 },
+    { id: 'panacea', name: 'Panacea', category: 'character', character: 'Therapist', goal: 10 },
+    { id: 'cornucopia', name: 'Cornucopia', category: 'character', character: 'Princess', goal: 10 },
+    { id: 'panoptes', name: 'Panoptes', category: 'character', character: 'Reporter', goal: 10 },
+    { id: 'pandora', name: 'Pandora', category: 'character', character: 'Terrorist', goal: 10 },
+    { id: 'cerberus', name: 'Cerberus', category: 'character', character: 'Warden', goal: 10 },
+
+    // --- Extended stat milestones (higher tiers) ---
+    { id: 'gram', name: 'Gram', category: 'stat', stat: 'wins', goal: 200, desc: 'Win 200 matches.' },
+    { id: 'nothung', name: 'Nothung', category: 'stat', stat: 'wins', goal: 500, desc: 'Win 500 matches.' },
+    { id: 'hrunting', name: 'Hrunting', category: 'stat', stat: 'wins', goal: 750, desc: 'Win 750 matches.' },
+    { id: 'dainsleif', name: 'Dainsleif', category: 'stat', stat: 'kills', goal: 750, desc: 'Land 750 kills.' },
+    { id: 'clarent', name: 'Clarent', category: 'stat', stat: 'kills', goal: 1000, desc: 'Land 1000 kills.' },
+    { id: 'curtana', name: 'Curtana', category: 'stat', stat: 'kills', goal: 1200, desc: 'Land 1200 kills.' },
+    { id: 'hauteclere', name: 'Hauteclere', category: 'stat', stat: 'healAmt', goal: 1000, desc: 'Heal 1000 total hex.' },
+    { id: 'colada', name: 'Colada', category: 'stat', stat: 'healAmt', goal: 1500, desc: 'Heal 1500 total hex.' },
+    { id: 'tizona', name: 'Tizona', category: 'stat', stat: 'healAmt', goal: 2000, desc: 'Heal 2000 total hex.' },
+    { id: 'zhanlu', name: 'Zhanlu', category: 'stat', stat: 'imprisons', goal: 100, desc: 'Imprison 100 enemies.' },
+    { id: 'chengying', name: 'Chengying', category: 'stat', stat: 'imprisons', goal: 150, desc: 'Imprison 150 enemies.' },
+    { id: 'ganjiang', name: 'Ganjiang', category: 'stat', stat: 'imprisons', goal: 200, desc: 'Imprison 200 enemies.' },
+    { id: 'moye', name: 'Moye', category: 'stat', stat: 'tactical', goal: 500, desc: 'Make 500 tactical plays.' },
+    { id: 'longyuan', name: 'Longyuan', category: 'stat', stat: 'tactical', goal: 750, desc: 'Make 750 tactical plays.' },
+    { id: 'onikiri', name: 'Onikiri', category: 'stat', stat: 'tactical', goal: 1000, desc: 'Make 1000 tactical plays.' },
+    { id: 'dojigiri', name: 'Dojigiri', category: 'stat', stat: 'matches', goal: 300, desc: 'Play 300 matches.' },
+    { id: 'mikazuki', name: 'Mikazuki', category: 'stat', stat: 'matches', goal: 500, desc: 'Play 500 matches.' },
+    { id: 'amenonuhoko', name: 'Amenonuhoko', category: 'stat', stat: 'matches', goal: 750, desc: 'Play 750 matches.' },
+    { id: 'parashu', name: 'Parashu', category: 'stat', stat: 'revives', goal: 80, desc: 'Revive 80 allies.' },
+    { id: 'pinaka', name: 'Pinaka', category: 'stat', stat: 'revives', goal: 150, desc: 'Revive 150 allies.' },
+    { id: 'gandiva', name: 'Gandiva', category: 'stat', stat: 'mvpCount', goal: 50, desc: 'Earn Match MVP 50 times.' },
+    { id: 'brahmastra', name: 'Brahmastra', category: 'stat', stat: 'mvpCount', goal: 100, desc: 'Earn Match MVP 100 times.' },
+    { id: 'agneyastra', name: 'Agneyastra', category: 'stat', stat: 'bestWinStreak', goal: 15, desc: 'Win 15 matches in a row.' },
+    { id: 'nagastra', name: 'Nagastra', category: 'stat', stat: 'bestWinStreak', goal: 25, desc: 'Win 25 matches in a row.' },
+    { id: 'gorz', name: 'Gorz', category: 'stat', stat: 'perfectWins', goal: 5, desc: 'Win 5 matches without losing a single card.' },
+    { id: 'simorgh', name: 'Simorgh', category: 'stat', stat: 'perfectWins', goal: 15, desc: 'Win 15 matches without losing a single card.' },
+
+    // --- New stat tracks: losses & draws ---
+    { id: 'gleipnir', name: 'Gleipnir', category: 'stat', stat: 'losses', goal: 10, desc: 'Suffer 10 losses. Even chains break eventually.' },
+    { id: 'mjolnir', name: 'Mjolnir', category: 'stat', stat: 'losses', goal: 50, desc: 'Suffer 50 losses. Worthy of another swing.' },
+    { id: 'ichaival', name: 'Ichaival', category: 'stat', stat: 'losses', goal: 100, desc: 'Suffer 100 losses. The bow that never truly misses its lesson.' },
+    { id: 'claiomhsolais', name: 'Claiomh Solais', category: 'stat', stat: 'draws', goal: 5, desc: 'Draw 5 matches.' },
+    { id: 'gaebuidhe', name: 'Gae Buidhe', category: 'stat', stat: 'draws', goal: 20, desc: 'Draw 20 matches.' },
+
+    // --- Squad-category win milestones ---
+    { id: 'kaumodaki', name: 'Kaumodaki', category: 'squadWins', squadCategory: 'Bloodbane', goal: 25, desc: 'Win 25 matches with a Bloodbane on your squad.' },
+    { id: 'sharanga', name: 'Sharanga', category: 'squadWins', squadCategory: 'Bloodbane', goal: 50, desc: 'Win 50 matches with a Bloodbane on your squad.' },
+    { id: 'nandaka', name: 'Nandaka', category: 'squadWins', squadCategory: 'Bloodborne', goal: 25, desc: 'Win 25 matches with a Bloodborne on your squad.' },
+    { id: 'panchajanya', name: 'Panchajanya', category: 'squadWins', squadCategory: 'Bloodborne', goal: 50, desc: 'Win 50 matches with a Bloodborne on your squad.' },
+    { id: 'khanda', name: 'Khanda', category: 'squadWins', squadCategory: 'Heroic', goal: 25, desc: 'Win 25 matches with a Heroic on your squad.' },
+    { id: 'urumi', name: 'Urumi', category: 'squadWins', squadCategory: 'Heroic', goal: 50, desc: 'Win 50 matches with a Heroic on your squad.' },
+
+    // --- The capstone title: reach #1 in the world at least once, ever ---
+    { id: 'excalibur', name: 'Excalibur', category: 'special', goal: 1, desc: 'Reach the #1 World Ranking at least once. Once drawn, it is yours forever — the throne remembers.' }
 ];
 
 const TITLE_BY_ID_MAP = {};
@@ -2645,11 +2777,16 @@ function titleDesc(t) { return t.category === 'character' ? `Win ${t.goal} match
 function titleIsMet(t, stats) {
     if (!stats) return false;
     if (t.category === 'character') return ((stats.charWins && stats.charWins[t.character]) || 0) >= t.goal;
+    if (t.category === 'squadWins') return cosmeticCategoryWinCount(stats, t.squadCategory) >= t.goal;
+    if (t.category === 'special') return false; // never auto-detected from match stats — granted directly (e.g. reaching #1 world rank)
     return (stats[t.stat] || 0) >= t.goal;
 }
 function titleCurrentProgress(t, stats) {
     if (!stats) return 0;
-    return t.category === 'character' ? ((stats.charWins && stats.charWins[t.character]) || 0) : (stats[t.stat] || 0);
+    if (t.category === 'character') return (stats.charWins && stats.charWins[t.character]) || 0;
+    if (t.category === 'squadWins') return cosmeticCategoryWinCount(stats, t.squadCategory);
+    if (t.category === 'special') return 0;
+    return stats[t.stat] || 0;
 }
 
 // ============================================================================
@@ -2673,7 +2810,17 @@ const CARD_SKIN_DEFS = [
     { id: 'bloodborne_circuit', name: 'Bloodborne Circuit', cssClass: 'card-skin-bloodbornecircuit', unlock: { type: 'categoryWins', category: 'Bloodborne', goal: 10 }, desc: 'Steel/teal circuit-line border. Win 10 matches with a Bloodborne on your squad.' },
     { id: 'sacred_ember', name: 'Sacred Ember', cssClass: 'card-skin-sacredember', unlock: { type: 'categoryWins', category: 'Heroic', goal: 10 }, desc: 'White-gold soft glow. Win 10 matches with a Heroic on your squad.' },
     { id: 'widows_ink', name: "Widow's Ink", cssClass: 'card-skin-widowsink', unlock: { type: 'stat', stat: 'mvpCount', goal: 10 }, desc: 'Deep purple/black with silk trim. Earn Match MVP 10 times.' },
-    { id: 'executioners_mark', name: "Executioner's Mark", cssClass: 'card-skin-executionersmark', unlock: { type: 'stat', stat: 'kills', goal: 100 }, desc: 'Black and blood-orange, jagged edge. Land 100 kills.' }
+    { id: 'executioners_mark', name: "Executioner's Mark", cssClass: 'card-skin-executionersmark', unlock: { type: 'stat', stat: 'kills', goal: 100 }, desc: 'Black and blood-orange, jagged edge. Land 100 kills.' },
+    { id: 'ember_wraith', name: 'Ember Wraith', cssClass: 'card-skin-emberwraith', unlock: { type: 'stat', stat: 'kills', goal: 200 }, desc: 'Charred orange embers on black. Land 200 kills.' },
+    { id: 'glacial_omen', name: 'Glacial Omen', cssClass: 'card-skin-glacialomen', unlock: { type: 'rankTier', tierIndex: 4 }, desc: `Frosted blue-white finish. Reach ${RANK_TIERS[4].name} rank.` },
+    { id: 'verdant_thorn', name: 'Verdant Thorn', cssClass: 'card-skin-verdantthorn', unlock: { type: 'stat', stat: 'healAmt', goal: 800 }, desc: 'Mossy green with thorned edges. Heal 800 total hex.' },
+    { id: 'royal_amethyst', name: 'Royal Amethyst', cssClass: 'card-skin-royalamethyst', unlock: { type: 'rankTier', tierIndex: 5 }, desc: `Violet and gold prestige finish. Reach ${RANK_TIERS[5].name} rank.` },
+    { id: 'storm_herald', name: 'Storm Herald', cssClass: 'card-skin-stormherald', unlock: { type: 'stat', stat: 'tactical', goal: 200 }, desc: 'Storm-blue with static trim. Make 200 tactical plays.' },
+    { id: 'plague_doctor', name: 'Plague Doctor', cssClass: 'card-skin-plaguedoctor', unlock: { type: 'categoryWins', category: 'Bloodborne', goal: 20 }, desc: 'Sickly green and bone. Win 20 matches with a Bloodborne on your squad.' },
+    { id: 'solar_flare', name: 'Solar Flare', cssClass: 'card-skin-solarflare', unlock: { type: 'stat', stat: 'mvpCount', goal: 15 }, desc: 'Blazing gold-orange glow. Earn Match MVP 15 times.' },
+    { id: 'abyssal_ink', name: 'Abyssal Ink', cssClass: 'card-skin-abyssalink', unlock: { type: 'stat', stat: 'imprisons', goal: 80 }, desc: 'Deep navy-black void finish. Imprison 80 enemies.' },
+    { id: 'thornsteel', name: 'Thornsteel', cssClass: 'card-skin-thornsteel', unlock: { type: 'stat', stat: 'matches', goal: 250 }, desc: 'Grey steel with a bloodied edge. Play 250 matches.' },
+    { id: 'phantom_veil', name: 'Phantom Veil', cssClass: 'card-skin-phantomveil', unlock: { type: 'friends', goal: 15 }, desc: 'A pale, half-translucent finish. Add 15 friends.' }
 ];
 
 const BOARD_THEME_DEFS = [
@@ -2686,7 +2833,17 @@ const BOARD_THEME_DEFS = [
     { id: 'ashen_vigil', name: 'Ashen Vigil', cssClass: 'board-theme-ashenvigil', unlock: { type: 'stat', stat: 'revives', goal: 10 }, desc: 'Revive 10 allies.' },
     { id: 'frostbound_ledger', name: 'Frostbound Ledger', cssClass: 'board-theme-frostboundledger', unlock: { type: 'rankTier', tierIndex: 1 }, desc: `Reach ${RANK_TIERS[1].name} rank.` },
     { id: 'neon_underworld', name: 'Neon Underworld', cssClass: 'board-theme-neonunderworld', unlock: { type: 'friends', goal: 5 }, desc: 'Add 5 friends.' },
-    { id: 'aurum_sanctum', name: 'Aurum Sanctum', cssClass: 'board-theme-aurumsanctum', unlock: { type: 'rankTier', tierIndex: RANK_TIERS.length - 1 }, desc: `Reach ${RANK_TIERS[RANK_TIERS.length - 1].name}, the top rank.` }
+    { id: 'aurum_sanctum', name: 'Aurum Sanctum', cssClass: 'board-theme-aurumsanctum', unlock: { type: 'rankTier', tierIndex: RANK_TIERS.length - 1 }, desc: `Reach ${RANK_TIERS[RANK_TIERS.length - 1].name}, the top rank.` },
+    { id: 'crimson_abyss', name: 'Crimson Abyss', cssClass: 'board-theme-crimsonabyss', unlock: { type: 'stat', stat: 'kills', goal: 300 }, desc: 'Land 300 kills.' },
+    { id: 'lunar_hollow', name: 'Lunar Hollow', cssClass: 'board-theme-lunarhollow', unlock: { type: 'rankTier', tierIndex: 4 }, desc: `Reach ${RANK_TIERS[4].name} rank.` },
+    { id: 'ember_wastes', name: 'Ember Wastes', cssClass: 'board-theme-emberwastes', unlock: { type: 'stat', stat: 'imprisons', goal: 100 }, desc: 'Imprison 100 enemies.' },
+    { id: 'glacial_expanse', name: 'Glacial Expanse', cssClass: 'board-theme-glacialexpanse', unlock: { type: 'stat', stat: 'healAmt', goal: 1000 }, desc: 'Heal 1000 total hex.' },
+    { id: 'royal_court', name: 'Royal Court', cssClass: 'board-theme-royalcourt', unlock: { type: 'rankTier', tierIndex: RANK_TIERS.length - 1 }, desc: `Reach ${RANK_TIERS[RANK_TIERS.length - 1].name}, the top rank.` },
+    { id: 'plague_ward', name: 'Plague Ward', cssClass: 'board-theme-plagueward', unlock: { type: 'categoryWins', category: 'Bloodborne', goal: 15 }, desc: 'Win 15 matches with a Bloodborne on your squad.' },
+    { id: 'thunderscar', name: 'Thunderscar', cssClass: 'board-theme-thunderscar', unlock: { type: 'stat', stat: 'tactical', goal: 200 }, desc: 'Make 200 tactical plays.' },
+    { id: 'coral_ruin', name: 'Coral Ruin', cssClass: 'board-theme-coralruin', unlock: { type: 'stat', stat: 'revives', goal: 60 }, desc: 'Revive 60 allies.' },
+    { id: 'ashfall_basin', name: 'Ashfall Basin', cssClass: 'board-theme-ashfallbasin', unlock: { type: 'stat', stat: 'matches', goal: 250 }, desc: 'Play 250 matches.' },
+    { id: 'starlit_sanctum', name: 'Starlit Sanctum', cssClass: 'board-theme-starlitsanctum', unlock: { type: 'friends', goal: 10 }, desc: 'Add 10 friends.' }
 ];
 
 // Total career wins across every character in a given CARD_POOL category
@@ -2945,7 +3102,7 @@ function renderProfileTitles() {
 // grimoire_profiles_setup.sql for the one-time database setup (adds
 // player_profiles + match_history tables and 4 RPC functions).
 // ============================================================================
-const PROFILE_AVATAR_OPTIONS = ['🧙','🧛','🧟','🧞','👹','👺','💀','👻','🤖','🥷','🕵️','🦹','🧑‍⚖️','👑','🐺','🦇','🐍','🔪','⚔️','🛡️','🔮','🩸','⚙️','🎭'];
+const PROFILE_AVATAR_OPTIONS = ['🧙','🧛','🧟','🧞','👹','👺','💀','👻','🤖','🥷','🕵️','🦹','🧑‍⚖️','👑','🐺','🦇','🐍','🔪','⚔️','🛡️','🔮','🩸','⚙️','🎭','🕷️','🦂','🐉','👁️','🔥','❄️','⚡','🌙','☠️','🗡️','🏹','🪓','⛓️','🕯️','🧪','⚱️','🦴','🐙','🦑','🕸️','🌑','🎃','🧌','🧝','🧚','🥋','🎩','💣','🔫','🚬','🕶️','🎯','🧿','🪦','🦉','🦅','🐊'];
 
 let blProfileTargetUsername = null; // whose profile is currently open in the modal
 let blProfileIsSelf = true;
