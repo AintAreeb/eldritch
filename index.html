@@ -1146,12 +1146,12 @@
            from Player 2's seat instead of Player 1's. The back button and
            the ••• comms menu live outside this wrapper on purpose, so they
            stay put in their corners for whoever's thumb is nearest them.  */
-        #battleFlipWrap {
+        #battleFlipWrap, #draftFlipWrap {
             transform: rotate(0deg);
             transition: transform 0.45s ease;
             transform-origin: center center;
         }
-        #battleFlipWrap.seat-2-active {
+        #battleFlipWrap.seat-2-active, #draftFlipWrap.seat-2-active {
             transform: rotate(180deg);
         }
     </style>
@@ -1275,14 +1275,27 @@
                 <button class="btn diff-btn" data-diff="mastermind" style="width:auto; padding:8px 14px; font-size:10px;" onclick="setDifficulty('mastermind', this)">👑 MASTERMIND</button>
             </div>
             <div id="difficultyDescription" style="text-align:center; font-size:10.5px; color:#8a8f98; min-height:28px; margin:0 auto 14px auto; max-width:320px; line-height:1.4;"></div>
+
+            <div class="squad-title" style="border-bottom:none;">Squad Selection</div>
+            <div style="display:flex; gap:8px; justify-content:center; margin:10px 0 18px 0;">
+                <button class="btn picker-btn picker-active" data-bot-squad-mode="random" style="width:auto; padding:8px 14px; font-size:10px;" onclick="setBotSquadMode('random', this)">RANDOM</button>
+                <button class="btn picker-btn" data-bot-squad-mode="draft" style="width:auto; padding:8px 14px; font-size:10px;" onclick="setBotSquadMode('draft', this)">DRAFT</button>
+            </div>
+
             <button class="start-btn" onclick="initializeMatch()">INITIALIZE GRIMOIRE</button>
         </div>
 
         <div id="localPanel" style="display:none;">
             <div class="squad-title" style="margin-top:0; border-bottom:none;">Local 2-Player (Pass & Play)</div>
             <p style="text-align:center; font-size:11px; color:#8a8f98; max-width:320px; margin:0 auto 16px auto; line-height:1.5;">
-                Two random, tier-balanced squads are dealt — one per player. Take turns on this same device; after each move, a handoff screen pauses the clock until the next player confirms they're holding the device.
+                Take turns on this same device — the board stays put and only the display rotates 180° for whoever's turn it is, chess-board style.
             </p>
+
+            <div style="display:flex; gap:8px; justify-content:center; margin:10px 0 18px 0;">
+                <button class="btn picker-btn picker-active" data-local-squad-mode="random" style="width:auto; padding:8px 14px; font-size:10px;" onclick="setLocalSquadMode('random', this)">RANDOM</button>
+                <button class="btn picker-btn" data-local-squad-mode="draft" style="width:auto; padding:8px 14px; font-size:10px;" onclick="setLocalSquadMode('draft', this)">DRAFT</button>
+            </div>
+
             <button class="start-btn" onclick="initializeLocalMatch()">START LOCAL MATCH</button>
         </div>
 
@@ -1317,13 +1330,15 @@
 
     <div id="draftView" style="display:none; text-align:center; padding:16px;">
         <button class="back-fab-btn" onclick="blConfirmBackFromMatch()" title="Back">←</button>
+        <div id="draftFlipWrap">
         <h1>DRAFT</h1>
         <div id="draftStatus" class="turn-display"></div>
         <div style="display:flex; justify-content:space-around; font-size:11px; color:#8a8f98; margin:8px 0 4px 0;">
-            <div>YOU: <span id="draftMyCount">0 / 10</span></div>
-            <div>OPPONENT: <span id="draftOppCount">0 / 10</span></div>
+            <div><span id="draftMyLabel">YOU</span>: <span id="draftMyCount">0 / 10</span></div>
+            <div><span id="draftOppLabel">OPPONENT</span>: <span id="draftOppCount">0 / 10</span></div>
         </div>
         <div id="draftPoolGrid"></div>
+        </div>
     </div>
 
     <div id="gameView" style="display: none;">
@@ -1711,6 +1726,18 @@ let gameState = {
 // ever changing position on screen. 1 = the seat that isn't rotated,
 // 2 = the seat sitting opposite (rotated).
 let localActiveSeat = 1;
+
+// Squad-selection mode for the vs-Bot and Local 2P setup panels — mirrors
+// mp.squadMode ('random' | 'draft') but kept separate since those two modes
+// have no `mp` object at all. See startLocalDraft below for the actual
+// non-networked draft engine both panels share.
+let botSquadMode = 'random';
+let localSquadMode = 'random';
+// The in-progress local draft session, or null when no draft is running.
+// Shape mirrors mp.draft: { mode, pool, p1Picks, p2Picks, schedule,
+// scheduleIndex, turnSide, picksLeftInTurn }.
+let localDraft = null;
+let localDraftBotTimeoutHandle = null;
 
 // ============================================================================
 // SETTINGS & HAPTICS
@@ -3849,6 +3876,8 @@ function resetToSetup(fromPopstate) {
     mpTeardownConnection();
     clearSoloSnapshot();
     if (botTurnTimeoutHandle) { clearTimeout(botTurnTimeoutHandle); botTurnTimeoutHandle = null; }
+    if (localDraftBotTimeoutHandle) { clearTimeout(localDraftBotTimeoutHandle); localDraftBotTimeoutHandle = null; }
+    localDraft = null;
     undoState = { snapshot: null, pendingSnapshot: null, awaitingResponse: false, incomingRequest: false, waitingForSync: false };
     gameOverVibrated = false;
     gameOverFXPlayed = false;
@@ -4042,6 +4071,10 @@ function initializeMatch() {
     mpClearSession();
     gameState.isLocalMultiplayer = false;
     localActiveSeat = 1;
+    if (botSquadMode === 'draft') {
+        startLocalDraft('vsBot');
+        return;
+    }
     let built = buildRandomBalancedSquads();
     gameState.unusedBloodbanes = built.unusedBloodbanes;
     gameState.unusedBloodbornes = built.unusedBloodbornes;
@@ -4057,6 +4090,10 @@ function initializeLocalMatch() {
     mp.isMultiplayer = false;
     mpClearSession();
     gameState.isLocalMultiplayer = true;
+    if (localSquadMode === 'draft') {
+        startLocalDraft('local2p');
+        return;
+    }
     let built = buildRandomBalancedSquads();
     gameState.unusedBloodbanes = built.unusedBloodbanes;
     gameState.unusedBloodbornes = built.unusedBloodbornes;
@@ -4349,6 +4386,18 @@ function mpAttemptReconnectOnLoad() {
 function mpSetSquadMode(mode, btnEl) {
     mp.squadMode = mode;
     document.querySelectorAll('#mpPanel .picker-btn[data-mp-mode]').forEach(b => b.classList.remove('picker-active'));
+    if (btnEl) btnEl.classList.add('picker-active');
+}
+
+function setBotSquadMode(mode, btnEl) {
+    botSquadMode = mode;
+    document.querySelectorAll('#vsBotPanel .picker-btn[data-bot-squad-mode]').forEach(b => b.classList.remove('picker-active'));
+    if (btnEl) btnEl.classList.add('picker-active');
+}
+
+function setLocalSquadMode(mode, btnEl) {
+    localSquadMode = mode;
+    document.querySelectorAll('#localPanel .picker-btn[data-local-squad-mode]').forEach(b => b.classList.remove('picker-active'));
     if (btnEl) btnEl.classList.add('picker-active');
 }
 
@@ -4778,6 +4827,143 @@ function mpApplyDraftPick(cardName, side) {
     } else {
         mpRenderDraft();
     }
+}
+
+// ============================================================================
+// LOCAL (NON-NETWORKED) DRAFT — vs-Bot and Local 2P share this one engine.
+// Same snake-draft schedule/pool/category-caps as the online multiplayer
+// draft above (mpBuildDraftSchedule/mpMaterializeSquad/mpCategoryCap are
+// plain helpers with no `mp` dependency, so they're reused as-is), but
+// entirely self-contained on this device — no `mp` object, no network
+// messages. Side 1 is always the human at the unrotated seat; side 2 is
+// either the bot (mode: 'vsBot', auto-picks on a short delay) or the second
+// human sitting opposite (mode: 'local2p' — draftFlipWrap rotates 180° on
+// side 2's turn, same chess-board seating as the battle screen).
+// ============================================================================
+function startLocalDraft(mode) {
+    const schedule = mpBuildDraftSchedule();
+    localDraft = {
+        mode, // 'vsBot' | 'local2p'
+        pool: CARD_POOL.map(c => ({...c})),
+        p1Picks: [], p2Picks: [],
+        schedule,
+        scheduleIndex: 0,
+        turnSide: schedule[0].side,
+        picksLeftInTurn: schedule[0].count
+    };
+    document.getElementById('setupView').style.display = 'none';
+    document.getElementById('draftView').style.display = 'block';
+    bl_enterGameScreen();
+    renderLocalDraft();
+    if (mode === 'vsBot' && localDraft.turnSide === 2) {
+        localDraftBotTimeoutHandle = setTimeout(runBotDraftPick, 700);
+    }
+}
+
+function renderLocalDraft() {
+    const d = localDraft;
+    if (!d) return;
+    const flipWrap = document.getElementById('draftFlipWrap');
+    if (flipWrap) {
+        flipWrap.classList.toggle('seat-2-active', d.mode === 'local2p' && d.turnSide === 2);
+    }
+    const isP1Turn = d.turnSide === 1;
+    const canPick = d.mode === 'vsBot' ? isP1Turn : true;
+    const categories = [
+        { key: 'Bloodbane', label: '🩸 BLOODBANE CAGE' },
+        { key: 'Bloodborne', label: '⚙️ BLOODBORNE CAGE' },
+        { key: 'Heroic', label: '⭐ HEROIC CAGE' }
+    ];
+    let html = '';
+    categories.forEach(({ key: cat, label }) => {
+        const cardsInCat = d.pool.filter(c => c.category === cat);
+        if (cardsInCat.length === 0) return;
+        const turnPicks = d.turnSide === 1 ? d.p1Picks : d.p2Picks;
+        const roomLeft = turnPicks.filter(c => c.category === cat).length < mpCategoryCap(cat);
+        html += `<div class="squad-title" style="margin-top:12px;">${label} (cap ${mpCategoryCap(cat)})</div><div class="squad" style="grid-template-columns:repeat(3, minmax(0,1fr));">`;
+        cardsInCat.forEach(c => {
+            const enabled = canPick && roomLeft;
+            html += `<button class="btn" style="height:auto; padding:10px 4px; ${enabled ? '' : 'opacity:0.35;'}" ${enabled ? `onclick="pickLocalDraftCard('${c.name}')"` : 'disabled'}>${c.name}</button>`;
+        });
+        html += '</div>';
+    });
+    document.getElementById('draftPoolGrid').innerHTML = html;
+
+    if (d.mode === 'vsBot') {
+        document.getElementById('draftMyLabel').innerText = 'YOU';
+        document.getElementById('draftOppLabel').innerText = 'BOT';
+        document.getElementById('draftStatus').innerText = isP1Turn
+            ? `Your pick — choose ${d.picksLeftInTurn} card${d.picksLeftInTurn > 1 ? 's' : ''} this turn`
+            : "Bot is picking...";
+    } else {
+        document.getElementById('draftMyLabel').innerText = 'PLAYER 1';
+        document.getElementById('draftOppLabel').innerText = 'PLAYER 2';
+        document.getElementById('draftStatus').innerText = `Player ${d.turnSide}'s pick — choose ${d.picksLeftInTurn} card${d.picksLeftInTurn > 1 ? 's' : ''} this turn`;
+    }
+    document.getElementById('draftMyCount').innerText = d.p1Picks.length + ' / 10';
+    document.getElementById('draftOppCount').innerText = d.p2Picks.length + ' / 10';
+}
+
+function pickLocalDraftCard(cardName) {
+    const d = localDraft;
+    if (!d || d.picksLeftInTurn <= 0) return;
+    if (d.mode === 'vsBot' && d.turnSide !== 1) return;
+    applyLocalDraftPick(cardName, d.turnSide);
+}
+
+function applyLocalDraftPick(cardName, side) {
+    const d = localDraft;
+    if (!d) return;
+    const idx = d.pool.findIndex(c => c.name === cardName);
+    if (idx === -1) return;
+    const card = d.pool.splice(idx, 1)[0];
+    if (side === 1) d.p1Picks.push(card); else d.p2Picks.push(card);
+
+    d.picksLeftInTurn--;
+    if (d.picksLeftInTurn <= 0 && d.p1Picks.length + d.p2Picks.length < 20) {
+        d.scheduleIndex++;
+        const next = d.schedule[d.scheduleIndex];
+        if (next) {
+            d.turnSide = next.side;
+            d.picksLeftInTurn = next.count;
+        }
+    }
+
+    if (d.p1Picks.length === 10 && d.p2Picks.length === 10) {
+        finishLocalDraft();
+        return;
+    }
+
+    renderLocalDraft();
+    if (d.mode === 'vsBot' && d.turnSide === 2) {
+        localDraftBotTimeoutHandle = setTimeout(runBotDraftPick, 550 + Math.random() * 400);
+    }
+}
+
+// Bot's draft pick: a legal random choice each time, respecting category
+// caps — draft mode is about letting the human curate their own squad, not
+// about out-thinking the bot's pool management.
+function runBotDraftPick() {
+    const d = localDraft;
+    if (!d || d.mode !== 'vsBot' || d.turnSide !== 2) return;
+    const eligible = d.pool.filter(c => d.p2Picks.filter(x => x.category === c.category).length < mpCategoryCap(c.category));
+    if (eligible.length === 0) return;
+    const chosen = eligible[Math.floor(Math.random() * eligible.length)];
+    applyLocalDraftPick(chosen.name, 2);
+}
+
+function finishLocalDraft() {
+    const d = localDraft;
+    const p1Squad = mpMaterializeSquad(d.p1Picks, 'p1');
+    const p2Squad = mpMaterializeSquad(d.p2Picks, 'p2');
+    const p1Tier = p1Squad.reduce((s, c) => c.maxHex === Infinity ? s + 3 : s + c.tier, 0);
+    const p2Tier = p2Squad.reduce((s, c) => c.maxHex === Infinity ? s + 3 : s + c.tier, 0);
+    gameState.unusedBloodbanes = d.pool.filter(c => c.category === 'Bloodbane').map(c => ({...c}));
+    gameState.unusedBloodbornes = d.pool.filter(c => c.category === 'Bloodborne').map(c => ({...c}));
+    const mode = d.mode;
+    localDraft = null;
+    document.getElementById('draftView').style.display = 'none';
+    startBattleWithSquads(p1Squad, p2Squad, p1Tier, p2Tier, mode === 'vsBot' ? { vsBot: true } : { localMultiplayer: true });
 }
 
 function mpHandleMessage(data, peerId) {
