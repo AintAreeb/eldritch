@@ -4312,7 +4312,9 @@ let mp = {
     matched: false,
     draft: null,
     phase: 'lobby',     // 'lobby' | 'draft' | 'battle' — used for reconnect/resync
-    opponentUsername: null // filled in via the 'identify' handshake, if both sides are logged in
+    opponentUsername: null, // filled in via the 'identify' handshake, if both sides are logged in
+    roomAttempt: 0,      // bumped each time mpEscalateMatchConnection forces a fresh room
+    cachedSquadsPayload: null // side 1's built squads, kept so a reconnect resend doesn't re-roll them
 };
 
 function mpLog(text) {
@@ -4697,7 +4699,17 @@ function mpWireReliableRoom(room) {
         queued.forEach(([envelope, peerId]) => rawSend(envelope, peerId));
     };
 
-    return { msgAction: msgActionProxy, send, onPeerConnected: flush, dispose: () => clearInterval(retryTimer) };
+    return {
+        msgAction: msgActionProxy,
+        send,
+        onPeerConnected: flush,
+        dispose: () => clearInterval(retryTimer),
+        // True while at least one outgoing message is still waiting on an ack.
+        // Used to detect a channel that's gone silently dead (e.g. the "shared
+        // connection but this room never fires onPeerJoin" case) so the caller
+        // can force a fresh room instead of retrying forever into the void.
+        hasPending: () => Object.keys(state.pending).length > 0
+    };
 }
 
 
@@ -4786,30 +4798,94 @@ function mpFindRandomOpponent() {
     Object.keys(mp.room.getPeers()).forEach(tryClaim);
 }
 
-function mpFinalizeMatch(peerId) {
+// Deterministic room name for a given peer pair + retry attempt. Both sides
+// compute this independently from the same sorted-ID pair, so no signaling
+// is needed to agree on where to reconnect — attempt 0 is the original
+// match room, attempt 1+ are fallback rooms used by mpEscalateMatchConnection.
+function mpDeriveMatchRoomName(peerId, attempt) {
+    const base = 'match-' + [window.__trysteroSelfId, peerId].sort().join('-');
+    return attempt > 0 ? base + '-r' + attempt : base;
+}
+
+// Joins (or rejoins) the private 1:1 room used for the rest of the match and
+// wires up the reliable message channel + handlers. Tears down any previous
+// room/channel first, so this is safe to call again from
+// mpEscalateMatchConnection without leaking old retry timers.
+function mpOpenMatchChannel(peerId, roomName) {
+    if (mp.reliable) { try { mp.reliable.dispose(); } catch (e) {} }
+    if (mp.room) { try { mp.room.leave(); } catch (e) {} }
     mp.peerId = peerId;
-    mp.mySide = (window.__trysteroSelfId < peerId) ? 1 : 2;
-    const privateName = 'match-' + [window.__trysteroSelfId, peerId].sort().join('-');
-    try { mp.room.leave(); } catch (e) {}
-    mpLog('Opponent found! Connecting...');
-    mp.roomName = privateName;
-    mp.room = window.__trysteroJoinRoom(MP_CONFIG, privateName);
+    mp.roomName = roomName;
+    mp.room = window.__trysteroJoinRoom(MP_CONFIG, roomName);
     const reliable = mpWireReliableRoom(mp.room);
     mp.reliable = reliable;
     mp.sendMsg = reliable.send;
     reliable.msgAction.onMessage = (data, pid) => mpHandleMessage(data, pid);
-    // Both sides call mpBeginSquadPhase() below right away (draft/squad setup
-    // itself is fully deterministic and needs no round-trip), but the actual
-    // private data channel to the peer may still be mid-handshake at that
-    // moment. mpWireReliableRoom queues anything sent before this fires, so
-    // the first draft pick / squad payload no longer gets lost in transit.
+    // Both sides call mpBeginSquadPhase() right after this returns (draft/squad
+    // setup itself is fully deterministic and needs no round-trip), but the
+    // actual private data channel to the peer may still be mid-handshake at
+    // that moment. mpWireReliableRoom queues anything sent before this fires,
+    // so the first draft pick / squad payload no longer gets lost in transit.
     mp.room.onPeerJoin = pid => {
         mp.peerId = pid;
         reliable.onPeerConnected();
         attachVoiceToRoom(mp.room);
     };
+}
+
+function mpFinalizeMatch(peerId) {
+    mp.mySide = (window.__trysteroSelfId < peerId) ? 1 : 2;
+    mp.roomAttempt = 0;
+    mpLog('Opponent found! Connecting...');
+    mpOpenMatchChannel(peerId, mpDeriveMatchRoomName(peerId, 0));
     mpSaveSession();
     mpBeginSquadPhase();
+    mpStartConnectionWatchdog(peerId);
+}
+
+// Guards against the failure mode behind "both screens stuck on waiting for
+// opponent to roll squads": occasionally the two sides already share an
+// underlying WebRTC connection from the lobby room, so the fresh private
+// room's onPeerJoin never fires and messages (or their acks) silently never
+// arrive, even with the seq/ack retry loop in mpWireReliableRoom. There's no
+// way to distinguish "still handshaking" from "will never connect" from one
+// side alone, so instead of waiting forever, periodically check whether the
+// squad/draft handoff has actually completed, and if not, force a genuinely
+// new room name — a room trystero has never used for this pair guarantees a
+// real join handshake — and resend whatever this side owes the other.
+function mpStartConnectionWatchdog(peerId) {
+    let attempts = 0;
+    const MAX_ATTEMPTS = 4; // ~4 * 8s = 32s of escalation before giving up
+    const watchdog = setInterval(() => {
+        // Side 1 is "stuck" if its squadsReady (or a draft pick) never got
+        // acked; side 2 is "stuck" if it's still sitting in the lobby phase.
+        const stillWaiting = (mp.phase === 'lobby' && mp.mySide !== 1);
+        const unacked = mp.reliable && mp.reliable.hasPending();
+        if (!mp.isMultiplayer || (!stillWaiting && !unacked)) { clearInterval(watchdog); return; }
+        attempts++;
+        if (attempts > MAX_ATTEMPTS) {
+            clearInterval(watchdog);
+            if (stillWaiting) mpLog('Connection trouble — hit Cancel and search again.');
+            return;
+        }
+        mpEscalateMatchConnection(peerId);
+    }, 8000);
+}
+
+function mpEscalateMatchConnection(peerId) {
+    mp.roomAttempt++;
+    mpOpenMatchChannel(peerId, mpDeriveMatchRoomName(peerId, mp.roomAttempt));
+    mpSaveSession();
+    if (mp.mySide === 1 && mp.cachedSquadsPayload) {
+        // Resend the SAME squads we already committed to locally — never
+        // re-roll here, or the two sides would end up playing different games.
+        mp.sendMsg({ type: 'squadsReady', payload: mp.cachedSquadsPayload }, mp.peerId);
+    }
+    // Whatever phase we're each actually in, asking for a resync brings the
+    // other side's local state (draft picks, battle state) fully up to date
+    // over the new, definitely-working channel — cheaper than trying to
+    // replay every individual message that may have been lost.
+    mp.sendMsg({ type: 'resyncRequest' }, mp.peerId);
 }
 
 // ---- Squad phase: routes to draft or randomized-sync ---------------------
@@ -4846,12 +4922,13 @@ function mpRunRandomizedSquadFlow() {
         // move" while the other was stuck forever on "waiting for opponent to
         // roll squads". Passing peerId sends it immediately over the raw
         // channel AND registers it for the normal seq/ack retry loop.
-        mp.sendMsg({ type: 'squadsReady', payload: mpSanitizeForWire({
+        mp.cachedSquadsPayload = mpSanitizeForWire({
             p1Squad: built.p2Squad, p2Squad: built.p1Squad,
             p1Tier: built.p2Tier, p2Tier: built.p1Tier,
             unusedBloodbanes: built.unusedBloodbanes,
             unusedBloodbornes: built.unusedBloodbornes
-        })}, mp.peerId);
+        });
+        mp.sendMsg({ type: 'squadsReady', payload: mp.cachedSquadsPayload }, mp.peerId);
         mpStartBattleFromPayload(built);
     } else {
         mpLog('Waiting for opponent to roll squads...');
@@ -5167,6 +5244,7 @@ function mpHandleMessage(data, peerId) {
     if (data.type === 'identify') {
         mp.opponentUsername = (data.payload && data.payload.username) || null;
     } else if (data.type === 'squadsReady') {
+        if (mp.phase === 'battle') return; // already applied (e.g. a watchdog resend arrived after the original)
         mpStartBattleFromPayload(mpRestoreFromWire(data.payload));
     } else if (data.type === 'draftPick') {
         mpApplyDraftPick(data.cardName, mp.draft ? mp.draft.turnSide : null);
