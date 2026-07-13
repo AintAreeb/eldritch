@@ -6405,7 +6405,7 @@ function processSelectedTarget(targetId) {
             let dmg1 = firstEnemy.hasActivity ? 2 : 1;
             let dmg2 = secondEnemy.hasActivity ? 2 : 1;
             if (isSameTarget) {
-                firstEnemy.hex = Math.max(0, firstEnemy.hex - (dmg1 * 2));
+                applyShieldedDamage(firstEnemy, dmg1 * 2);
                 writeLog(`🤖 Mecha+Cop Fusion: Enforced 2x damage (${dmg1 * 2}) on ${firstEnemy.name}.`);
             } else {
                 applyShieldedDamage(firstEnemy, dmg1);
@@ -7410,6 +7410,23 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
             if (c.mechaCooldown > 0) c.mechaCooldown--; 
             if (c.blockedCounter > 0) c.blockedCounter--;
         });
+        // Mirrors the player's free "⚕️ Cleanse" button (freeDoctorCleanse):
+        // an active Doctor can strip poison off any poisoned squadmate
+        // (including itself) for 1 of its own Hex, entirely outside the
+        // turn economy — it never costs the bot its actual move. Without
+        // this, a poisoned bot card just had no way to ever be cured, since
+        // Doctor's normal heal only adds Hex and never clears the flag.
+        let cleanseDoc = gameState.p2.find(c => c.name === 'Doctor' && c.hex > 0 && !c.imprisoned);
+        if (cleanseDoc) {
+            let poisonedAllies = gameState.p2.filter(c => c.poisoned && c.hex > 0);
+            for (let ally of poisonedAllies) {
+                if (cleanseDoc.hex <= 0) break;
+                cleanseDoc.hex -= 1;
+                ally.poisoned = false;
+                writeLog(`⚕️ Bot Doctor performs clean action to remove poison from ${ally.name}. Cost: 1 Hex.`);
+                queueRecap('cured', ally);
+            }
+        }
     }
 
     if(aliveBots.length > 0 && activePlayers.length > 0) {
@@ -7550,7 +7567,7 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
                         writeLog(`👻 Bot Wraith claims +2 hex amplification for the kill!`);
                     }
                 } else if (aiActor.name === 'Doctor') {
-                    let healTargets = gameState.p2.filter(c => c.id !== aiActor.id && c.hex > 0 && c.hex < c.maxHex);
+                    let healTargets = gameState.p2.filter(c => c.id !== aiActor.id && c.hex > 0 && !c.imprisoned && c.hex < c.maxHex);
                     if (healTargets.length > 0) {
                         let patient = pickBotHealTarget(healTargets, gameState.difficulty);
                         patient.hex = Math.min(patient.maxHex, patient.hex + 1);
@@ -7576,8 +7593,16 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
                     let logMsg = `🎤 Bot Singer double-targets ${targetPlayer.name}`;
                     if (otherPlayers.length > 0) {
                         let secondTarget = otherPlayers[Math.floor(Math.random() * otherPlayers.length)];
-                        applyShieldedDamage(secondTarget, 1);
-                        logMsg += ` and ${secondTarget.name}.`;
+                        // Same anti-double-kill rule Singer's move resolves
+                        // under everywhere else (player's own Singer, Sorcerer
+                        // hijack, Actor/Dementor/Bartender mimics): don't let
+                        // a single Singer move bag two kills at once.
+                        if (!(targetPlayer.hex === 0 && secondTarget.hex === 1)) {
+                            applyShieldedDamage(secondTarget, 1);
+                            logMsg += ` and ${secondTarget.name}.`;
+                        } else {
+                            logMsg += `.`;
+                        }
                     } else {
                         logMsg += `.`;
                     }
@@ -7760,7 +7785,7 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
                         } else if (pName === 'Cop') {
                             let dmg1 = first.hasActivity ? 2 : 1;
                             let dmg2 = second.hasActivity ? 2 : 1;
-                            if (isSameTarget) { first.hex = Math.max(0, first.hex - (dmg1 * 2)); }
+                            if (isSameTarget) { applyShieldedDamage(first, dmg1 * 2); }
                             else { applyShieldedDamage(first, dmg1); applyShieldedDamage(second, dmg2); }
                             writeLog(`🤖 Bot Mecha+Cop Fusion: enforced damage on your ${first.name}${isSameTarget ? '' : ' and ' + second.name}!`);
                         } else {
@@ -7800,14 +7825,14 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
                     aiActor.hex = 0;
                     writeLog(`💥 Bot Terrorist drained 1 hex from eligible player cards and died instantly.`);
                 } else if (aiActor.name === 'Reporter') {
-                    let injuredBots = gameState.p2.filter(c => c.hex > 0 && c.hex < c.maxHex);
+                    let injuredBots = gameState.p2.filter(c => c.hex > 0 && !c.imprisoned && c.hex < c.maxHex);
                     for (let i = 0; i < 5; i++) {
                         if (injuredBots.length > 0) {
                             let b = injuredBots[Math.floor(Math.random() * injuredBots.length)];
                             b.hex = Math.min(b.maxHex === Infinity ? 99 : b.maxHex, b.hex + 1);
                             writeLog(`📰 Bot Reporter distributed hex to ${b.name} (+1 Hex).`);
                             queueRecap('heal', b);
-                            injuredBots = gameState.p2.filter(c => c.hex > 0 && c.hex < c.maxHex);
+                            injuredBots = gameState.p2.filter(c => c.hex > 0 && !c.imprisoned && c.hex < c.maxHex);
                         }
                     }
                     aiActor.hex = 0;
