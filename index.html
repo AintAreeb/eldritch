@@ -4134,8 +4134,22 @@ function startBattleWithSquads(p1Squad, p2Squad, p1Tier, p2Tier, opts = {}) {
     gameState.p2 = p2Squad;
     gameState.p1TierTotal = p1Tier;
     gameState.p2TierTotal = p2Tier;
-    // Lower total tier level moves first. Ties default to side 1.
-    gameState.currentTurn = (p2Tier < p1Tier) ? 2 : 1;
+    // Lower total tier level moves first. On an exact tie, "default to side
+    // 1" used to mean BOTH real multiplayer clients picked a winner — since
+    // each device always mirrors its OWN squad onto local p1 ("my squad"),
+    // a tie made every device independently conclude "p1 (me) goes first",
+    // so both players saw YOUR TURN simultaneously. For a real online match,
+    // break the tie using the two peers' Trystero connection IDs instead:
+    // that comparison comes out exactly reversed on the two devices (my ID
+    // vs theirs, vs their ID vs mine), so precisely one side wins — the
+    // same trick already used elsewhere to assign mp.mySide. Solo/local-pass-
+    // and-play only ever run one shared gameState (no duplicated
+    // perspective), so they keep the simple side-1-default tiebreak.
+    if (p1Tier === p2Tier && mp.isMultiplayer && mp.peerId) {
+        gameState.currentTurn = (window.__trysteroSelfId < mp.peerId) ? 1 : 2;
+    } else {
+        gameState.currentTurn = (p2Tier < p1Tier) ? 2 : 1;
+    }
     gameState.isLocalMultiplayer = !!opts.localMultiplayer;
     gameState.isGameOver = false;
     gameState.p1KnightShields = 0;
@@ -4204,7 +4218,7 @@ function startBattleWithSquads(p1Squad, p2Squad, p1Tier, p2Tier, opts = {}) {
     } else {
         writeLog(`💠 Tier totals — Squad 1: ${p1Tier} | Squad 2: ${p2Tier}.`);
         if (p1Tier === p2Tier) {
-            writeLog("💠 Tier totals are tied — Squad 1 moves first.");
+            writeLog(gameState.currentTurn === 1 ? "💠 Tier totals are tied — a coin flip says Squad 1 moves first!" : "💠 Tier totals are tied — a coin flip says Squad 2 moves first!");
         } else {
             writeLog(gameState.currentTurn === 1 ? "💠 Squad 1 has the lower tier total and moves first!" : "💠 Squad 2 has the lower tier total and moves first!");
         }
