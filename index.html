@@ -5300,7 +5300,7 @@ function hasValidTargets(card, allies, enemies) {
         return teamLostTwoCount && targetsExist;
     }
     if (card.name === 'Therapist') return relevantRecord !== null && enemies.some(c => c.hex > 0 && !c.imprisoned);
-    if (card.name === 'Reporter') return allies.some(c => c.hex > 0);
+    if (card.name === 'Reporter') return allies.some(c => c.hex > 0 && c.hex < c.maxHex);
     if (card.name === 'Warden') return allies.some(c => c.imprisoned && c.name !== 'Spy') && enemies.some(c => c.hex > 0 && !c.imprisoned && !c.isHeroic);
     if (card.name === 'Actor') return true;
     if (card.name === 'Princess') return relevantRecord !== null;
@@ -6290,59 +6290,34 @@ function processSelectedTarget(targetId) {
         return;
     }
 
-    if (baseMove === 'reporter_heal_1') {
+    // Reporter chain: like the bot's loop (which only ever heals allies that
+    // are still c.hex < c.maxHex), each step only offers still-injured
+    // allies as targets. If nobody's injured anymore after a heal, the
+    // chain ends right there instead of prompting for a target that no
+    // longer exists — same stopping condition the bot's loop uses.
+    const REPORTER_STEPS = ['reporter_heal_2', 'reporter_heal_3', 'reporter_heal_4', 'reporter_heal_5', null];
+    const REPORTER_LABELS = ['📰 REPORTER: SELECT 2ND CARD TO HEAL', '📰 REPORTER: SELECT 3RD CARD TO HEAL', '📰 REPORTER: SELECT 4TH CARD TO HEAL', '📰 REPORTER: SELECT 5TH CARD TO HEAL'];
+    const REPORTER_ORDER = ['reporter_heal_1', 'reporter_heal_2', 'reporter_heal_3', 'reporter_heal_4', 'reporter_heal_5'];
+    if (REPORTER_ORDER.includes(baseMove)) {
         let patient = gameState.p1.find(c => c.id === targetId);
         patient.hex = Math.min(patient.maxHex === Infinity ? 99 : patient.maxHex, patient.hex + 1);
         writeLog(`📰 Reporter distributed hex to ${patient.name} (+1 Hex).`);
         queueRecap('heal', patient);
-        
-        gameState.targetingMode.type = 'reporter_heal_2';
-        document.getElementById('targetBar').innerText = '📰 REPORTER: SELECT 2ND CARD TO HEAL';
+
+        let stepIdx = REPORTER_ORDER.indexOf(baseMove);
+        let stillInjured = gameState.p1.some(c => c.hex > 0 && c.hex < c.maxHex && !c.imprisoned);
+        let nextType = REPORTER_STEPS[stepIdx];
+
+        if (!stillInjured || !nextType) {
+            actorCard.hasActivity = true;
+            actorCard.hex = 0;
+            concludeTargetedMove(actorCard.id, baseMove);
+            return;
+        }
+
+        gameState.targetingMode.type = nextType;
+        document.getElementById('targetBar').innerText = REPORTER_LABELS[stepIdx];
         renderScene();
-        return;
-    }
-    if (baseMove === 'reporter_heal_2') {
-        let patient = gameState.p1.find(c => c.id === targetId);
-        patient.hex = Math.min(patient.maxHex === Infinity ? 99 : patient.maxHex, patient.hex + 1);
-        writeLog(`📰 Reporter distributed hex to ${patient.name} (+1 Hex).`);
-        queueRecap('heal', patient);
-        
-        gameState.targetingMode.type = 'reporter_heal_3';
-        document.getElementById('targetBar').innerText = '📰 REPORTER: SELECT 3RD CARD TO HEAL';
-        renderScene();
-        return;
-    }
-    if (baseMove === 'reporter_heal_3') {
-        let patient = gameState.p1.find(c => c.id === targetId);
-        patient.hex = Math.min(patient.maxHex === Infinity ? 99 : patient.maxHex, patient.hex + 1);
-        writeLog(`📰 Reporter distributed hex to ${patient.name} (+1 Hex).`);
-        queueRecap('heal', patient);
-        
-        gameState.targetingMode.type = 'reporter_heal_4';
-        document.getElementById('targetBar').innerText = '📰 REPORTER: SELECT 4TH CARD TO HEAL';
-        renderScene();
-        return;
-    }
-    if (baseMove === 'reporter_heal_4') {
-        let patient = gameState.p1.find(c => c.id === targetId);
-        patient.hex = Math.min(patient.maxHex === Infinity ? 99 : patient.maxHex, patient.hex + 1);
-        writeLog(`📰 Reporter distributed hex to ${patient.name} (+1 Hex).`);
-        queueRecap('heal', patient);
-        
-        gameState.targetingMode.type = 'reporter_heal_5';
-        document.getElementById('targetBar').innerText = '📰 REPORTER: SELECT 5TH CARD TO HEAL';
-        renderScene();
-        return;
-    }
-    if (baseMove === 'reporter_heal_5') {
-        let patient = gameState.p1.find(c => c.id === targetId);
-        patient.hex = Math.min(patient.maxHex === Infinity ? 99 : patient.maxHex, patient.hex + 1);
-        writeLog(`📰 Reporter distributed hex to ${patient.name} (+1 Hex).`);
-        queueRecap('heal', patient);
-        
-        actorCard.hasActivity = true;
-        actorCard.hex = 0;
-        concludeTargetedMove(actorCard.id, baseMove);
         return;
     }
 
@@ -7467,8 +7442,8 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
                 aiActor = pickBotActor(usableBots, activePlayers, gameState.difficulty);
             }
 
-            if (aiActor.name !== 'Spy' && !aiActor.isHeroic) aiActor.hex -= 1;
-            aiActor.hasActivity = true; 
+            if (aiActor.name !== 'Spy' && !aiActor.isHeroic && aiActor.name !== 'Mage' && aiActor.name !== 'Warlock') aiActor.hex -= 1;
+            aiActor.hasActivity = true;
 
             // Same per-card target restrictions the player is held to (Cop can only
             // strike Criminal/Law & Order tags, Robber can't normal-siphon Criminals, etc.)
@@ -7645,15 +7620,14 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
                         writeLog(`🏹 Bot Hood steals hex but has no active allies.`);
                     }
                 } else if (aiActor.name === 'Witch') {
-                    if (targetPlayer.tag === 'Entity') {
-                        applyShieldedDamage(targetPlayer, 1);
-                        writeLog(`✨ Bot Witch used Mystic Purge on Entity ${targetPlayer.name}, dealing 1 pure damage.`);
-                    } else {
-                        targetPlayer.poisoned = true;
-                        applyShieldedDamage(targetPlayer, 1);
-                        writeLog(`🔮 Bot Witch strikes and poisons your ${targetPlayer.name}.`);
-                        queueRecap('poison', targetPlayer);
-                    }
+                    // Matches the player's unconditional witch_poison: Witch is
+                    // Mystic-tagged, so poison lands on Entity targets exactly
+                    // the same as any other target — no more forcing a
+                    // no-poison Mystic Purge just because the target is an Entity.
+                    targetPlayer.poisoned = true;
+                    applyShieldedDamage(targetPlayer, 1);
+                    writeLog(`🔮 Bot Witch strikes and poisons your ${targetPlayer.name}.`);
+                    queueRecap('poison', targetPlayer);
                 } else if (aiActor.name === 'Lawyer') {
                     let validTargets = activePlayers.filter(c => (c.tag === 'Criminal' || c.tag === 'Law & Order') && c.hasActivity);
                     if (validTargets.length > 0) {
@@ -7715,36 +7689,37 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
                     }
                 } else if (aiActor.name === 'Mage') {
                     let deadBots = gameState.p2.filter(c => c.hex <= 0 && c.name !== 'Spy');
-                    if (deadBots.length > 0) {
-                        let cost = 1;
-                        if (aiActor.hex >= cost) {
-                            aiActor.hex -= cost;
-                            deadBots[0].hex = cost;
-                            writeLog(`🤖 Bot Mage resurrected ${deadBots[0].name} with ${cost} Hex.`);
-                            queueRecap('revive', deadBots[0]);
-                        }
-                    } else if (targetPlayer.tag === 'Entity') {
+                    if (deadBots.length > 0 && aiActor.hex >= 1) {
+                        aiActor.hex -= 1;
+                        deadBots[0].hex = 1;
+                        writeLog(`🤖 Bot Mage resurrected ${deadBots[0].name} with 1 Hex.`);
+                        queueRecap('revive', deadBots[0]);
+                    } else if (targetPlayer.tag === 'Entity' && aiActor.hex >= 1) {
+                        aiActor.hex -= 1;
                         applyShieldedDamage(targetPlayer, 1);
                         writeLog(`✨ Bot Mage used Mystic Purge on Entity ${targetPlayer.name}, dealing 1 pure damage.`);
                     } else {
-                        applyShieldedDamage(targetPlayer, 1);
-                        writeLog(`🤖 Bot Mage strikes your ${targetPlayer.name} for 1 damage.`);
+                        // Matches the player's Mage, which has no generic attack
+                        // at all — only Revive (dead ally) or Mystic Purge
+                        // (Entity target), each costing exactly 1 Hex with no
+                        // separate flat charge on top. No dead ally and no
+                        // Entity here means there's nothing legal for Mage to
+                        // do, same as Warlock's equivalent decline branch below.
+                        writeLog(`🤖 Bot Mage found no dead ally to revive and no Entity to purge, and held its ground.`);
+                        executedAction = false;
                     }
                 } else if (aiActor.name === 'Warlock') {
                     let imprisonedBots = gameState.p2.filter(c => c.imprisoned && c.name !== 'Spy');
-                    if (imprisonedBots.length > 0) {
+                    if (imprisonedBots.length > 0 && aiActor.hex >= 1) {
                         let target = imprisonedBots[0];
                         let cost = Math.min(aiActor.hex, 3);
-                        if (cost >= 1) {
-                            aiActor.hex -= cost;
-                            target.hex = cost;
-                            target.imprisoned = false;
-                            writeLog(`🤖 Bot Warlock spent ${cost} Hex to break ${target.name} free from imprisonment.`);
-                            queueRecap('freed', target);
-                        } else {
-                            executedAction = false;
-                        }
-                    } else if (targetPlayer.tag === 'Entity') {
+                        aiActor.hex -= cost;
+                        target.hex = cost;
+                        target.imprisoned = false;
+                        writeLog(`🤖 Bot Warlock spent ${cost} Hex to break ${target.name} free from imprisonment.`);
+                        queueRecap('freed', target);
+                    } else if (targetPlayer.tag === 'Entity' && aiActor.hex >= 1) {
+                        aiActor.hex -= 1;
                         applyShieldedDamage(targetPlayer, 1);
                         writeLog(`✨ Bot Warlock used Mystic Purge on Entity ${targetPlayer.name}, dealing 1 pure damage.`);
                     } else {
@@ -8160,7 +8135,7 @@ function renderScene() {
         if (gameState.targetingMode.isActive) {
             const m = gameState.targetingMode.type;
             if (m === 'doctor_heal' && !isDead && !card.imprisoned && card.hex < card.maxHex) isEligibleAlly = true;
-            if (m.startsWith('reporter_heal_') && !isDead && !card.imprisoned) isEligibleAlly = true;
+            if (m.startsWith('reporter_heal_') && !isDead && !card.imprisoned && card.hex < card.maxHex) isEligibleAlly = true;
             if (m === 'hood_step2' && !isDead && !card.imprisoned && card.id !== gameState.targetingMode.actorId) isEligibleAlly = true;
             if (m === 'mecha_hood_share_2' && !isDead && !card.imprisoned && card.id !== gameState.targetingMode.actorId) isEligibleAlly = true;
             if (m.startsWith('mage_revive_') && isDead && card.name !== 'Spy') isEligibleAlly = true;
