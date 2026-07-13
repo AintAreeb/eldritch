@@ -1,6 +1,6 @@
 {
-  "name": "Eldritch",
-  "short_name": "Eldritch",
+  "name": "Grimoire",
+  "short_name": "Grimoire",
   "description": "A tactical turn-based card battle between Bloodbane and Bloodborne factions.",
   "start_url": "./index.html",
   "scope": "./",
