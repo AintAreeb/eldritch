@@ -693,6 +693,41 @@
         .msum-fill-heal { background: #4af7a7; }
         .msum-fill-tactical { background: #ffcc00; }
         .msum-bar-value { font-size: 9px; color: #c7c9cf; width: 22px; text-align: right; flex-shrink: 0; }
+        /* Match Replay modal */
+        .replay-modal { max-width: 360px; }
+        .replay-round {
+            text-align: center; font-size: 10px; color: #ffcc00; text-transform: uppercase;
+            letter-spacing: 0.06em; font-weight: 700; margin-bottom: 8px;
+        }
+        .replay-body { display: flex; flex-direction: column; gap: 6px; }
+        .replay-board { display: flex; flex-direction: column; gap: 4px; }
+        .replay-vs { text-align: center; font-size: 10px; color: #5a5f68; font-weight: 700; margin: 2px 0; }
+        .replay-card-row {
+            display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.07); border-radius: 6px; padding: 5px 8px;
+            transition: opacity 0.2s ease;
+        }
+        .replay-card-row.replay-card-dead { opacity: 0.4; }
+        .replay-card-name { font-size: 11px; font-weight: 700; color: #e8e0c9; flex: 1; }
+        .replay-card-hexbar { flex: 1.2; height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; }
+        .replay-card-hexfill { height: 100%; background: #4af7a7; border-radius: 3px; }
+        .replay-card-row.replay-card-dead .replay-card-hexfill { background: #ff5555; }
+        .replay-card-hexnum { font-size: 9px; color: #c7c9cf; width: 34px; text-align: right; flex-shrink: 0; }
+        .replay-card-badges { font-size: 10px; flex-shrink: 0; min-width: 14px; text-align: center; }
+        .replay-logline {
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px; padding: 10px; font-size: 12px; color: #e8e0c9; line-height: 1.4;
+            min-height: 40px; margin-top: 4px;
+        }
+        .replay-scrub-row { margin: 10px 0 4px 0; }
+        .replay-scrub-row input[type="range"] { width: 100%; accent-color: #ff3333; }
+        .replay-controls { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px; }
+        .replay-ctrl-btn {
+            background: #1a1922; color: #e8e0c9; border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px; padding: 8px 14px; font-size: 14px; cursor: pointer;
+        }
+        .replay-play-btn { background: #ff3333; border-color: #ff3333; color: #fff; min-width: 42px; }
+        .replay-progress { font-size: 10px; color: #8a8f98; margin-left: 6px; }
         /* Profile modal */
         .profile-modal { max-width: 340px; }
         .profile-header {
@@ -1426,7 +1461,29 @@
     <div id="matchSummaryModal" class="guide-modal msum-modal">
         <h3>📊 MATCH SUMMARY</h3>
         <div class="guide-body" id="matchSummaryBody"></div>
+        <button class="guide-close-btn" id="msumReplayBtn" style="background:#1a1922; color:#4af7a7; border:1px solid rgba(74,247,167,0.35); margin-bottom:8px;" onclick="openReplayModal()">🎬 Watch Replay</button>
         <button class="guide-close-btn" onclick="closeMatchSummaryModal()">Close</button>
+    </div>
+
+    <div id="replayModal" class="guide-modal replay-modal">
+        <h3>🎬 MATCH REPLAY</h3>
+        <div class="replay-round" id="replayRoundLabel"></div>
+        <div class="guide-body replay-body">
+            <div class="replay-board" id="replayBoardP2"></div>
+            <div class="replay-vs">VS</div>
+            <div class="replay-board" id="replayBoardP1"></div>
+            <div class="replay-logline" id="replayLogLine"></div>
+        </div>
+        <div class="replay-scrub-row">
+            <input type="range" id="replayScrubber" min="0" max="0" value="0" oninput="replayGoto(parseInt(this.value))">
+        </div>
+        <div class="replay-controls">
+            <button class="replay-ctrl-btn" onclick="replayStep(-1)" id="replayPrevBtn">⏮</button>
+            <button class="replay-ctrl-btn replay-play-btn" onclick="replayToggleAutoplay()" id="replayPlayBtn">▶</button>
+            <button class="replay-ctrl-btn" onclick="replayStep(1)" id="replayNextBtn">⏭</button>
+            <span class="replay-progress" id="replayProgress"></span>
+        </div>
+        <button class="guide-close-btn" onclick="closeReplayModal()">Close</button>
     </div>
 
     <div id="guideModal" class="guide-modal">
@@ -1858,6 +1915,20 @@ let matchStats = {};
 let matchSummaryShown = false;
 let matchRecorded = false; // guards against recording the same multiplayer match twice to history
 
+// ---- Match Replay -----------------------------------------------------
+// A chronological list of every log line produced during the current match,
+// each paired with a full snapshot of gameState taken at the instant that
+// line was written. Reset at the start of every match (see
+// startBattleWithSquads) and appended to on every writeLog() call, so it
+// works identically for solo, vs-bot, local 2P, and online multiplayer —
+// no extra hooks needed anywhere else in the engine. Frame 0 is always the
+// "Engine Integrated..." line written at kickoff, i.e. the untouched
+// starting board.
+let matchReplayLog = [];
+let replayIndex = 0;
+let replayPlaying = false;
+let replayPlayHandle = null;
+
 function statsEnsureEntry(card, side) {
     if (!matchStats[card.id]) {
         matchStats[card.id] = { id: card.id, name: card.name, side: side, attackDmg: 0, kills: 0, healAmt: 0, revives: 0, tactical: 0, imprisons: 0, moves: 0 };
@@ -2027,6 +2098,78 @@ function showMatchSummaryModal() {
 function closeMatchSummaryModal() {
     document.getElementById('matchSummaryModal').style.display = 'none';
     if (bl_hist.modal === 'summary') history.back();
+}
+
+// ---- Match Replay modal --------------------------------------------------
+// Scrubs through matchReplayLog, which was populated frame-by-frame during
+// the match itself (see writeLog). Nothing here touches the live gameState
+// — it only ever reads from the frozen snapshots already recorded.
+function openReplayModal() {
+    if (matchReplayLog.length === 0) return;
+    replayPlaying = false;
+    if (replayPlayHandle) { clearInterval(replayPlayHandle); replayPlayHandle = null; }
+    document.getElementById('replayPlayBtn').innerText = '▶';
+    document.getElementById('replayScrubber').max = matchReplayLog.length - 1;
+    replayGoto(matchReplayLog.length - 1); // land on the final frame first
+    document.getElementById('replayModal').style.display = 'flex';
+    bl_pushState({ modal: 'replay' });
+}
+function closeReplayModal() {
+    replayPlaying = false;
+    if (replayPlayHandle) { clearInterval(replayPlayHandle); replayPlayHandle = null; }
+    document.getElementById('replayModal').style.display = 'none';
+    if (bl_hist.modal === 'replay') history.back();
+}
+function replayCardRowHTML(card) {
+    let isDead = card.hex <= 0;
+    let maxHex = card.maxHex === Infinity ? Math.max(card.hex, 1) : card.maxHex;
+    let pct = maxHex > 0 ? Math.max(0, Math.min(100, (card.hex / maxHex) * 100)) : 0;
+    let badges = '';
+    if (card.imprisoned) badges += '🔒';
+    if (card.poisoned) badges += '☠️';
+    if (isDead) badges += '💀';
+    let hexLabel = isDead ? 'DEAD' : (card.maxHex === Infinity ? `${card.hex}/∞` : `${card.hex}/${card.maxHex}`);
+    return `<div class="replay-card-row ${isDead ? 'replay-card-dead' : ''}">
+        <div class="replay-card-name">${card.name}</div>
+        <div class="replay-card-hexbar"><div class="replay-card-hexfill" style="width:${pct}%"></div></div>
+        <div class="replay-card-hexnum">${hexLabel}</div>
+        <div class="replay-card-badges">${badges}</div>
+    </div>`;
+}
+function renderReplayFrame() {
+    let frame = matchReplayLog[replayIndex];
+    if (!frame) return;
+    document.getElementById('replayRoundLabel').innerText = `Round ${frame.round}`;
+    document.getElementById('replayBoardP1').innerHTML = frame.state.p1.map(replayCardRowHTML).join('');
+    document.getElementById('replayBoardP2').innerHTML = frame.state.p2.map(replayCardRowHTML).join('');
+    document.getElementById('replayLogLine').innerText = frame.text;
+    document.getElementById('replayScrubber').value = replayIndex;
+    document.getElementById('replayProgress').innerText = `${replayIndex + 1} / ${matchReplayLog.length}`;
+    document.getElementById('replayPrevBtn').disabled = replayIndex <= 0;
+    document.getElementById('replayNextBtn').disabled = replayIndex >= matchReplayLog.length - 1;
+}
+function replayGoto(index) {
+    replayIndex = Math.max(0, Math.min(matchReplayLog.length - 1, index));
+    renderReplayFrame();
+}
+function replayStep(delta) {
+    if (replayPlaying) replayToggleAutoplay(); // manual scrub cancels autoplay
+    replayGoto(replayIndex + delta);
+}
+function replayToggleAutoplay() {
+    replayPlaying = !replayPlaying;
+    document.getElementById('replayPlayBtn').innerText = replayPlaying ? '⏸' : '▶';
+    if (replayPlayHandle) { clearInterval(replayPlayHandle); replayPlayHandle = null; }
+    if (replayPlaying) {
+        if (replayIndex >= matchReplayLog.length - 1) replayGoto(0); // restart from the top
+        replayPlayHandle = setInterval(() => {
+            if (replayIndex >= matchReplayLog.length - 1) {
+                replayToggleAutoplay(); // reached the end, stop
+                return;
+            }
+            replayGoto(replayIndex + 1);
+        }, 1400);
+    }
 }
 
 // Records a completed match to the logged-in local player's Supabase match
@@ -3281,7 +3424,7 @@ function bl_bootIntoGameScreen() {
     bl_pushState({ screen: 'game', modal: null });
 }
 function bl_hideModalUI(name) {
-    const ids = { guide: 'guideModal', chat: 'chatModal', friends: 'friendsModal', settings: 'settingsModal', summary: 'matchSummaryModal', profile: 'profileModal', favcard: 'favCardModal', ranking: 'rankingModal' };
+    const ids = { guide: 'guideModal', chat: 'chatModal', friends: 'friendsModal', settings: 'settingsModal', summary: 'matchSummaryModal', profile: 'profileModal', favcard: 'favCardModal', ranking: 'rankingModal', replay: 'replayModal' };
     const el = document.getElementById(ids[name]);
     if (el) el.style.display = 'none';
 }
@@ -3688,6 +3831,17 @@ function writeLog(text) {
     const log = document.getElementById('combatLog');
     log.innerHTML += `<div>» ${text}</div>`;
     log.scrollTop = log.scrollHeight;
+    // Every log line doubles as a replay frame: what was said, plus the
+    // full board state at that exact instant. Cheap enough for a match
+    // this short, and it means the replay needs zero extra hooks anywhere
+    // else in the engine.
+    try {
+        matchReplayLog.push({
+            text,
+            round: gameState.roundCount,
+            state: deepCloneGameState(gameState)
+        });
+    } catch (e) { /* replay is best-effort — never let logging break the match */ }
 }
 
 // ---- Quick Chat text presets ---------------------------------------------
@@ -3990,6 +4144,10 @@ function startBattleWithSquads(p1Squad, p2Squad, p1Tier, p2Tier, opts = {}) {
     matchSummaryShown = false;
     matchRecorded = false;
     lastRankingDelta = null;
+    matchReplayLog = [];
+    replayIndex = 0;
+    replayPlaying = false;
+    if (replayPlayHandle) { clearInterval(replayPlayHandle); replayPlayHandle = null; }
     abortTargetingSequence();
 
     document.getElementById('setupView').style.display = 'none';
@@ -6897,7 +7055,7 @@ function getBotCandidatePool(actor, enemies) {
     if (actor.name === 'Wraith') return harmful.filter(c => (c.tag === 'Mystic' || c.tag === 'Entity') && !isHarmMoveWasted(c));
     if (actor.name === 'Hood') return harmful.filter(c => (c.name !== 'Spy' || actor.hex === 0) && !isHarmMoveWasted(c));
     if (actor.name === 'Killer' || actor.name === 'Spy') return harmful.filter(c => !isHarmMoveWasted(c));
-    if (actor.name === 'Ninja') return harmful.filter(c => (c.name !== 'Spy' || actor.hex === 1) && !isHarmMoveWasted(c));
+    if (actor.name === 'Ninja') return harmful.filter(c => (c.name !== 'Spy' || actor.hex === 0) && !isHarmMoveWasted(c));
     if (actor.name === 'Knight') return harmful.filter(c => !isHarmMoveWasted(c));
     if (actor.name === 'Witch') return harmful.filter(c => !isWitchMoveWasted(c));
     if (actor.name === 'Dictator') return harmful.filter(c => !isImprisonMoveWasted(c));
@@ -6982,7 +7140,6 @@ function applyMimicRoleEffect(roleName, aiActor, verbPrefix) {
         if (enemyPool.length === 0) return false;
         let t = pickBotTarget(enemyPool, gameState.difficulty);
         applyShieldedDamage(t, 1);
-        aiActor.hex = Math.min(aiActor.maxHex === Infinity ? 99 : aiActor.maxHex, aiActor.hex + 1);
         writeLog(`💰 ${verbPrefix} siphons 1 Hex from your ${t.name}!`);
         if (!copyExcluded) gameState.p2LastMoveRole = roleName;
         return true;
@@ -7007,15 +7164,22 @@ function applyMimicRoleEffect(roleName, aiActor, verbPrefix) {
         return true;
     }
     if (roleName === 'Hood') {
-        if (enemyPool.length === 0) return false;
-        let t = pickBotTarget(enemyPool, gameState.difficulty);
-        applyShieldedDamage(t, 1);
+        let hoodPool = enemyPool.filter(c => c.name !== 'Spy' || aiActor.hex === 0);
+        if (hoodPool.length === 0) return false;
+        let t = pickBotTarget(hoodPool, gameState.difficulty);
+        let isExecute = (t.name === 'Spy' && aiActor.hex === 0);
+        if (isExecute) applyShieldedExecution(t);
+        else applyShieldedDamage(t, 1);
         let healTarget = pickBotHealTarget(allyPool.filter(c => c.hex < c.maxHex), gameState.difficulty) || allyPool[0];
         if (healTarget) {
             healTarget.hex = Math.min(healTarget.maxHex === Infinity ? 99 : healTarget.maxHex, healTarget.hex + 1);
             queueRecap('heal', healTarget);
         }
-        writeLog(`🏹 ${verbPrefix} strikes your ${t.name}${healTarget ? ' and channels hex to ' + healTarget.name : ''}!`);
+        if (isExecute) {
+            writeLog(`🪓 ${verbPrefix}'s last stand instantly finishes off ${t.name}${healTarget ? ' and channels hex to ' + healTarget.name : ''}!`);
+        } else {
+            writeLog(`🏹 ${verbPrefix} strikes your ${t.name}${healTarget ? ' and channels hex to ' + healTarget.name : ''}!`);
+        }
         if (!copyExcluded) gameState.p2LastMoveRole = roleName;
         return true;
     }
@@ -7188,7 +7352,7 @@ function canBotActorSecureKill(actor, enemies) {
     if (actor.name === 'Killer') return true;
     if (actor.name === 'Robber') return actor.hex === 1 && pool.length > 0;
     if (actor.name === 'Wraith') return actor.hex === 1 && pool.length > 0;
-    if (actor.name === 'Ninja') return pool.some(c => c.hex === 1 || (c.name === 'Spy' && actor.hex === 1));
+    if (actor.name === 'Ninja') return pool.some(c => c.hex === 1) || (actor.hex === 1 && enemies.some(c => c.name === 'Spy' && c.hex > 0 && !c.imprisoned && !isCardShielded(c)));
     if (actor.name === 'Cop') return pool.some(c => c.hex <= (c.hasActivity ? 2 : 1));
     if (actor.name === 'Knight' && actor.hex !== 2) return pool.some(c => c.name === 'Spy' || c.hex <= 1);
     return pool.some(c => c.hex <= 1);
@@ -7388,7 +7552,6 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
                     } else {
                         if (targetPlayer.name !== 'Spy' && targetPlayer.tag !== 'Entity') {
                             applyShieldedDamage(targetPlayer, 1);
-                            aiActor.hex = Math.min(aiActor.maxHex, aiActor.hex + 1);
                         }
                         writeLog(`💰 Bot Robber siphons 1 Hex from enemy ${targetPlayer.name}.`);
                     }
@@ -7465,10 +7628,14 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
                         writeLog(`🥷 Bot Ninja gets a kill and claims +2 hex amplification!`);
                     }
                 } else if (aiActor.name === 'Hood') {
-                    if (targetPlayer.name !== 'Spy' && targetPlayer.tag !== 'Entity') {
+                    if (targetPlayer.name === 'Spy' && aiActor.hex === 0) {
+                        applyShieldedExecution(targetPlayer);
+                        isDirectKill = true;
+                        writeLog(`🪓 Bot Hood's last stand instantly finishes off ${targetPlayer.name}.`);
+                    } else if (targetPlayer.name !== 'Spy' && targetPlayer.tag !== 'Entity') {
                         applyShieldedDamage(targetPlayer, 1);
                     }
-                    let hoodAllies = gameState.p2.filter(c => c.id !== aiActor.id && c.hex > 0);
+                    let hoodAllies = gameState.p2.filter(c => c.id !== aiActor.id && c.hex > 0 && !c.imprisoned);
                     if (hoodAllies.length > 0) {
                         let recipient = pickBotHealTarget(hoodAllies, gameState.difficulty);
                         recipient.hex = Math.min(recipient.maxHex, recipient.hex + 1);
