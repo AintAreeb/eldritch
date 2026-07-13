@@ -1355,7 +1355,6 @@
             </div>
 
             <div id="mpConnectButtons" style="display:flex; flex-direction:column; gap:8px; max-width:260px; margin:0 auto;">
-                <button class="start-btn" style="width:100%;" onclick="mpFindRandomOpponent()">🎲 PLAY RANDOM OPPONENT</button>
                 <button class="btn" style="width:100%; padding:10px; font-size:10px;" onclick="mpCreateRoom()">CREATE ROOM</button>
                 <button class="btn" style="width:100%; padding:10px; font-size:10px;" onclick="mpShowJoinInput()">JOIN ROOM</button>
             </div>
@@ -1367,15 +1366,6 @@
 
             <div id="mpRoomCodeDisplay" style="font-size:16px; font-weight:700; letter-spacing:0.1em; color:#4af7a7; margin-top:14px;"></div>
             <div id="mpStatus" style="font-size:11px; color:#8a8f98; margin-top:8px; min-height:14px;"></div>
-
-            <div id="mpInviteBanner" class="undo-request-banner" style="display:none; margin-top:14px;">
-                <div class="undo-request-banner-text" id="mpInviteText">Do you want to play against this opponent?</div>
-                <div class="undo-request-actions">
-                    <button class="btn" style="background:#059669;" onclick="mpRespondToInvite(true)">✅ Yes, play</button>
-                    <button class="btn" style="background:#ff3333;" onclick="mpRespondToInvite(false)">❌ No thanks</button>
-                </div>
-            </div>
-
             <button class="btn cancel-btn" style="max-width:260px; margin:14px auto 0 auto;" onclick="mpCancelConnection()">CANCEL</button>
         </div>
 
@@ -4323,9 +4313,7 @@ let mp = {
     phase: 'lobby',     // 'lobby' | 'draft' | 'battle' — used for reconnect/resync
     opponentUsername: null, // filled in via the 'identify' handshake, if both sides are logged in
     roomAttempt: 0,      // bumped each time mpEscalateMatchConnection forces a fresh room
-    cachedSquadsPayload: null, // side 1's built squads, kept so a reconnect resend doesn't re-roll them
-    pendingInvite: null, // { peerId, role: 'searcher'|'host', theirUsername } while a random-opponent invite is being confirmed
-    lobbySend: null      // the lobby room's 'invite' action sender, used by mpRespondToInvite
+    cachedSquadsPayload: null // side 1's built squads, kept so a reconnect resend doesn't re-roll them
 };
 
 function mpLog(text) {
@@ -4602,11 +4590,10 @@ function mpTeardownConnection() {
         blCallAccountRpc('cancel_match_invite', { p_invite_id: blLastSentInviteId });
         blLastSentInviteId = null;
     }
-    mp = { isMultiplayer: false, room: null, roomName: null, sendMsg: null, reliable: null, peerId: null, mySide: null, squadMode: mp.squadMode, matched: false, draft: null, phase: 'lobby', roomAttempt: 0, cachedSquadsPayload: null, pendingInvite: null, lobbySend: null };
+    mp = { isMultiplayer: false, room: null, roomName: null, sendMsg: null, reliable: null, peerId: null, mySide: null, squadMode: mp.squadMode, matched: false, draft: null, phase: 'lobby', roomAttempt: 0, cachedSquadsPayload: null };
     const codeEl = document.getElementById('mpRoomCodeDisplay');
     if (codeEl) codeEl.innerText = '';
     mpLog('');
-    mpHideInvitePrompt();
     // mpFindRandomOpponent() hides these while searching — always restore
     // them on cancel/teardown, whichever flow (random or room-code) was active.
     const connectButtons = document.getElementById('mpConnectButtons');
@@ -4759,257 +4746,6 @@ function mpConnectDirect(code) {
         mpSaveSession();
         mpBeginSquadPhase();
     };
-}
-
-// ---- Random Opponent matchmaking (no room code needed) -------------------
-// Everyone who clicks this for a given squad mode joins the same public
-// "lobby" room for that mode — this is the "search for rooms" step. Finding
-// someone else already there is like finding an existing room; if nobody's
-// there, you're effectively the one who "created" it, and you just wait.
-//
-// Matching is never instant/automatic anymore. It's a two-step, mutual
-// opt-in handshake so neither side is ever dropped into a match they didn't
-// knowingly agree to:
-//   1. Whichever of the two peers is designated the "searcher" for this pair
-//      (decided deterministically by comparing peer IDs, so both sides agree
-//      on the roles without needing to exchange a message first) is shown a
-//      local prompt: "Do you want to play against <name>?" the moment the
-//      two peers discover each other in the lobby.
-//   2. If the searcher says yes, a 'request' is sent to the other peer (the
-//      "host"), who now sees their own version of the same prompt: "Do you
-//      want to play against <name>?"
-//   3. Only if the host ALSO says yes does an 'accept' go back, and both
-//      sides move into the actual match. A "no" from either side at either
-//      step just cancels that pairing and leaves both still searching.
-//
-// This also happens to fix the older bug where two people clicking Play at
-// the same time could each silently end up in their own separate match,
-// each stuck forever on "waiting for opponent's move" because they were
-// never actually talking to each other. Since a match now only ever begins
-// once both sides have explicitly confirmed the SAME peer, that failure
-// mode can't happen: there's no "silent auto-connect" step left to race.
-function mpFindRandomOpponent() {
-    if (!mpReady()) return;
-    mp.isMultiplayer = true;
-    clearSoloSnapshot();
-    mp.matched = false;
-    mp.pendingInvite = null;
-    mpHideInvitePrompt();
-    mpLog('Searching for an opponent...');
-    document.getElementById('mpConnectButtons').style.display = 'none';
-    document.getElementById('mpJoinInputRow').style.display = 'none';
-
-    const lobbyName = 'lobby-' + mp.squadMode;
-    mp.room = window.__trysteroJoinRoom(MP_CONFIG, lobbyName);
-    const inviteAction = mp.room.makeAction('invite');
-    const sendInvite = inviteAction.send;
-    mp.lobbySend = sendInvite;
-
-    const helloSeen = {};     // peerId -> username they told us about themselves ('' if anonymous)
-    const askedSearcher = {}; // peerId -> true once we've shown OUR OWN searcher-side prompt for them
-
-    // Deterministic per-pair role split, same lower-ID convention used
-    // elsewhere in this file (e.g. mpFinalizeMatch's side 1/2 assignment) —
-    // both sides compute this independently and always agree.
-    const isSearcherFor = (peerId) => window.__trysteroSelfId < peerId;
-
-    const maybeShowSearcherPrompt = (peerId) => {
-        if (mp.isMultiplayer === false) return; // cancelled
-        if (mp.pendingInvite || askedSearcher[peerId]) return; // already mid-handshake with someone
-        if (!isSearcherFor(peerId)) return; // I'm the host for this pair — I just wait to be asked
-        askedSearcher[peerId] = true;
-        const theirName = helloSeen[peerId] || 'a player';
-        mp.pendingInvite = { peerId, role: 'searcher', theirUsername: theirName };
-        mpShowInvitePrompt(theirName, 'searcher');
-    };
-
-    inviteAction.onMessage = (data, peerId) => {
-        if (mp.isMultiplayer === false) return; // cancelled
-        if (data.t === 'hello') {
-            helloSeen[peerId] = data.username || '';
-            maybeShowSearcherPrompt(peerId);
-        } else if (data.t === 'request') {
-            // The searcher for this pair said yes and is now asking ME
-            // (the host) to confirm too.
-            if (mp.pendingInvite) { sendInvite({ t: 'busy' }, peerId); return; }
-            const theirName = data.username || helloSeen[peerId] || 'a player';
-            mp.pendingInvite = { peerId, role: 'host', theirUsername: theirName };
-            mpShowInvitePrompt(theirName, 'host');
-        } else if (data.t === 'accept') {
-            // The host confirmed my request — I'm the searcher, let's go.
-            if (mp.pendingInvite && mp.pendingInvite.peerId === peerId) {
-                mpHideInvitePrompt();
-                mpFinalizeMatch(peerId);
-            }
-        } else if (data.t === 'decline' || data.t === 'busy') {
-            if (mp.pendingInvite && mp.pendingInvite.peerId === peerId) {
-                mp.pendingInvite = null;
-                mpHideInvitePrompt();
-                mpLog('They declined — still searching for an opponent...');
-            }
-            delete askedSearcher[peerId];
-        }
-    };
-
-    const greet = (peerId) => {
-        sendInvite({ t: 'hello', username: (blAccount && blAccount.username) || '' }, peerId);
-        // Belt-and-suspenders: if our 'hello' or theirs gets lost, don't wait
-        // forever to show the searcher-side prompt — fall back to a generic
-        // name after a beat rather than leaving that side stuck silently.
-        setTimeout(() => maybeShowSearcherPrompt(peerId), 1200);
-    };
-
-    mp.room.onPeerJoin = greet;
-    Object.keys(mp.room.getPeers()).forEach(greet);
-}
-
-// Shows the "Do you want to play against X?" confirmation to the local user.
-function mpShowInvitePrompt(theirName, role) {
-    const banner = document.getElementById('mpInviteBanner');
-    const text = document.getElementById('mpInviteText');
-    if (text) text.innerText = `Do you want to play against ${theirName}?`;
-    if (banner) banner.style.display = 'flex';
-    mpLog(role === 'host' ? `${theirName} wants to play you!` : 'Opponent found!');
-}
-
-function mpHideInvitePrompt() {
-    const banner = document.getElementById('mpInviteBanner');
-    if (banner) banner.style.display = 'none';
-}
-
-// Called by the Yes/No buttons on the invite banner.
-function mpRespondToInvite(accept) {
-    if (!mp.pendingInvite) return;
-    const { peerId, role } = mp.pendingInvite;
-    const sendInvite = mp.lobbySend;
-    mpHideInvitePrompt();
-
-    if (!accept) {
-        if (sendInvite) sendInvite({ t: 'decline' }, peerId);
-        mp.pendingInvite = null;
-        mpLog('Searching for an opponent...');
-        return;
-    }
-
-    if (role === 'searcher') {
-        // I said yes — now it's the host's turn to confirm. I don't connect
-        // yet; I wait for their 'accept'.
-        if (sendInvite) sendInvite({ t: 'request', username: (blAccount && blAccount.username) || '' }, peerId);
-        mpLog('Waiting for them to confirm...');
-    } else {
-        // I'm the host and I just said yes to the searcher's request —
-        // both sides have now explicitly agreed, so connect.
-        if (sendInvite) sendInvite({ t: 'accept' }, peerId);
-        mpFinalizeMatch(peerId);
-    }
-}
-
-// Deterministic room name for a given peer pair + retry attempt. Both sides
-// compute this independently from the same sorted-ID pair, so no signaling
-// is needed to agree on where to reconnect — attempt 0 is the original
-// match room, attempt 1+ are fallback rooms used by mpEscalateMatchConnection.
-function mpDeriveMatchRoomName(peerId, attempt) {
-    const base = 'match-' + [window.__trysteroSelfId, peerId].sort().join('-');
-    return attempt > 0 ? base + '-r' + attempt : base;
-}
-
-// Joins (or rejoins) the room used for match communication and wires up the
-// reliable message channel + handlers. Tears down any previous channel
-// first, so this is safe to call again from mpEscalateMatchConnection
-// without leaking old retry timers.
-//
-// opts.reuseRoom: if passed an already-open room (instead of joining fresh),
-// we keep using that connection rather than leaving it and joining a new
-// room by name. This matters for the initial hop out of the public lobby:
-// the invite/request/accept handshake that just got us here already proved
-// this exact peer connection works, whereas asking trystero to join a brand-new
-// "match-" room can silently never finish its own join handshake when the
-// two peers already share a connection under the hood — trystero doesn't
-// always re-fire onPeerJoin in that case. That mismatch was the real cause
-// behind one side hanging forever on "waiting for opponent to roll squads"
-// while the other had already moved on into battle.
-function mpOpenMatchChannel(peerId, roomName, opts = {}) {
-    if (mp.reliable) { try { mp.reliable.dispose(); } catch (e) {} }
-    if (opts.reuseRoom) {
-        mp.room = opts.reuseRoom;
-    } else {
-        if (mp.room) { try { mp.room.leave(); } catch (e) {} }
-        mp.room = window.__trysteroJoinRoom(MP_CONFIG, roomName);
-    }
-    mp.peerId = peerId;
-    mp.roomName = roomName; // still recorded even when reusing — see mpAttemptReconnectOnLoad
-    const reliable = mpWireReliableRoom(mp.room);
-    mp.reliable = reliable;
-    mp.sendMsg = reliable.send;
-    reliable.msgAction.onMessage = (data, pid) => mpHandleMessage(data, pid);
-    mp.room.onPeerJoin = pid => {
-        mp.peerId = pid;
-        reliable.onPeerConnected();
-        attachVoiceToRoom(mp.room);
-    };
-    // Reused rooms are already connected to this peer by definition (we just
-    // exchanged claim/accept over it) — mpWireReliableRoom's own getPeers()
-    // check at creation time already catches this, but flushing explicitly
-    // here means we don't depend on that race going our way.
-    if (opts.reuseRoom) reliable.onPeerConnected();
-}
-
-function mpFinalizeMatch(peerId) {
-    mp.mySide = (window.__trysteroSelfId < peerId) ? 1 : 2;
-    mp.roomAttempt = 0;
-    mpLog('Opponent found! Connecting...');
-    // Keep talking over the lobby room we're already connected through
-    // (see mpOpenMatchChannel's comment above) instead of hopping rooms.
-    // We still compute and remember a private room name purely so a page
-    // refresh has somewhere stable to reconnect to later — a fresh page
-    // load is a genuinely new connection, so the "no join event fires"
-    // ambiguity that affects a live, no-refresh room-hop doesn't apply there.
-    mpOpenMatchChannel(peerId, mpDeriveMatchRoomName(peerId, 0), { reuseRoom: mp.room });
-    mpSaveSession();
-    mpBeginSquadPhase();
-    mpStartConnectionWatchdog(peerId);
-}
-
-// Guards against the rarer case where even the reused lobby connection goes
-// stale mid-handoff (e.g. it drops right as the match is found). There's no
-// way to distinguish "still catching up" from "will never arrive" from one
-// side alone, so instead of waiting forever, periodically check whether the
-// squad/draft handoff has actually completed, and if not, hop to a genuinely
-// fresh room (a real join handshake, since this is no longer the "maybe
-// already shares a connection" case) and resend whatever this side owes.
-function mpStartConnectionWatchdog(peerId) {
-    let attempts = 0;
-    const MAX_ATTEMPTS = 4; // ~4 * 8s = 32s of escalation before giving up
-    const watchdog = setInterval(() => {
-        // Side 1 is "stuck" if its squadsReady (or a draft pick) never got
-        // acked; side 2 is "stuck" if it's still sitting in the lobby phase.
-        const stillWaiting = (mp.phase === 'lobby' && mp.mySide !== 1);
-        const unacked = mp.reliable && mp.reliable.hasPending();
-        if (!mp.isMultiplayer || (!stillWaiting && !unacked)) { clearInterval(watchdog); return; }
-        attempts++;
-        if (attempts > MAX_ATTEMPTS) {
-            clearInterval(watchdog);
-            if (stillWaiting) mpLog('Connection trouble — hit Cancel and search again.');
-            return;
-        }
-        mpEscalateMatchConnection(peerId);
-    }, 8000);
-}
-
-function mpEscalateMatchConnection(peerId) {
-    mp.roomAttempt++;
-    mpOpenMatchChannel(peerId, mpDeriveMatchRoomName(peerId, mp.roomAttempt));
-    mpSaveSession();
-    if (mp.mySide === 1 && mp.cachedSquadsPayload) {
-        // Resend the SAME squads we already committed to locally — never
-        // re-roll here, or the two sides would end up playing different games.
-        mp.sendMsg({ type: 'squadsReady', payload: mp.cachedSquadsPayload }, mp.peerId);
-    }
-    // Whatever phase we're each actually in, asking for a resync brings the
-    // other side's local state (draft picks, battle state) fully up to date
-    // over the new, definitely-working channel — cheaper than trying to
-    // replay every individual message that may have been lost.
-    mp.sendMsg({ type: 'resyncRequest' }, mp.peerId);
 }
 
 // ---- Squad phase: routes to draft or randomized-sync ---------------------
