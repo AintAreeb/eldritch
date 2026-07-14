@@ -26,6 +26,16 @@ jobs:
           [ -f icon.png ] && cp icon.png www/ || true
       - run: npm install
       - run: npx cap add android
+      - name: Generate icon and splash screen
+        run: |
+          mkdir -p resources
+          cp icon.png resources/icon.png
+          cp icon.png resources/splash.png
+          npx @capacitor/assets generate --android \
+            --iconBackgroundColor '#080710' \
+            --iconBackgroundColorDark '#080710' \
+            --splashBackgroundColor '#080710' \
+            --splashBackgroundColorDark '#080710'
       - run: npx cap sync android
       - run: chmod +x android/gradlew
       - working-directory: android
