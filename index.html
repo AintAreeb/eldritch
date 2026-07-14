@@ -381,7 +381,7 @@
            so equipping a board theme also re-skins every profile view
            (lobby account card + profile modal) with the matching banner. */
         .pbanner-strip {
-            height: 44px; border-radius: 8px; margin-bottom: 10px;
+            border-radius: 10px; padding: 12px;
             background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.015) 100%);
             border: 1px solid rgba(255,255,255,0.08);
             transition: background 0.2s ease, border-color 0.2s ease;
@@ -1023,8 +1023,6 @@
         .profile-modal { max-width: 340px; }
         .profile-header {
             display: flex; align-items: center; gap: 12px;
-            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 10px; padding: 12px; margin-bottom: 12px;
         }
         .profile-avatar-circle {
             width: 52px; height: 52px; border-radius: 50%; flex-shrink: 0;
@@ -1600,17 +1598,18 @@
                 <div id="accountStatus" class="account-status"></div>
             </div>
             <div id="accountLoggedIn" style="display:none;">
-                <div id="accountBannerStrip" class="pbanner-strip"></div>
-                <div class="account-loggedin-top">
-                    <div class="account-avatar-col">
-                        <div id="accountAvatarCircle" class="profile-avatar-circle account-avatar-sm" onclick="openProfileModal()" title="View profile">🧙</div>
-                        <span id="accountWelcome" class="account-username-glow"></span>
-                    </div>
-                    <div class="account-loggedin-info">
-                        <div id="accountTitleBadge" class="title-badge" style="display:none;"></div>
-                        <div class="account-badge-row">
-                            <span id="accountFavBadge" class="profile-fav-badge profile-fav-empty" style="display:none;"></span>
-                            <span id="accountRankBadge" class="profile-fav-badge" style="display:none; background:transparent;"></span>
+                <div id="accountBannerStrip" class="pbanner-strip" style="margin-bottom:10px;">
+                    <div class="account-loggedin-top">
+                        <div class="account-avatar-col">
+                            <div id="accountAvatarCircle" class="profile-avatar-circle account-avatar-sm" onclick="openProfileModal()" title="View profile">🧙</div>
+                            <span id="accountWelcome" class="account-username-glow"></span>
+                        </div>
+                        <div class="account-loggedin-info">
+                            <div id="accountTitleBadge" class="title-badge" style="display:none;"></div>
+                            <div class="account-badge-row">
+                                <span id="accountFavBadge" class="profile-fav-badge profile-fav-empty" style="display:none;"></span>
+                                <span id="accountRankBadge" class="profile-fav-badge" style="display:none; background:transparent;"></span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -3442,17 +3441,18 @@ function renderProfileInfo() {
     const favLabel = p.favourite_card ? `⭐ ${blEscapeHtml(p.favourite_card)}` : 'No favourite card set';
     let rankTier = blProfileRanking ? getTierForPoints(blProfileRanking.ranking_points) : null;
     let html = `
-        <div class="pbanner-strip" id="profileBannerStrip"></div>
-        <div class="profile-header">
-            <div class="profile-avatar-circle${blProfileIsSelf ? ' is-editable' : ''}" ${blProfileIsSelf ? 'onclick="toggleAvatarPicker()"' : ''}>${p.avatar || '🧙'}</div>
-            <div class="profile-header-main">
-                <div class="profile-username">${blEscapeHtml(p.username)}</div>
-                ${blProfileTitles && blProfileTitles.equipped_title && TITLE_BY_ID_MAP[blProfileTitles.equipped_title] ? `<div class="title-badge">🏅 ${TITLE_BY_ID_MAP[blProfileTitles.equipped_title].name}</div>` : ''}
-                <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:4px;">
-                    <span class="profile-fav-badge${p.favourite_card ? '' : ' profile-fav-empty'}">${favLabel}</span>
-                    ${rankTier ? `<span class="profile-fav-badge" style="background:transparent; border-color:${rankTier.color}55; color:${rankTier.color};">${rankTier.icon} ${rankTier.name}${blProfileRanking.world_rank ? ` · #${blProfileRanking.world_rank}` : ''}</span>` : ''}
+        <div class="pbanner-strip" id="profileBannerStrip" style="margin-bottom:12px;">
+            <div class="profile-header">
+                <div class="profile-avatar-circle${blProfileIsSelf ? ' is-editable' : ''}" ${blProfileIsSelf ? 'onclick="toggleAvatarPicker()"' : ''}>${p.avatar || '🧙'}</div>
+                <div class="profile-header-main">
+                    <div class="profile-username">${blEscapeHtml(p.username)}</div>
+                    ${blProfileTitles && blProfileTitles.equipped_title && TITLE_BY_ID_MAP[blProfileTitles.equipped_title] ? `<div class="title-badge">🏅 ${TITLE_BY_ID_MAP[blProfileTitles.equipped_title].name}</div>` : ''}
+                    <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:4px;">
+                        <span class="profile-fav-badge${p.favourite_card ? '' : ' profile-fav-empty'}">${favLabel}</span>
+                        ${rankTier ? `<span class="profile-fav-badge" style="background:transparent; border-color:${rankTier.color}55; color:${rankTier.color};">${rankTier.icon} ${rankTier.name}${blProfileRanking.world_rank ? ` · #${blProfileRanking.world_rank}` : ''}</span>` : ''}
+                    </div>
+                    ${blProfileIsSelf ? `<button class="profile-fav-picker-btn" onclick="openFavCardModal()">Change favourite card</button>` : ''}
                 </div>
-                ${blProfileIsSelf ? `<button class="profile-fav-picker-btn" onclick="openFavCardModal()">Change favourite card</button>` : ''}
             </div>
         </div>`;
     if (blProfileIsSelf) {
