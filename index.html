@@ -819,6 +819,17 @@
                 font-size: clamp(7.5px, 2.6vw, 10px);
                 line-height: 1.05;
             }
+            .shield-badge {
+                font-size: 6px;
+            }
+        }
+        /* Desktop only (1024px+): bump the shield badge up from its 8px
+           base size. Uses a min-width breakpoint well above any phone's
+           landscape width, so phones rotated sideways are unaffected. */
+        @media (min-width: 1024px) {
+            .shield-badge {
+                font-size: 12px;
+            }
         }
         /* Character Guide modal */
         .guide-modal {
