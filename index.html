@@ -855,6 +855,14 @@
             .hex-row .cleanse-badge {
                 margin: 0;
             }
+            /* Portrait phone only: the CHOOSE/SELECT target button can clip
+               against the card's bottom edge once the tag, hearts, and
+               button are all stacked in the limited vertical space. Shrink
+               the button itself so it fits fully inside the card. */
+            .btn.target-btn {
+                font-size: 6.5px;
+                padding: 3px 2px;
+            }
         }
         /* Desktop only (1024px+): bump the shield badge up from its 8px
            base size. Uses a min-width breakpoint well above any phone's
