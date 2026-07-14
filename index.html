@@ -377,6 +377,35 @@
         #gameView.board-theme-starlitsanctum { background: radial-gradient(ellipse at 50% -10%, rgba(230,230,255,0.12) 0%, rgba(8,7,16,0) 60%); }
         #gameView.board-theme-starlitsanctum .log { background: #0c0c14; border-color: rgba(230,230,255,0.26); color: #e8e8ff; }
 
+        /* Profile banners — one per board theme (20 total incl. default),
+           so equipping a board theme also re-skins every profile view
+           (lobby account card + profile modal) with the matching banner. */
+        .pbanner-strip {
+            height: 44px; border-radius: 8px; margin-bottom: 10px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.015) 100%);
+            border: 1px solid rgba(255,255,255,0.08);
+            transition: background 0.2s ease, border-color 0.2s ease;
+        }
+        .pbanner-bloodmoon { background: linear-gradient(135deg, rgba(140,10,20,0.5) 0%, rgba(140,10,20,0.06) 100%); border-color: rgba(255,107,107,0.4); }
+        .pbanner-obsidianrift { background: linear-gradient(135deg, rgba(80,0,120,0.45) 0%, rgba(80,0,120,0.06) 100%); border-color: rgba(201,139,255,0.4); }
+        .pbanner-parchmentnoir { background: linear-gradient(135deg, rgba(180,160,110,0.35) 0%, rgba(180,160,110,0.05) 100%); border-color: rgba(232,217,171,0.4); }
+        .pbanner-verdanthex { background: linear-gradient(135deg, rgba(30,140,90,0.45) 0%, rgba(30,140,90,0.06) 100%); border-color: rgba(107,232,166,0.4); }
+        .pbanner-staticbloom { background: linear-gradient(135deg, rgba(255,204,0,0.35) 0%, rgba(255,204,0,0.05) 100%); border-color: rgba(255,224,122,0.4); }
+        .pbanner-ashenvigil { background: linear-gradient(135deg, rgba(150,150,160,0.4) 0%, rgba(150,150,160,0.05) 100%); border-color: rgba(216,216,222,0.35); }
+        .pbanner-frostboundledger { background: linear-gradient(135deg, rgba(94,200,216,0.45) 0%, rgba(94,200,216,0.06) 100%); border-color: rgba(159,232,242,0.4); }
+        .pbanner-neonunderworld { background: linear-gradient(135deg, rgba(255,0,180,0.45) 0%, rgba(255,0,180,0.06) 100%); border-color: rgba(255,122,240,0.45); }
+        .pbanner-aurumsanctum { background: linear-gradient(135deg, rgba(212,175,55,0.5) 0%, rgba(212,175,55,0.06) 100%); border-color: rgba(240,220,154,0.45); }
+        .pbanner-crimsonabyss { background: linear-gradient(135deg, rgba(150,10,10,0.55) 0%, rgba(150,10,10,0.06) 100%); border-color: rgba(255,128,128,0.45); }
+        .pbanner-lunarhollow { background: linear-gradient(135deg, rgba(150,180,220,0.4) 0%, rgba(150,180,220,0.05) 100%); border-color: rgba(200,216,238,0.4); }
+        .pbanner-emberwastes { background: linear-gradient(135deg, rgba(255,110,20,0.45) 0%, rgba(255,110,20,0.06) 100%); border-color: rgba(255,176,102,0.4); }
+        .pbanner-glacialexpanse { background: linear-gradient(135deg, rgba(150,220,255,0.45) 0%, rgba(150,220,255,0.06) 100%); border-color: rgba(168,232,255,0.45); }
+        .pbanner-royalcourt { background: linear-gradient(135deg, rgba(160,100,220,0.5) 0%, rgba(160,100,220,0.06) 100%); border-color: rgba(216,184,255,0.45); }
+        .pbanner-plagueward { background: linear-gradient(135deg, rgba(120,160,80,0.4) 0%, rgba(120,160,80,0.05) 100%); border-color: rgba(192,216,144,0.4); }
+        .pbanner-thunderscar { background: linear-gradient(135deg, rgba(120,170,255,0.45) 0%, rgba(120,170,255,0.06) 100%); border-color: rgba(168,200,255,0.4); }
+        .pbanner-coralruin { background: linear-gradient(135deg, rgba(255,120,140,0.45) 0%, rgba(255,120,140,0.06) 100%); border-color: rgba(255,176,190,0.4); }
+        .pbanner-ashfallbasin { background: linear-gradient(135deg, rgba(140,130,120,0.4) 0%, rgba(140,130,120,0.05) 100%); border-color: rgba(208,200,188,0.35); }
+        .pbanner-starlitsanctum { background: linear-gradient(135deg, rgba(230,230,255,0.4) 0%, rgba(230,230,255,0.06) 100%); border-color: rgba(232,232,255,0.4); }
+
         .cooldown-badge { 
             position: absolute; 
             top: 6px; 
@@ -1571,6 +1600,7 @@
                 <div id="accountStatus" class="account-status"></div>
             </div>
             <div id="accountLoggedIn" style="display:none;">
+                <div id="accountBannerStrip" class="pbanner-strip"></div>
                 <div class="account-loggedin-top">
                     <div class="account-avatar-col">
                         <div id="accountAvatarCircle" class="profile-avatar-circle account-avatar-sm" onclick="openProfileModal()" title="View profile">🧙</div>
@@ -3112,6 +3142,26 @@ function applyEquippedBoardTheme() {
     if (cls) gv.classList.add(cls);
 }
 
+// Profile banners piggyback on the same 20 board-theme definitions (1
+// default + 19 unlockable) — whichever board theme a player has equipped
+// automatically becomes their profile banner everywhere a profile is shown,
+// with no separate banner-picker needed.
+function blBannerClassForTheme(themeId) {
+    if (!themeId) return '';
+    const def = BOARD_THEME_DEFS.find(t => t.id === themeId);
+    if (!def || !def.cssClass) return '';
+    return 'pbanner-' + def.cssClass.replace('board-theme-', '');
+}
+function blApplyBannerToEl(el, themeId) {
+    if (!el) return;
+    BOARD_THEME_DEFS.forEach(t => { if (t.cssClass) el.classList.remove('pbanner-' + t.cssClass.replace('board-theme-', '')); });
+    const cls = blBannerClassForTheme(themeId);
+    if (cls) el.classList.add(cls);
+}
+function blApplyLobbyBanner() {
+    blApplyBannerToEl(document.getElementById('accountBannerStrip'), blCosmetics ? blCosmetics.equippedTheme : null);
+}
+
 async function blRefreshCosmetics() {
     if (!blAccount) { blCosmetics = null; return; }
     const result = await blCallAccountRpc('get_player_cosmetics', { p_username: blAccount.username });
@@ -3127,6 +3177,7 @@ async function blRefreshCosmetics() {
         blCosmetics = { earnedSkins: ['classic_ink'], equippedSkin: null, earnedThemes: ['classic_grimoire'], equippedTheme: null, peakRankingPoints: 0 };
     }
     applyEquippedBoardTheme();
+    blApplyLobbyBanner();
 }
 
 // Called after ranking refreshes so peak rank (used to unlock rank-tier
@@ -3391,6 +3442,7 @@ function renderProfileInfo() {
     const favLabel = p.favourite_card ? `⭐ ${blEscapeHtml(p.favourite_card)}` : 'No favourite card set';
     let rankTier = blProfileRanking ? getTierForPoints(blProfileRanking.ranking_points) : null;
     let html = `
+        <div class="pbanner-strip" id="profileBannerStrip"></div>
         <div class="profile-header">
             <div class="profile-avatar-circle${blProfileIsSelf ? ' is-editable' : ''}" ${blProfileIsSelf ? 'onclick="toggleAvatarPicker()"' : ''}>${p.avatar || '🧙'}</div>
             <div class="profile-header-main">
@@ -3430,6 +3482,7 @@ function renderProfileInfo() {
             <span class="profile-stats-legend-item"><span class="profile-legend-dot" style="background:#3388ff;"></span>Win Rate ${p.win_rate}</span>
         </div>`;
     document.getElementById('profileInfoView').innerHTML = html;
+    blApplyBannerToEl(document.getElementById('profileBannerStrip'), blProfileCosmetics ? blProfileCosmetics.equippedTheme : null);
     drawStatsRadar('profileRadarCanvas', [p.avg_attack, p.avg_heal, p.avg_tactical, p.win_rate], ['Attack', 'Heal', 'Tactical', 'Win Rate'], ['#ff5555', '#4af7a7', '#ffcc00', '#3388ff']);
 }
 
