@@ -7429,15 +7429,20 @@ function processSelectedTarget(targetId) {
             }
         } 
         else if (pName === 'Robber') {
+            // Note: the Mecha's own -1 Hex activation cost was already charged
+            // above (actorCard.hex = Math.max(0, actorCard.hex - 1);), same as
+            // every other fusion partner. This branch used to hand back +2 Hex
+            // to the Mecha on top of that, which fully erased the activation
+            // cost and left the Mecha with a net +1 Hex gain instead of the
+            // intended loss. Robber fusion now just lands the double hit like
+            // the other pairings, so the Mecha's Hex cost actually sticks.
             if (isSameTarget) {
                 applyShieldedDamage(firstEnemy, 2);
-                actorCard.hex = Math.min(actorCard.maxHex, actorCard.hex + 2);
-                writeLog(`🤖 Mecha+Robber Fusion: Siphoned 2 hex from ${firstEnemy.name}.`);
+                writeLog(`🤖 Mecha+Robber Fusion: Dealt 2x damage (2) to ${firstEnemy.name}.`);
             } else {
                 applyShieldedDamage(firstEnemy, 1);
                 applyShieldedDamage(secondEnemy, 1);
-                actorCard.hex = Math.min(actorCard.maxHex, actorCard.hex + 2);
-                writeLog(`🤖 Mecha+Robber Fusion: Siphoned 1 hex each from ${firstEnemy.name} and ${secondEnemy.name}.`);
+                writeLog(`🤖 Mecha+Robber Fusion: Dealt 1 damage each to ${firstEnemy.name} and ${secondEnemy.name}.`);
             }
         } 
         else if (pName === 'Cop') {
@@ -8855,9 +8860,14 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
                             if (!isSameTarget) applyShieldedExecution(second);
                             writeLog(`🤖 Bot Mecha+Killer Fusion: executed your ${first.name}${isSameTarget ? '' : ' and ' + second.name}!`);
                         } else if (pName === 'Robber') {
-                            if (isSameTarget) { applyShieldedDamage(first, 2); aiActor.hex = Math.min(aiActor.maxHex === Infinity ? 99 : aiActor.maxHex, aiActor.hex + 2); }
-                            else { applyShieldedDamage(first, 1); applyShieldedDamage(second, 1); aiActor.hex = Math.min(aiActor.maxHex === Infinity ? 99 : aiActor.maxHex, aiActor.hex + 2); }
-                            writeLog(`🤖 Bot Mecha+Robber Fusion: siphoned Hex from your ${first.name}${isSameTarget ? '' : ' and ' + second.name}!`);
+                            // Same fix as the player-side Mecha+Robber branch: don't
+                            // refund +2 Hex to the bot's Mecha here, since its -1 Hex
+                            // activation cost was already deducted earlier for every
+                            // fusion (see the shared `aiActor.hex -= 1` above). Refunding
+                            // +2 on top of that erased the cost entirely.
+                            if (isSameTarget) { applyShieldedDamage(first, 2); }
+                            else { applyShieldedDamage(first, 1); applyShieldedDamage(second, 1); }
+                            writeLog(`🤖 Bot Mecha+Robber Fusion: dealt damage to your ${first.name}${isSameTarget ? '' : ' and ' + second.name}!`);
                         } else if (pName === 'Cop') {
                             let dmg1 = first.hasActivity ? 2 : 1;
                             let dmg2 = second.hasActivity ? 2 : 1;
@@ -9313,8 +9323,14 @@ function renderScene() {
                     if (m === 'mystic_purge') {
                         if (card.tag === 'Entity' && !isHarmMoveWasted(card)) isEligibleEnemy = true;
                     } else if (m === 'mecha_click_route_1' || m === 'mecha_click_route_2') {
+                        // This branch used to skip the isHarmMoveWasted guard that every
+                        // other harmful move below is gated by, which meant a
+                        // not-yet-transformed Wendigo/Kitsune could be offered (and
+                        // "hit") as a Mecha fusion target. Wendigo/Kitsune must be
+                        // completely untouchable until they shapeshift, so route this
+                        // through the same check as everything else.
                         if (m === 'mecha_click_route_2' && card.id === gameState.targetingMode.firstTargetId) isSelectedFirst = true;
-                        isEligibleEnemy = true;
+                        if (!isHarmMoveWasted(card)) isEligibleEnemy = true;
                     } else if (!(card.tag === 'Entity' && act && act.tag !== 'Mystic' && m !== 'knight_strike' && m !== 'wraith_strike' && m !== 'wraith_execute')) {
                         // Each harm/kill move below is additionally gated by
                         // isHarmMoveWasted (K-Shielded card already floored at
