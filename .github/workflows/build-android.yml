@@ -31,21 +31,43 @@ jobs:
       - run: npx cap add android
       - name: Build adaptive icon layers (foreground, background, monochrome)
         run: |
-          sudo apt-get update && sudo apt-get install -y imagemagick
+          sudo apt-get update && sudo apt-get install -y imagemagick wget
           mkdir -p resources
-          convert -size 1024x1024 xc:"#000000" \
-            \( icon.png -filter Lanczos -resize 620x620 \) -gravity center -composite \
-            resources/icon.png
-          convert -size 1024x1024 xc:none \
-            \( icon.png -filter Lanczos -resize 620x620 \) -gravity center -composite \
-            resources/icon-foreground.png
+          wget -q -O /tmp/grimoire-font.ttf \
+            "https://github.com/google/fonts/raw/main/ofl/unifrakturcook/UnifrakturCook-Bold.ttf"
+
+          # Solid background layer
           convert -size 1024x1024 xc:"#000000" \
             resources/icon-background.png
+
+          # Foreground: cream-colored text on transparent background
           convert -size 1024x1024 xc:none \
-            \( icon.png -filter Lanczos -resize 620x620 -fill white -colorize 100% \) -gravity center -composite \
+            -gravity center -fill "#e8ddc6" \
+            -font /tmp/grimoire-font.ttf -pointsize 160 \
+            -annotate +0+0 "grimoire" \
+            resources/icon-foreground.png
+
+          # Combined icon: text over black
+          convert -size 1024x1024 xc:"#000000" \
+            \( -size 1024x1024 xc:none -gravity center -fill "#e8ddc6" \
+               -font /tmp/grimoire-font.ttf -pointsize 160 \
+               -annotate +0+0 "grimoire" \) \
+            -gravity center -composite \
+            resources/icon.png
+
+          # Monochrome: white silhouette for themed icons
+          convert -size 1024x1024 xc:none \
+            -gravity center -fill white \
+            -font /tmp/grimoire-font.ttf -pointsize 160 \
+            -annotate +0+0 "grimoire" \
             resources/icon-monochrome.png
+
+          # Splash: larger text, same treatment
           convert -size 2732x2732 xc:"#000000" \
-            \( icon.png -filter Lanczos -resize 1200x1200 \) -gravity center -composite \
+            \( -size 2732x2732 xc:none -gravity center -fill "#e8ddc6" \
+               -font /tmp/grimoire-font.ttf -pointsize 340 \
+               -annotate +0+0 "grimoire" \) \
+            -gravity center -composite \
             resources/splash.png
       - name: Generate icon and splash screen
         run: |
