@@ -34,18 +34,18 @@ jobs:
           sudo apt-get update && sudo apt-get install -y imagemagick
           mkdir -p resources
           convert -size 1024x1024 xc:"#000000" \
-            \( icon.png -resize 620x620 \) -gravity center -composite \
+            \( icon.png -filter Lanczos -resize 620x620 \) -gravity center -composite \
             resources/icon.png
           convert -size 1024x1024 xc:none \
-            \( icon.png -resize 620x620 \) -gravity center -composite \
+            \( icon.png -filter Lanczos -resize 620x620 \) -gravity center -composite \
             resources/icon-foreground.png
           convert -size 1024x1024 xc:"#000000" \
             resources/icon-background.png
           convert -size 1024x1024 xc:none \
-            \( icon.png -resize 620x620 -fill white -colorize 100% \) -gravity center -composite \
+            \( icon.png -filter Lanczos -resize 620x620 -fill white -colorize 100% \) -gravity center -composite \
             resources/icon-monochrome.png
           convert -size 2732x2732 xc:"#000000" \
-            \( icon.png -resize 1200x1200 \) -gravity center -composite \
+            \( icon.png -filter Lanczos -resize 1200x1200 \) -gravity center -composite \
             resources/splash.png
       - name: Generate icon and splash screen
         run: |
