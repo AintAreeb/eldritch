@@ -50,12 +50,15 @@ jobs:
       - run: chmod +x android/gradlew
       - working-directory: android
         run: ./gradlew assembleDebug --no-daemon
-      - name: Rename APK
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk grimoire.apk
+      - name: Rename APK with unique build ID
+        run: |
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          cp android/app/build/outputs/apk/debug/app-debug.apk grimoire-$SHORT_SHA.apk
+          echo "APK_NAME=grimoire-$SHORT_SHA.apk" >> $GITHUB_ENV
       - name: Publish to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
-          name: Latest build
-          body: Automatically built from the latest commit.
-          files: grimoire.apk
+          name: "Build ${{ github.sha }}"
+          body: "Commit: ${{ github.sha }}"
+          files: ${{ env.APK_NAME }}
