@@ -765,7 +765,7 @@
             flex-shrink: 0;
             /* Bug fix: names were being hard-truncated with an ellipsis on
                narrow/portrait phones (anything longer than ~8 chars, e.g.
-               "Chronos", "Wendigo", "Bartender", "Therapist",
+               "Chronos", "vovo", "Bartender", "Therapist",
                "Terrorist"). Wrapping onto a 2nd line instead of clipping to
                1 line keeps the full name readable at any card width. */
             display: -webkit-box;
@@ -861,7 +861,7 @@
            lets them fit without affecting any other card's name styling,
            and without touching landscape or tablet/desktop layouts at all.
            ("Skinwalker"/"Watchmaker" used to need this too, before they
-           were renamed to the shorter "Wendigo"/"Chronos".) */
+           were renamed to the shorter "vovo"/"Chronos".) */
         @media (orientation: portrait) and (max-width: 600px) {
             .card-title-long {
                 font-size: clamp(7.5px, 2.6vw, 10px);
@@ -2031,7 +2031,7 @@ const CARD_POOL = [
     { name: 'Sorcerer', tag: 'Mystic', maxHex: 2, tier: 3, cooldown: 'consecutive', category: 'Bloodbane' },
     { name: 'Singer', tag: 'Artist', maxHex: 2, tier: 2, cooldown: 'none', category: 'Bloodbane' },
     { name: 'Witch', tag: 'Mystic', maxHex: 2, tier: 2, cooldown: 'none', category: 'Bloodbane' },
-    { name: 'Wendigo', tag: 'Entity', maxHex: 1, tier: 3, cooldown: 'consecutive', category: 'Bloodbane' },
+    { name: 'vovo', tag: 'Entity', maxHex: 1, tier: 3, cooldown: 'consecutive', category: 'Bloodbane' },
     { name: 'Wraith', tag: 'Entity', maxHex: 3, tier: 3, cooldown: 'none', category: 'Bloodbane' },
 
     // Bloodbornes
@@ -2058,10 +2058,10 @@ const CARD_POOL = [
 ];
 
 // Roles that 'Dementor' is forbidden from reanimating: the entire
-// Heroic/SacredSouls category plus Wendigo, Sorcerer, Chronos, Mecha, and Bartender.
-const DEMENTOR_FORBIDDEN_ROLES = ['Actor', 'Therapist', 'Princess', 'Reporter', 'Terrorist', 'Warden', 'Wendigo', 'Sorcerer', 'Chronos', 'Mecha', 'Bartender', 'Kitsune', 'Samurai'];
+// Heroic/SacredSouls category plus vovo, Sorcerer, Chronos, Mecha, and Bartender.
+const DEMENTOR_FORBIDDEN_ROLES = ['Actor', 'Therapist', 'Princess', 'Reporter', 'Terrorist', 'Warden', 'vovo', 'Sorcerer', 'Chronos', 'Mecha', 'Bartender', 'Kitsune', 'Samurai'];
 // Cards that 'Sorcerer' is forbidden from hijacking/controlling, beyond Heroics.
-const SORCERER_FORBIDDEN_ROLES = ['Wendigo', 'Dementor', 'Chronos', 'Bartender', 'Mecha', 'Kitsune', 'Samurai'];
+const SORCERER_FORBIDDEN_ROLES = ['vovo', 'Dementor', 'Chronos', 'Bartender', 'Mecha', 'Kitsune', 'Samurai'];
 
 // The set of roles whose moves Bartender is able to copy (the same set
 // Actor/Dementor are able to mimic). If the opponent's last move wasn't
@@ -2070,17 +2070,17 @@ const SORCERER_FORBIDDEN_ROLES = ['Wendigo', 'Dementor', 'Chronos', 'Bartender',
 const BARTENDER_MIMICABLE_ROLES = ['Killer', 'Robber', 'Doctor', 'Dictator', 'Cop', 'Singer', 'Spy', 'Ninja', 'Hood', 'Witch', 'Lawyer', 'Knight', 'Jinn', 'Wraith'];
 
 // Bartender is not allowed to copy a move if it was actually performed by
-// one of these cards — Dementor, Sorcerer, Chronos, Wendigo, or any
+// one of these cards — Dementor, Sorcerer, Chronos, vovo, or any
 // Heroic/SacredSouls card (Actor, Therapist, Princess, Reporter, Terrorist)
 // — even if that card's move resolved into an otherwise-copyable role (e.g.
 // an Actor mimicking Killer, or a Sorcerer hijacking a Doctor). This is
 // checked against the physical card that actually acted, not the role its
 // move resolved into.
-const BARTENDER_COPY_EXCLUDED_ACTORS = ['Dementor', 'Sorcerer', 'Chronos', 'Wendigo', 'Kitsune', 'Actor', 'Therapist', 'Princess', 'Reporter', 'Terrorist'];
+const BARTENDER_COPY_EXCLUDED_ACTORS = ['Dementor', 'Sorcerer', 'Chronos', 'vovo', 'Kitsune', 'Actor', 'Therapist', 'Princess', 'Reporter', 'Terrorist'];
 function isBartenderCopyExcludedActor(card) {
     if (!card) return false;
     if (card.isHeroic || card.category === 'Heroic' || card.category === 'SacredSouls') return true;
-    if (card.wasWendigo) return true;
+    if (card.wasvovo) return true;
     if (card.wasKitsune) return true;
     return BARTENDER_COPY_EXCLUDED_ACTORS.includes(card.name);
 }
@@ -2946,7 +2946,7 @@ const TITLE_DEFS = [
     { id: 'trishula', name: 'Trishula', category: 'character', character: 'Sorcerer', goal: 10 },
     { id: 'thyrsus', name: 'Thyrsus', category: 'character', character: 'Singer', goal: 10 },
     { id: 'sudarshana', name: 'Sudarshana', category: 'character', character: 'Witch', goal: 10 },
-    { id: 'laevateinn', name: 'Laevateinn', category: 'character', character: 'Wendigo', goal: 10 },
+    { id: 'laevateinn', name: 'Laevateinn', category: 'character', character: 'vovo', goal: 10 },
     { id: 'nidhogg', name: 'Nidhogg', category: 'character', character: 'Wraith', goal: 10 },
     { id: 'gungnir', name: 'Gungnir', category: 'character', character: 'Mecha', goal: 10 },
     { id: 'skofnung', name: 'Skofnung', category: 'character', character: 'Knight', goal: 10 },
@@ -3961,13 +3961,13 @@ function isCardShielded(card) {
 }
 
 // Deals `amount` Hex damage to a target. If that damage would kill a
-// shielded card, it instead bottoms out at 1 Hex. Wendigo is fully immune
+// shielded card, it instead bottoms out at 1 Hex. vovo is fully immune
 // until it shapeshifts (see isHarmMoveWasted/isImprisonMoveWasted below) —
 // this guard is enforced here directly too, so no code path (rebounds,
 // hijacks, mimics, bot logic, etc.) can ever land damage on it early.
 function applyShieldedDamage(target, amount) {
     if (!target) return;
-    if (target.name === 'Wendigo' || target.name === 'Kitsune') return;
+    if (target.name === 'vovo' || target.name === 'Kitsune') return;
     let result = target.hex - amount;
     if (result <= 0 && target.hex > 0 && isCardShielded(target)) {
         target.hex = 1;
@@ -3982,12 +3982,12 @@ function applyShieldedDamage(target, amount) {
 
 // Direct-execution effects (Killer, Robber Execute, Ninja finisher, Mecha
 // fusion instakills, etc) that would otherwise set Hex straight to 0
-// regardless of current total. Respects K-Shield the same way. Wendigo is
+// regardless of current total. Respects K-Shield the same way. vovo is
 // immune until it shapeshifts, guarded directly here for the same reason
 // as applyShieldedDamage above.
 function applyShieldedExecution(target) {
     if (!target) return;
-    if (target.name === 'Wendigo' || target.name === 'Kitsune') return;
+    if (target.name === 'vovo' || target.name === 'Kitsune') return;
     if (target.hex > 0 && isCardShielded(target)) {
         target.hex = 1;
         writeLog(`🛡️ ${target.name}'s K-Shield absorbed a lethal execution!`);
@@ -3999,12 +3999,12 @@ function applyShieldedExecution(target) {
     }
 }
 
-// Attempts to imprison a target; fully blocked by K-Shield. Wendigo is also
+// Attempts to imprison a target; fully blocked by K-Shield. vovo is also
 // fully immune to imprisonment until it shapeshifts, guarded directly here
 // for the same reason as applyShieldedDamage above.
 function applyShieldedImprison(target) {
     if (!target) return;
-    if (target.name === 'Wendigo' || target.name === 'Kitsune') return;
+    if (target.name === 'vovo' || target.name === 'Kitsune') return;
     if (isCardShielded(target)) {
         writeLog(`🛡️ ${target.name}'s K-Shield prevented imprisonment!`);
         queueRecap('blocked', target);
@@ -4026,7 +4026,7 @@ function applyShieldedImprison(target) {
 //    that is already floored and can't be floored any further: either a
 //    K-Shielded card sitting at exactly 1 Hex (K-Shield stops any
 //    killing blow at 1, so a hit landing on a card already at 1 changes
-//    nothing), or a not-yet-transformed Wendigo, which is hard-floored
+//    nothing), or a not-yet-transformed vovo, which is hard-floored
 //    at 1 Hex by its own untouchable rule (see renderScene) independent
 //    of any team K-Shield.
 // These are used both to hide the option from the player's target list and
@@ -4034,12 +4034,12 @@ function applyShieldedImprison(target) {
 // sides are held to identical rules.
 function isImprisonMoveWasted(target) {
     if (!target) return false;
-    if (target.name === 'Wendigo' || target.name === 'Kitsune') return true;
+    if (target.name === 'vovo' || target.name === 'Kitsune') return true;
     return isCardShielded(target);
 }
 function isHarmMoveWasted(target) {
     if (!target) return false;
-    if (target.name === 'Wendigo' || target.name === 'Kitsune') return true;
+    if (target.name === 'vovo' || target.name === 'Kitsune') return true;
     return isCardShielded(target) && target.hex === 1;
 }
 // Witch's poison is a real, independent side effect even when the
@@ -6398,7 +6398,7 @@ function hasValidTargets(card, allies, enemies) {
     if (card.name === 'Jinn') return harmfulEnemies.length > 0;
     if (card.name === 'Bartender') return true;
 
-    if (card.name === 'Wendigo') return gameState.unusedBloodbanes.length > 0;
+    if (card.name === 'vovo') return gameState.unusedBloodbanes.length > 0;
     if (card.name === 'Kitsune') return gameState.unusedBloodbornes.length > 0;
     if (card.name === 'Hacker') return getHackerEligiblePairs(allies, enemies, card.id).length > 0;
 
@@ -7052,12 +7052,12 @@ function handleMechaSelection(actorId, partnerId) {
     renderScene();
 }
 
-function runWendigoAbilityPad(actorId) {
+function runvovoAbilityPad(actorId) {
     let container = document.getElementById('skinwalkerOptionsContainer');
     container.innerHTML = '';
 
     if (gameState.unusedBloodbanes.length === 0) {
-        writeLog("🐺 Wendigo found no remaining Bloodbane forms left to become.");
+        writeLog("🐺 vovo found no remaining Bloodbane forms left to become.");
         return;
     }
 
@@ -7067,20 +7067,20 @@ function runWendigoAbilityPad(actorId) {
         b.style.margin = '2px 0';
         b.style.background = '#444';
         b.innerText = template.name.toUpperCase();
-        b.onclick = () => handleWendigoTransform(actorId, idx);
+        b.onclick = () => handlevovoTransform(actorId, idx);
         container.appendChild(b);
     });
     document.getElementById('skinwalkerChoiceModal').style.display = 'flex';
 }
 
-function handleWendigoTransform(actorId, templateIdx) {
+function handlevovoTransform(actorId, templateIdx) {
     document.getElementById('skinwalkerChoiceModal').style.display = 'none';
     let actor = gameState.p1.find(c => c.id === actorId);
     let template = gameState.unusedBloodbanes[templateIdx];
     if (!actor || !template) return;
 
     // Consumes the chosen remaining Bloodbane form; the other one stays
-    // available in case a second Wendigo ever needs it.
+    // available in case a second vovo ever needs it.
     gameState.unusedBloodbanes = gameState.unusedBloodbanes.filter((t, i) => i !== templateIdx);
 
     actor.name = template.name;
@@ -7090,10 +7090,10 @@ function handleWendigoTransform(actorId, templateIdx) {
     actor.category = 'Bloodbane';
     actor.maxHex = template.maxHex === Infinity ? Infinity : template.maxHex + 1;
     actor.hex = actor.maxHex === Infinity ? Infinity : template.maxHex + 1;
-    actor.wasWendigo = true;
+    actor.wasvovo = true;
     actor.lastUsedRound = 0;
 
-    writeLog(`🐺 Your Wendigo permanently shifted into ${template.name}, gaining +1 extra Hex!`);
+    writeLog(`🐺 Your vovo permanently shifted into ${template.name}, gaining +1 extra Hex!`);
     statsBump(actor, 'p1', { tactical: 1 });
     // Free action: doesn't cost the turn's move, so the turn continues
     // and the newly-transformed card can still act this same turn.
@@ -8037,7 +8037,7 @@ function getBotCandidatePool(actor, enemies) {
     // Same wasted-move exclusions the player's target list is held to (see
     // isHarmMoveWasted/isImprisonMoveWasted/isWitchMoveWasted) — the bot
     // should never spend its move attacking a K-Shielded card already
-    // floored at 1 Hex, or an untransformed Wendigo, any more than the
+    // floored at 1 Hex, or an untransformed vovo, any more than the
     // player is allowed to.
     if (actor.name === 'Cop') return harmful.filter(c => (c.tag === 'Criminal' || c.tag === 'Law & Order') && !isHarmMoveWasted(c));
     if (actor.name === 'Robber') return (actor.hex === 0 ? harmful.filter(c => c.tag === 'Criminal' || c.name === 'Dictator') : harmful.filter(c => c.tag !== 'Criminal')).filter(c => !isHarmMoveWasted(c));
@@ -8287,7 +8287,7 @@ const ROLE_THREAT_VALUE = {
     Spy: 7, Dementor: 7, Hacker: 7, Wraith: 7,
     Witch: 6, Cop: 6, Chronos: 6, Singer: 6, Lawyer: 6, Mage: 6, Warlock: 6,
     Knight: 5, Hood: 5, Robber: 5, Jinn: 5, Bartender: 5, Imam: 5,
-    Wendigo: 4, Kitsune: 4, Doctor: 4,
+    vovo: 4, Kitsune: 4, Doctor: 4,
     Actor: 3, Therapist: 3, Princess: 3, Reporter: 3, Terrorist: 4, Warden: 4
 };
 function roleThreatValue(name) {
@@ -8440,8 +8440,8 @@ function pickBotActor(usableBots, activePlayers, style) {
 }
 
 // isFollowUpAction/freeActionDepth let the routine recurse into itself when
-// the bot's Wendigo transforms — a free action that doesn't cost the
-// turn (mirroring the player's own Wendigo, see handleWendigoTransform)
+// the bot's vovo transforms — a free action that doesn't cost the
+// turn (mirroring the player's own vovo, see handlevovoTransform)
 // — so the bot immediately gets to act again with a fresh pick instead of
 // its whole turn being skipped. Only the outermost (non-follow-up) call
 // touches the once-per-turn cooldown ticks, and only the call that finally
@@ -8936,7 +8936,7 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
                         writeLog(`💀 Bot Dementor found no dead cards to reanimate.`);
                         executedAction = false;
                     }
-                } else if (aiActor.name === 'Wendigo') {
+                } else if (aiActor.name === 'vovo') {
                     if (gameState.unusedBloodbanes.length > 0) {
                         let idx = Math.floor(Math.random() * gameState.unusedBloodbanes.length);
                         let template = gameState.unusedBloodbanes[idx];
@@ -8948,14 +8948,14 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
                         aiActor.category = 'Bloodbane';
                         aiActor.maxHex = template.maxHex === Infinity ? Infinity : template.maxHex + 1;
                         aiActor.hex = aiActor.maxHex;
-                        aiActor.wasWendigo = true;
+                        aiActor.wasvovo = true;
                         // Free action: doesn't cost the turn's move (matches the
-                        // player's handleWendigoTransform), so the bot's turn
+                        // player's handlevovoTransform), so the bot's turn
                         // is NOT ended here — it immediately gets to act again,
                         // either with the newly-transformed card or any other
                         // usable card, instead of its whole turn being skipped.
                         aiActor.lastUsedRound = 0;
-                        writeLog(`🐺 Bot Wendigo permanently shifted into ${template.name}, gaining +1 extra Hex! It acts again immediately.`);
+                        writeLog(`🐺 Bot vovo permanently shifted into ${template.name}, gaining +1 extra Hex! It acts again immediately.`);
                         statsBump(aiActor, 'p2', { tactical: 1 });
                         renderScene();
                         if (freeActionDepth < 8) {
@@ -8974,7 +8974,7 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
                         statsRecordFromSnapshot(_statsSnapshot);
                         return;
                     } else {
-                        writeLog(`🐺 Bot Wendigo found no remaining Bloodbane forms and held its ground.`);
+                        writeLog(`🐺 Bot vovo found no remaining Bloodbane forms and held its ground.`);
                     }
                 } else if (aiActor.name === 'Kitsune') {
                     if (gameState.unusedBloodbornes.length > 0) {
@@ -9125,7 +9125,7 @@ function evaluateWinThresholds() {
 // names for a smaller, adaptive font — see the `.card-title-long` rule
 // under the portrait media query — while leaving every other card's name
 // styling untouched. ("Skinwalker"/"Watchmaker" used to be on this list
-// too, before they were renamed to the shorter "Wendigo"/"Chronos", which
+// too, before they were renamed to the shorter "vovo"/"Chronos", which
 // fit fine at normal size.)
 const CARD_LONG_NAMES = ['Bartender', 'Dementor'];
 function cardTitleClass(name) {
@@ -9141,9 +9141,9 @@ function renderScene() {
     if (flipWrap) {
         flipWrap.classList.toggle('seat-2-active', gameState.isLocalMultiplayer && localActiveSeat === 2);
     }
-    // Wendigo can't be killed before it changes form - its 1 Hex is untouchable.
+    // vovo can't be killed before it changes form - its 1 Hex is untouchable.
     [...gameState.p1, ...gameState.p2].forEach(c => {
-        if ((c.name === 'Wendigo' || c.name === 'Kitsune') && c.hex < 1) c.hex = 1;
+        if ((c.name === 'vovo' || c.name === 'Kitsune') && c.hex < 1) c.hex = 1;
     });
     if (gameState.forcedPlayerActorName) {
         let forcedCard = gameState.p1.find(c => c.name === gameState.forcedPlayerActorName);
@@ -9295,12 +9295,12 @@ function renderScene() {
                     } else if (!(card.tag === 'Entity' && act && act.tag !== 'Mystic' && m !== 'knight_strike' && m !== 'wraith_strike' && m !== 'wraith_execute')) {
                         // Each harm/kill move below is additionally gated by
                         // isHarmMoveWasted (K-Shielded card already floored at
-                        // 1 Hex, or a not-yet-transformed Wendigo) so a
+                        // 1 Hex, or a not-yet-transformed vovo) so a
                         // guaranteed no-op target is never offered as an
                         // option in the first place, and imprison moves are
                         // gated by isImprisonMoveWasted (K-Shield always
                         // fully blocks imprisonment, and a not-yet-transformed
-                        // Wendigo is fully immune to imprisonment too).
+                        // vovo is fully immune to imprisonment too).
                         if (m === 'killer_strike' && !isHarmMoveWasted(card)) isEligibleEnemy = true; 
                         if (m === 'dictator_imprison' && !isImprisonMoveWasted(card)) isEligibleEnemy = true; 
                         if (m === 'jinn_block') isEligibleEnemy = true;
@@ -9405,7 +9405,7 @@ function closeMergedActionModal() {
 }
 
 // Shared Cancel handler for every "choose from a list" ability pad
-// (Bartender/Actor/Dementor/Sorcerer/Mecha/Wendigo-Kitsune/Hacker). None of
+// (Bartender/Actor/Dementor/Sorcerer/Mecha/vovo-Kitsune/Hacker). None of
 // these pads spend the acting card's Hex or turn until an option inside
 // them is actually clicked, so backing out here is always a true no-op —
 // the player just gets their card-view controls back to try another move.
@@ -9481,8 +9481,8 @@ function buildDynamicActionPads(card, isLockedByCooldown) {
         if (card.name === 'Mecha') {
             btns.push(`<button class="btn" onclick="runMechaAbilityPad('${card.id}')">Fuse</button>`);
         }
-        if (card.name === 'Wendigo') {
-            btns.push(`<button class="btn" onclick="runWendigoAbilityPad('${card.id}')">🐺 Transform</button>`);
+        if (card.name === 'vovo') {
+            btns.push(`<button class="btn" onclick="runvovoAbilityPad('${card.id}')">🐺 Transform</button>`);
         }
         if (card.name === 'Kitsune') {
             btns.push(`<button class="btn" onclick="runKitsuneAbilityPad('${card.id}')">🦊 Transform</button>`);
@@ -9575,16 +9575,16 @@ const GUIDE_DATA = {
         { name: 'Killer', tag: 'Criminal', hex: 2, desc: "Instantly takes out one enemy. Can't target Entities." },
         { name: 'Robber', tag: 'Criminal', hex: 3, desc: "Drains 1 hex from an enemy (not a Criminal or an Entity). Down to its last hex, it can instead instantly finish off an enemy Criminal or the Dictator." },
         { name: 'Cop', tag: 'Law & Order', hex: 2, desc: "Strikes a Criminal or Law & Order enemy for 1 damage — 2 damage if that enemy already made a move this round." },
-        { name: 'Dementor', tag: 'Entity', hex: 2, desc: "Copies the power of any character that has already died on either team, except Wendigo, Sorcerer, Chronos, Mecha, Bartender, or any Heroic. Must sit out a turn after using it." },
+        { name: 'Dementor', tag: 'Entity', hex: 2, desc: "Copies the power of any character that has already died on either team, except vovo, Sorcerer, Chronos, Mecha, Bartender, or any Heroic. Must sit out a turn after using it." },
         { name: 'Dictator', tag: 'Law & Order', hex: 2, desc: "Locks an enemy in prison so it can't act. Can't imprison Entities. Must sit out a turn after using it." },
         { name: 'Hood', tag: 'Assassin', hex: 3, desc: "Steals 1 hex from an enemy and gives it to one of your allies. Can't touch Entities. On its last hex, a hit on Spy instantly finishes it instead." },
         { name: 'Lawyer', tag: 'Law & Order', hex: 3, desc: "Imprisons an enemy." },
         { name: 'Ninja', tag: 'Assassin', hex: 2, desc: "Strikes an enemy for 1 damage. Its first kill earns it +2 bonus hex. On its very last hex, landing a hit on Spy is an instant finish. Must sit out a turn after using it." },
         { name: 'Spy', tag: 'Assassin', hex: '∞', desc: "Strikes any enemy except another Spy for 1 damage — and never spends its own hex to do it. Must sit out a turn after using it." },
-        { name: 'Sorcerer', tag: 'Mystic', hex: 2, desc: "Takes control of one enemy for a single move, forcing it to attack its own side. Can't hijack Wendigo, Dementor, Chronos, Bartender, or Mecha. Also gets Mystic Purge. Must sit out a turn after using it." },
+        { name: 'Sorcerer', tag: 'Mystic', hex: 2, desc: "Takes control of one enemy for a single move, forcing it to attack its own side. Can't hijack vovo, Dementor, Chronos, Bartender, or Mecha. Also gets Mystic Purge. Must sit out a turn after using it." },
         { name: 'Singer', tag: 'Artist', hex: 2, desc: "Hits two different enemies for 1 damage each in one move. Must sit out a turn after using it." },
         { name: 'Witch', tag: 'Mystic', hex: 2, desc: "Damages an enemy for 1 and poisons it — poison ticks off 1 extra hex every future turn that card acts, until cured. Also gets Mystic Purge." },
-        { name: 'Wendigo', tag: 'Entity', hex: 1, desc: "Completely untouchable until it transforms. At any time, for free, it can permanently shapeshift into an unused Bloodbane character and gain +1 max hex. Must sit out a turn after using its normal move." },
+        { name: 'vovo', tag: 'Entity', hex: 1, desc: "Completely untouchable until it transforms. At any time, for free, it can permanently shapeshift into an unused Bloodbane character and gain +1 max hex. Must sit out a turn after using its normal move." },
         { name: 'Wraith', tag: 'Entity', hex: 3, desc: "Drains 1 hex from an enemy — but can only target Mystic or Entity enemies. Its first kill earns it +2 bonus hex. Down to its last hex, it can instead instantly finish off an eligible Mystic or Entity enemy." },
     ],
     Bloodborne: [
