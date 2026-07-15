@@ -1589,6 +1589,28 @@
 
     <div id="setupView" class="setup-screen">
         <button class="settings-fab-btn" onclick="openSettingsModal()" title="Settings">⚙️</button>
+        <a id="webDownloadBanner" href="https://github.com/AintAreeb/grimoire/releases/latest/download/grimoire.apk"
+           title="Download the app"
+           style="display:none; position:fixed; top:56px; right:14px; z-index:950;
+                  width:36px; height:36px; border-radius:50%;
+                  background:#1a1922; border:1px solid rgba(255,255,255,0.12);
+                  color:#e8e0c9; font-size:16px; cursor:pointer;
+                  align-items:center; justify-content:center;
+                  text-decoration:none;
+                  box-shadow:0 8px 20px rgba(0,0,0,0.5);">
+            ⬇
+        </a>
+        <script>
+            (function () {
+                var isNativeApp = !!(window.Capacitor &&
+                    typeof window.Capacitor.isNativePlatform === 'function' &&
+                    window.Capacitor.isNativePlatform());
+                if (!isNativeApp) {
+                    var el = document.getElementById('webDownloadBanner');
+                    if (el) el.style.display = 'flex';
+                }
+            })();
+        </script>
         <h1 class="wordmark"><span>g</span><span>r</span><span>i</span><span>m</span><span>o</span><span>i</span><span>r</span><span>e</span></h1>
 
         <div id="accountBox" class="account-box">
