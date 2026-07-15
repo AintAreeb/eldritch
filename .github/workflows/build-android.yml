@@ -68,31 +68,4 @@ jobs:
           tag_name: latest
           name: "Build ${{ github.sha }}"
           body: "Commit: ${{ github.sha }}"
-          files: ${{ env.APK_NAME }}            \( icon.png -resize 620x620 \) -gravity center -composite \
-            resources/icon.png
-          convert -size 2732x2732 xc:"#080710" \
-            \( icon.png -resize 1200x1200 \) -gravity center -composite \
-            resources/splash.png
-      - name: Generate icon and splash screen
-        run: |
-          npx @capacitor/assets generate --android \
-            --iconBackgroundColor '#080710' \
-            --iconBackgroundColorDark '#080710' \
-            --splashBackgroundColor '#080710' \
-            --splashBackgroundColorDark '#080710'
-      - run: npx cap sync android
-      - run: chmod +x android/gradlew
-      - working-directory: android
-        run: ./gradlew assembleDebug --no-daemon
-      - name: Rename APK with unique build ID
-        run: |
-          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
-          cp android/app/build/outputs/apk/debug/app-debug.apk grimoire-$SHORT_SHA.apk
-          echo "APK_NAME=grimoire-$SHORT_SHA.apk" >> $GITHUB_ENV
-      - name: Publish to GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: latest
-          name: "Build ${{ github.sha }}"
-          body: "Commit: ${{ github.sha }}"
           files: ${{ env.APK_NAME }}
