@@ -29,39 +29,37 @@ jobs:
           [ -f icon.png ] && cp icon.png www/ || true
       - run: npm install
       - run: npx cap add android
-      - name: Build safe-zone padded icon and splash source images
+      - name: Build adaptive icon layers (foreground, background, monochrome)
         run: |
           sudo apt-get update && sudo apt-get install -y imagemagick
           mkdir -p resources
-          convert -size 1024x1024 xc:"#080710" \
+          convert -size 1024x1024 xc:"#000000" \
             \( icon.png -resize 620x620 \) -gravity center -composite \
             resources/icon.png
-          convert -size 2732x2732 xc:"#080710" \
+          convert -size 1024x1024 xc:none \
+            \( icon.png -resize 620x620 \) -gravity center -composite \
+            resources/icon-foreground.png
+          convert -size 1024x1024 xc:"#000000" \
+            resources/icon-background.png
+          convert -size 1024x1024 xc:none \
+            \( icon.png -resize 620x620 -fill white -colorize 100% \) -gravity center -composite \
+            resources/icon-monochrome.png
+          convert -size 2732x2732 xc:"#000000" \
             \( icon.png -resize 1200x1200 \) -gravity center -composite \
             resources/splash.png
       - name: Generate icon and splash screen
         run: |
           npx @capacitor/assets generate --android \
-            --iconBackgroundColor '#080710' \
-            --iconBackgroundColorDark '#080710' \
-            --splashBackgroundColor '#080710' \
-            --splashBackgroundColorDark '#080710'
-      - name: Upload generated icon for verification
-        uses: actions/upload-artifact@v4
-        with:
-          name: generated-icon-debug
-          path: |
-            resources/icon.png
-            android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+            --splashBackgroundColor '#000000' \
+            --splashBackgroundColorDark '#000000'
       - run: npx cap sync android
       - run: chmod +x android/gradlew
       - working-directory: android
         run: ./gradlew assembleDebug --no-daemon
-      - name: Rename APK with unique build ID
+      - name: Rename APK
         run: |
-          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
-          cp android/app/build/outputs/apk/debug/app-debug.apk grimoire-$SHORT_SHA.apk
-          echo "APK_NAME=grimoire-$SHORT_SHA.apk" >> $GITHUB_ENV
+          cp android/app/build/outputs/apk/debug/app-debug.apk grimoire.apk
+          echo "APK_NAME=grimoire.apk" >> $GITHUB_ENV
       - name: Publish to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
