@@ -4067,10 +4067,21 @@ function isHarmMoveWasted(target) {
     if (target.name === 'Wendigo' || target.name === 'Kitsune') return true;
     return isCardShielded(target) && target.hex === 1;
 }
+// Wendigo/Kitsune are hard-immune to poison, in addition to normal damage
+// and imprisonment, for as long as they're still in their untransformed
+// Entity form. The moment either one permanently shapeshifts (see
+// handleWendigoTransform/handleKitsuneTransform and the bot mirrors of
+// them), its `name` changes away from 'Wendigo'/'Kitsune' to whatever it
+// became, so this check naturally stops applying once it has shifted.
+function isPoisonImmune(card) {
+    return !!card && (card.name === 'Wendigo' || card.name === 'Kitsune');
+}
 // Witch's poison is a real, independent side effect even when the
 // accompanying damage would be wasted — so Witch is only truly wasted
-// against a target that's already poisoned too.
+// against a target that's already poisoned too. A not-yet-transformed
+// Wendigo/Kitsune is always wasted, though, since it can't be poisoned at all.
 function isWitchMoveWasted(target) {
+    if (isPoisonImmune(target)) return true;
     return isHarmMoveWasted(target) && !!target.poisoned;
 }
 
@@ -7312,14 +7323,14 @@ function processSelectedTarget(targetId) {
             writeLog(`🧘 Therapist rebounds lockdown onto bot ${enemy.name}!`);
             queueRecap('lockdown', enemy);
         } else if (botAbilityName === 'Witch') {
-            enemy.poisoned = true;
+            if (!isPoisonImmune(enemy)) enemy.poisoned = true;
             applyShieldedDamage(enemy, 1);
             writeLog(`🧘 Therapist rebounds poison strike onto bot ${enemy.name}!`);
             queueRecap('poison', enemy);
         } else {
             let dmg = record.damageDealt > 0 ? record.damageDealt : 1;
             applyShieldedDamage(enemy, dmg);
-            if (record.wasPoisoned) enemy.poisoned = true;
+            if (record.wasPoisoned && !isPoisonImmune(enemy)) enemy.poisoned = true;
             writeLog(`🧘 Therapist rebounds attack onto bot ${enemy.name} for ${dmg} damage.`);
         }
         
@@ -7393,13 +7404,13 @@ function processSelectedTarget(targetId) {
 
         if (pName === 'Witch') {
             if (isSameTarget) {
-                firstEnemy.poisoned = true; 
+                if (!isPoisonImmune(firstEnemy)) firstEnemy.poisoned = true;
                 applyShieldedDamage(firstEnemy, 2);
                 writeLog(`🤖 Mecha+Witch Fusion: Dealt 2x damage (2) and poisoned ${firstEnemy.name}.`);
                 queueRecap('poison', firstEnemy);
             } else {
-                firstEnemy.poisoned = true; applyShieldedDamage(firstEnemy, 1);
-                secondEnemy.poisoned = true; applyShieldedDamage(secondEnemy, 1);
+                if (!isPoisonImmune(firstEnemy)) firstEnemy.poisoned = true; applyShieldedDamage(firstEnemy, 1);
+                if (!isPoisonImmune(secondEnemy)) secondEnemy.poisoned = true; applyShieldedDamage(secondEnemy, 1);
                 writeLog(`🤖 Mecha+Witch Fusion: Dealt 1 damage and applied poison to both ${firstEnemy.name} and ${secondEnemy.name}.`);
                 queueRecap('poison', firstEnemy);
                 queueRecap('poison', secondEnemy);
@@ -7497,7 +7508,7 @@ function processSelectedTarget(targetId) {
             applyShieldedImprison(enemy);
             writeLog(`🔮 Control Sequence: ${originalType} imprisoned ${enemy.name}!`);
         } else if (originalType === 'Witch') {
-            enemy.poisoned = true;
+            if (!isPoisonImmune(enemy)) enemy.poisoned = true;
             applyShieldedDamage(enemy, 1);
             writeLog(`🔮 Control Sequence: Witch damaged and poisoned ${enemy.name}.`);
             queueRecap('poison', enemy);
@@ -7749,7 +7760,8 @@ function processSelectedTarget(targetId) {
         queueRecap('heal', ally);
     }
     else if (baseMove === 'witch_poison') {
-        enemy.poisoned = true; applyShieldedDamage(enemy, 1);
+        if (!isPoisonImmune(enemy)) enemy.poisoned = true;
+        applyShieldedDamage(enemy, 1);
         writeLog(`🔮 Your Witch attacks and poisons ${enemy.name}.`);
         queueRecap('poison', enemy);
     }
@@ -8143,7 +8155,7 @@ function applyMimicRoleEffect(roleName, aiActor, verbPrefix) {
         let pool = enemyPool.filter(c => !isWitchMoveWasted(c));
         if (pool.length === 0) return false;
         let t = pickBotTarget(pool, gameState.difficulty);
-        t.poisoned = true;
+        if (!isPoisonImmune(t)) t.poisoned = true;
         applyShieldedDamage(t, 1);
         writeLog(`🔮 ${verbPrefix} poisons your ${t.name}!`);
         queueRecap('poison', t);
@@ -8600,14 +8612,14 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
                                 writeLog(`🧘 Bot Therapist rebounds lockdown onto your ${reboundTarget.name}!`);
                                 queueRecap('lockdown', reboundTarget);
                             } else if (abilityName === 'Witch') {
-                                reboundTarget.poisoned = true;
+                                if (!isPoisonImmune(reboundTarget)) reboundTarget.poisoned = true;
                                 applyShieldedDamage(reboundTarget, 1);
                                 writeLog(`🧘 Bot Therapist rebounds poison strike onto your ${reboundTarget.name}!`);
                                 queueRecap('poison', reboundTarget);
                             } else {
                                 let dmg = record.damageDealt > 0 ? record.damageDealt : 1;
                                 applyShieldedDamage(reboundTarget, dmg);
-                                if (record.wasPoisoned) reboundTarget.poisoned = true;
+                                if (record.wasPoisoned && !isPoisonImmune(reboundTarget)) reboundTarget.poisoned = true;
                                 writeLog(`🧘 Bot Therapist rebounds attack onto your ${reboundTarget.name} for ${dmg} damage.`);
                             }
                         }
@@ -8730,7 +8742,7 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
                     // Mystic-tagged, so poison lands on Entity targets exactly
                     // the same as any other target — no more forcing a
                     // no-poison Mystic Purge just because the target is an Entity.
-                    targetPlayer.poisoned = true;
+                    if (!isPoisonImmune(targetPlayer)) targetPlayer.poisoned = true;
                     applyShieldedDamage(targetPlayer, 1);
                     writeLog(`🔮 Bot Witch strikes and poisons your ${targetPlayer.name}.`);
                     queueRecap('poison', targetPlayer);
@@ -8752,7 +8764,34 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
                     if (hijackPool.length > 0) {
                         let hijacked = pickBestByThreat(hijackPool, gameState.difficulty);
                         writeLog(`🔮 Bot Sorcerer hijacks control of your ${hijacked.name}!`);
+                        // Snapshot your team before the hijacked ability resolves so we
+                        // can tell which of your OWN cards it actually hit (it "forces
+                        // your card to attack its own side", so the real target lives in
+                        // p1, not p2) — targetPlayer/preAttackHex/etc default to the
+                        // generic pre-picked candidate from way above, which has nothing
+                        // to do with this hijack. Reassigning them here (same pattern the
+                        // Lawyer branch above uses) lets the normal botLastAttackRecord
+                        // built at the bottom of this function correctly describe the
+                        // hijack's real effect, so Imam's Revive Block (and Chronos) can
+                        // actually undo it — nullifying the hijack — instead of silently
+                        // restoring 0 Hex to the wrong card.
+                        let preHijackSnapshot = {};
+                        gameState.p1.forEach(c => { preHijackSnapshot[c.id] = { hex: c.hex, imprisoned: c.imprisoned, poisoned: c.poisoned }; });
                         let didSomething = applyMimicRoleEffect(hijacked.name, aiActor, `Bot Sorcerer (as ${hijacked.name})`);
+                        if (didSomething) {
+                            let hitCard = gameState.p1.find(c => {
+                                let before = preHijackSnapshot[c.id];
+                                return before && (before.hex !== c.hex || before.imprisoned !== c.imprisoned || before.poisoned !== c.poisoned);
+                            });
+                            if (hitCard) {
+                                let before = preHijackSnapshot[hitCard.id];
+                                targetPlayer = hitCard;
+                                preAttackHex = before.hex;
+                                actionType = (!before.imprisoned && hitCard.imprisoned) ? 'imprison' : 'damage';
+                                isDirectKill = actionType !== 'imprison' && before.hex > 0 && hitCard.hex === 0;
+                                wasPoisonedState = before.poisoned;
+                            }
+                        }
                         applyShieldedDamage(hijacked, 1);
                         writeLog(`⚠️ Control Loop Feedback: your ${hijacked.name} lost 1 Hex.`);
                         if (!didSomething) executedAction = false;
@@ -8846,8 +8885,8 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
                         aiActor.mechaCooldown = 4;
 
                         if (pName === 'Witch') {
-                            if (isSameTarget) { first.poisoned = true; applyShieldedDamage(first, 2); queueRecap('poison', first); }
-                            else { first.poisoned = true; applyShieldedDamage(first, 1); second.poisoned = true; applyShieldedDamage(second, 1); queueRecap('poison', first); queueRecap('poison', second); }
+                            if (isSameTarget) { if (!isPoisonImmune(first)) first.poisoned = true; applyShieldedDamage(first, 2); queueRecap('poison', first); }
+                            else { if (!isPoisonImmune(first)) first.poisoned = true; applyShieldedDamage(first, 1); if (!isPoisonImmune(second)) second.poisoned = true; applyShieldedDamage(second, 1); queueRecap('poison', first); queueRecap('poison', second); }
                             writeLog(`🤖 Bot Mecha+Witch Fusion: poisoned and struck your ${first.name}${isSameTarget ? '' : ' and ' + second.name}!`);
                         } else if (pName === 'Hood') {
                             if (isSameTarget) applyShieldedDamage(first, 2);
@@ -9631,7 +9670,7 @@ const GUIDE_DATA = {
         { name: 'Mecha', tag: 'Bloodsmith', hex: 2, desc: "Fuses with an ally — Spy, Robber, Hood, Witch, Knight, Cop, or Ninja — letting that pairing land two hits in a single turn. 3-turn cooldown between uses." },
         { name: 'Knight', tag: 'Law & Order', hex: 2, desc: "First hex: raises a shield that stops your whole team from being killed or imprisoned for the enemy's next 2 turns. Last hex: strikes an enemy for 1 damage, or instantly finishes Spy." },
         { name: 'Hacker', tag: 'Criminal', hex: 2, desc: "Trades one of your characters with one of the enemy's. Swaps must alternate between Bloodbane-for-Bloodbane and Bloodborne-for-Bloodborne. Both cards return to full hex after the trade. 3-turn cooldown between uses." },
-        { name: 'Imam', tag: 'Mystic', hex: 2, desc: "Reverses the enemy's last kill or imprisonment against your team. Also gets Mystic Purge. Must sit out a turn after using it." },
+        { name: 'Imam', tag: 'Mystic', hex: 2, desc: "Reverses the enemy's last kill or imprisonment against your team, and can also nullify the enemy Sorcerer's last hijack of one of your cards — exactly like Chronos's rewind. Also gets Mystic Purge. Must sit out a turn after using it." },
         { name: 'Mage', tag: 'Mystic', hex: 3, desc: "Spends its own hex to revive a dead ally (other than Spy, who can't be revived) with that same amount of hex. Also gets Mystic Purge. Must sit out a turn after using it." },
         { name: 'Doctor', tag: 'Medic', hex: 3, desc: "Heals an ally for 1 hex. Can also cure poison on any teammate completely for free, without spending its move." },
         { name: 'Bartender', tag: 'Criminal', hex: 2, desc: "Copies whatever move the enemy used on their last turn. Must sit out a turn after using it." },
