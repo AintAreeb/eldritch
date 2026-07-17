@@ -335,6 +335,29 @@
             opacity: 0.92;
         }
 
+        /* Cosmetic picker previews — card skin rows in the Skins modal reuse
+           the same gradient/border as the equipped-card look, so the row shows
+           what the skin actually looks like before you pick it. */
+        .guide-card-entry.card-skin-crimsonledger { background: linear-gradient(180deg, rgba(120, 20, 25, 0.16) 0%, rgba(40, 8, 10, 0.08) 100%); border-color: rgba(180, 30, 40, 0.55); }
+        .guide-card-entry.card-skin-ashwake { background: linear-gradient(180deg, rgba(90, 80, 70, 0.14) 0%, rgba(255,120,40,0.05) 100%); border-color: rgba(140, 140, 150, 0.4); }
+        .guide-card-entry.card-skin-voidstatic { background: linear-gradient(160deg, rgba(120,40,220,0.14) 0%, rgba(0,220,220,0.08) 100%); border-color: rgba(150, 60, 255, 0.5); }
+        .guide-card-entry.card-skin-gildedverdict { background: linear-gradient(180deg, rgba(212,175,55,0.14) 0%, rgba(232,224,201,0.05) 100%); border-color: rgba(212, 175, 55, 0.6); }
+        .guide-card-entry.card-skin-bloodbanesigil { background: linear-gradient(180deg, rgba(10,8,10,0.4) 0%, rgba(90,0,10,0.1) 100%); border-color: rgba(120, 0, 10, 0.65); }
+        .guide-card-entry.card-skin-bloodbornecircuit { background: linear-gradient(180deg, rgba(40,60,65,0.18) 0%, rgba(20,20,25,0.1) 100%); border-color: rgba(60, 160, 170, 0.5); }
+        .guide-card-entry.card-skin-sacredember { background: linear-gradient(180deg, rgba(255,245,220,0.12) 0%, rgba(255,210,120,0.05) 100%); border-color: rgba(255, 235, 200, 0.55); }
+        .guide-card-entry.card-skin-widowsink { background: linear-gradient(180deg, rgba(30,10,35,0.35) 0%, rgba(10,8,12,0.15) 100%); border-color: rgba(90, 20, 110, 0.55); }
+        .guide-card-entry.card-skin-executionersmark { background: linear-gradient(180deg, rgba(10,8,8,0.4) 0%, rgba(140,45,10,0.1) 100%); border-color: rgba(255, 100, 20, 0.55); }
+        .guide-card-entry.card-skin-emberwraith { background: linear-gradient(180deg, rgba(140,40,10,0.2) 0%, rgba(255,120,30,0.06) 100%); border-color: rgba(255, 90, 20, 0.55); }
+        .guide-card-entry.card-skin-glacialomen { background: linear-gradient(180deg, rgba(140,220,255,0.14) 0%, rgba(255,255,255,0.04) 100%); border-color: rgba(150, 220, 255, 0.55); }
+        .guide-card-entry.card-skin-verdantthorn { background: linear-gradient(180deg, rgba(20,60,30,0.22) 0%, rgba(60,140,70,0.06) 100%); border-color: rgba(60, 160, 80, 0.5); }
+        .guide-card-entry.card-skin-royalamethyst { background: linear-gradient(180deg, rgba(90,50,150,0.18) 0%, rgba(212,175,55,0.06) 100%); border-color: rgba(160, 100, 220, 0.55); }
+        .guide-card-entry.card-skin-stormherald { background: linear-gradient(160deg, rgba(40,60,120,0.2) 0%, rgba(180,220,255,0.06) 100%); border-color: rgba(120, 170, 255, 0.55); }
+        .guide-card-entry.card-skin-plaguedoctor { background: linear-gradient(180deg, rgba(30,35,15,0.3) 0%, rgba(90,110,50,0.08) 100%); border-color: rgba(120, 160, 80, 0.5); }
+        .guide-card-entry.card-skin-solarflare { background: linear-gradient(180deg, rgba(255,190,40,0.16) 0%, rgba(255,100,20,0.06) 100%); border-color: rgba(255, 190, 40, 0.55); }
+        .guide-card-entry.card-skin-abyssalink { background: linear-gradient(180deg, rgba(5,8,20,0.4) 0%, rgba(20,30,70,0.1) 100%); border-color: rgba(20, 30, 70, 0.6); }
+        .guide-card-entry.card-skin-thornsteel { background: linear-gradient(180deg, rgba(50,50,55,0.22) 0%, rgba(100,20,25,0.08) 100%); border-color: rgba(140, 30, 40, 0.5); }
+        .guide-card-entry.card-skin-phantomveil { background: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.01) 100%); border-color: rgba(220, 220, 230, 0.4); }
+
         /* ====================================================================
            CARD SKIN TITLE GLOW — the card name text keeps its normal colour;
            only a themed text-shadow glow (matched to each skin's palette
@@ -432,6 +455,29 @@
         .pbanner-coralruin { background: linear-gradient(135deg, rgba(255,120,140,0.45) 0%, rgba(255,120,140,0.06) 100%); border-color: rgba(255,176,190,0.4); }
         .pbanner-ashfallbasin { background: linear-gradient(135deg, rgba(140,130,120,0.4) 0%, rgba(140,130,120,0.05) 100%); border-color: rgba(208,200,188,0.35); }
         .pbanner-starlitsanctum { background: linear-gradient(135deg, rgba(230,230,255,0.4) 0%, rgba(230,230,255,0.06) 100%); border-color: rgba(232,232,255,0.4); }
+
+        /* Cosmetic picker previews — board theme rows in the Skins modal reuse
+           the exact pbanner gradient/border for that theme, so the row shows
+           the same background the profile banner gets when it's equipped. */
+        .guide-card-entry.pbanner-bloodmoon { background: linear-gradient(135deg, rgba(140,10,20,0.5) 0%, rgba(140,10,20,0.06) 100%); border-color: rgba(255,107,107,0.4); }
+        .guide-card-entry.pbanner-obsidianrift { background: linear-gradient(135deg, rgba(80,0,120,0.45) 0%, rgba(80,0,120,0.06) 100%); border-color: rgba(201,139,255,0.4); }
+        .guide-card-entry.pbanner-parchmentnoir { background: linear-gradient(135deg, rgba(180,160,110,0.35) 0%, rgba(180,160,110,0.05) 100%); border-color: rgba(232,217,171,0.4); }
+        .guide-card-entry.pbanner-verdanthex { background: linear-gradient(135deg, rgba(30,140,90,0.45) 0%, rgba(30,140,90,0.06) 100%); border-color: rgba(107,232,166,0.4); }
+        .guide-card-entry.pbanner-staticbloom { background: linear-gradient(135deg, rgba(255,204,0,0.35) 0%, rgba(255,204,0,0.05) 100%); border-color: rgba(255,224,122,0.4); }
+        .guide-card-entry.pbanner-ashenvigil { background: linear-gradient(135deg, rgba(150,150,160,0.4) 0%, rgba(150,150,160,0.05) 100%); border-color: rgba(216,216,222,0.35); }
+        .guide-card-entry.pbanner-frostboundledger { background: linear-gradient(135deg, rgba(94,200,216,0.45) 0%, rgba(94,200,216,0.06) 100%); border-color: rgba(159,232,242,0.4); }
+        .guide-card-entry.pbanner-neonunderworld { background: linear-gradient(135deg, rgba(255,0,180,0.45) 0%, rgba(255,0,180,0.06) 100%); border-color: rgba(255,122,240,0.45); }
+        .guide-card-entry.pbanner-aurumsanctum { background: linear-gradient(135deg, rgba(212,175,55,0.5) 0%, rgba(212,175,55,0.06) 100%); border-color: rgba(240,220,154,0.45); }
+        .guide-card-entry.pbanner-crimsonabyss { background: linear-gradient(135deg, rgba(150,10,10,0.55) 0%, rgba(150,10,10,0.06) 100%); border-color: rgba(255,128,128,0.45); }
+        .guide-card-entry.pbanner-lunarhollow { background: linear-gradient(135deg, rgba(150,180,220,0.4) 0%, rgba(150,180,220,0.05) 100%); border-color: rgba(200,216,238,0.4); }
+        .guide-card-entry.pbanner-emberwastes { background: linear-gradient(135deg, rgba(255,110,20,0.45) 0%, rgba(255,110,20,0.06) 100%); border-color: rgba(255,176,102,0.4); }
+        .guide-card-entry.pbanner-glacialexpanse { background: linear-gradient(135deg, rgba(150,220,255,0.45) 0%, rgba(150,220,255,0.06) 100%); border-color: rgba(168,232,255,0.45); }
+        .guide-card-entry.pbanner-royalcourt { background: linear-gradient(135deg, rgba(160,100,220,0.5) 0%, rgba(160,100,220,0.06) 100%); border-color: rgba(216,184,255,0.45); }
+        .guide-card-entry.pbanner-plagueward { background: linear-gradient(135deg, rgba(120,160,80,0.4) 0%, rgba(120,160,80,0.05) 100%); border-color: rgba(192,216,144,0.4); }
+        .guide-card-entry.pbanner-thunderscar { background: linear-gradient(135deg, rgba(120,170,255,0.45) 0%, rgba(120,170,255,0.06) 100%); border-color: rgba(168,200,255,0.4); }
+        .guide-card-entry.pbanner-coralruin { background: linear-gradient(135deg, rgba(255,120,140,0.45) 0%, rgba(255,120,140,0.06) 100%); border-color: rgba(255,176,190,0.4); }
+        .guide-card-entry.pbanner-ashfallbasin { background: linear-gradient(135deg, rgba(140,130,120,0.4) 0%, rgba(140,130,120,0.05) 100%); border-color: rgba(208,200,188,0.35); }
+        .guide-card-entry.pbanner-starlitsanctum { background: linear-gradient(135deg, rgba(230,230,255,0.4) 0%, rgba(230,230,255,0.06) 100%); border-color: rgba(232,232,255,0.4); }
 
         .cooldown-badge { 
             position: absolute; 
@@ -3302,11 +3348,11 @@ function renderProfileCosmetics() {
     const earnedThemes = blProfileCosmetics.earnedThemes || ['classic_grimoire'];
     const equippedTheme = blProfileCosmetics.equippedTheme || 'classic_grimoire';
 
-    function row(def, isEarned, isEquipped, equipFn) {
+    function row(def, isEarned, isEquipped, equipFn, previewClass) {
         const current = cosmeticCurrentProgress(def, ctx);
         const goal = cosmeticGoal(def);
         const pct = def.always ? 100 : Math.max(0, Math.min(100, Math.round(current / goal * 100)));
-        return `<div class="guide-card-entry title-entry${isEarned ? ' title-earned' : ' title-locked'}">
+        return `<div class="guide-card-entry title-entry${isEarned ? ' title-earned' : ' title-locked'}${previewClass ? ' ' + previewClass : ''}">
             <div style="display:flex; align-items:center; justify-content:space-between; gap:6px;">
                 <span class="guide-card-name">${isEarned ? '🎴' : '🔒'} ${def.name}</span>
                 ${blProfileIsSelf && isEarned ? `<button class="title-equip-btn${isEquipped ? ' title-equip-active' : ''}" onclick="${equipFn}('${isEquipped ? '' : def.id}')">${isEquipped ? 'Equipped' : 'Equip'}</button>` : ''}
@@ -3316,8 +3362,12 @@ function renderProfileCosmetics() {
         </div>`;
     }
 
-    const skinRows = CARD_SKIN_DEFS.map(s => row(s, earnedSkins.includes(s.id), equippedSkin === s.id, 'equipSkin')).join('');
-    const themeRows = BOARD_THEME_DEFS.map(t => row(t, earnedThemes.includes(t.id), equippedTheme === t.id, 'equipTheme')).join('');
+    // Card skin rows preview using the skin's own card-skin-* class (already
+    // scoped to real card visuals); board theme rows preview using the same
+    // pbanner-* class the profile banner uses for that theme, so what you see
+    // here is exactly what equipping it will look like elsewhere.
+    const skinRows = CARD_SKIN_DEFS.map(s => row(s, earnedSkins.includes(s.id), equippedSkin === s.id, 'equipSkin', s.cssClass)).join('');
+    const themeRows = BOARD_THEME_DEFS.map(t => row(t, earnedThemes.includes(t.id), equippedTheme === t.id, 'equipTheme', blBannerClassForTheme(t.id))).join('');
     view.innerHTML = `<div class="guide-section-label">Card Skins — ${earnedSkins.length} / ${CARD_SKIN_DEFS.length} Earned</div>${skinRows}`
         + `<div class="guide-section-label">Board Themes — ${earnedThemes.length} / ${BOARD_THEME_DEFS.length} Earned</div>${themeRows}`;
 }
