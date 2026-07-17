@@ -4133,16 +4133,39 @@ function recordPlayerAttack(actorId, baseMove) {
         return before.hex !== c.hex || before.imprisoned !== c.imprisoned || before.poisoned !== c.poisoned;
     });
     if (changed.length === 0) return;
-    let target = changed.sort((a, b) => {
+    let sorted = changed.sort((a, b) => {
         let beforeA = snap.cards[a.id], beforeB = snap.cards[b.id];
         return (beforeB.hex - b.hex) - (beforeA.hex - a.hex);
-    })[0];
+    });
+    let target = sorted[0];
     let before = snap.cards[target.id];
     let actor = gameState.p1.find(c => c.id === actorId);
     let damageDealt = before.hex - target.hex;
     let isSorcererAction = baseMove === 'sorcerer_hijacked_action' || baseMove === 'sorcerer_hijacked_singer_step2';
+
+    // A Sorcerer hijack also lands 1 "Control Loop Feedback" Hex loss on the
+    // hijacked enemy card itself — a second p2 card, separate from whichever
+    // card its stolen move actually hit. Track that one too so Chronos can
+    // restore both, not just the primary target.
+    let hijackFeedbackCardId = null, hijackFeedbackDamage = 0;
+    if (isSorcererAction) {
+        let hijackedId = gameState.targetingMode.metadata ? gameState.targetingMode.metadata.hijackedCardId : null;
+        let feedbackCard = sorted.find(c => c.id === hijackedId && c.id !== target.id);
+        if (feedbackCard) {
+            let fBefore = snap.cards[feedbackCard.id];
+            hijackFeedbackCardId = feedbackCard.id;
+            hijackFeedbackDamage = fBefore.hex - feedbackCard.hex;
+        }
+    }
+
     gameState.playerLastAttackRecord = {
         actorName: actor ? actor.name : 'Unknown',
+        actorId: actorId,
+        actorPreHex: gameState.targetingMode.actorPostCostHex,
+        actorPreHasKilled: gameState.targetingMode.actorPostCostHasKilled,
+        actorPreMaxHex: gameState.targetingMode.actorPostCostMaxHex,
+        hijackFeedbackCardId: hijackFeedbackCardId,
+        hijackFeedbackDamage: hijackFeedbackDamage,
         targetId: target.id,
         damageDealt: damageDealt,
         wasImprisoned: !before.imprisoned && target.imprisoned,
@@ -6588,6 +6611,29 @@ function executeChronosTimeTravel(actorId) {
                 : `⏳ Chronoshift Overturn: Restored ${record.damageDealt} Hex and state modifiers to ${affectedCard.name}.`);
             if (!record.wasImprisoned && record.damageDealt > 0) statDeltas.healAmt = record.damageDealt;
         }
+        // Fully nullify the move: also strip any Hex/state the bot's OWN
+        // acting card gained from it (e.g. a Sorcerer hijack's stolen +2
+        // hex kill-bonus), and restore any secondary card the move hit as
+        // Control Loop Feedback (a Sorcerer hijack damages the hijacked
+        // ally too, separately from whichever card its stolen move hit).
+        if (record.actorId !== undefined && record.actorId !== null) {
+            let attackerCard = gameState.p2.find(c => c.id === record.actorId) || gameState.p1.find(c => c.id === record.actorId);
+            if (attackerCard && record.actorPreHex !== undefined && attackerCard.hex > record.actorPreHex) {
+                writeLog(`⏳ Chronoshift Overturn: Reversed ${attackerCard.name}'s +${attackerCard.hex - record.actorPreHex} Hex gained from that move.`);
+                attackerCard.hex = record.actorPreHex;
+                attackerCard.hasKilled = record.actorPreHasKilled;
+                attackerCard.maxHex = record.actorPreMaxHex;
+            }
+        }
+        if (record.hijackFeedbackCardId && record.hijackFeedbackDamage > 0) {
+            let feedbackCard = gameState.p1.find(c => c.id === record.hijackFeedbackCardId);
+            if (feedbackCard) {
+                feedbackCard.hex += record.hijackFeedbackDamage;
+                if (feedbackCard.maxHex !== Infinity && feedbackCard.hex > feedbackCard.maxHex) feedbackCard.hex = feedbackCard.maxHex;
+                writeLog(`⏳ Chronoshift Overturn: Restored ${record.hijackFeedbackDamage} Hex to hijacked ${feedbackCard.name}.`);
+                queueRecap('rewind', feedbackCard);
+            }
+        }
     }
     statsBump(actor, 'p1', statDeltas);
     if (actor.hex <= 0) actor.hex = 0;
@@ -6982,6 +7028,9 @@ function handleSorcererSelection(actorId, enemyId) {
     gameState.targetingMode.actorId = actorId;
     gameState.targetingMode.metadata = { hijackedCardId: enemy.id, originalType: enemy.name };
     gameState.targetingMode.preEffectSnapshot = preEffectSnapshot;
+    gameState.targetingMode.actorPostCostHex = actorCard.hex;
+    gameState.targetingMode.actorPostCostHasKilled = actorCard.hasKilled;
+    gameState.targetingMode.actorPostCostMaxHex = actorCard.maxHex;
     
     const bar = document.getElementById('targetBar');
     bar.innerText = `🔮 HIJACKED ${enemy.name.toUpperCase()} (1 MOVE) - CHOOSE TARGET`;
@@ -7724,6 +7773,9 @@ function processSelectedTarget(targetId) {
 
     if (actorCard.name !== 'Spy' && !actorCard.isHeroic) actorCard.hex -= 1;
     actorCard.hasActivity = true;
+    gameState.targetingMode.actorPostCostHex = actorCard.hex;
+    gameState.targetingMode.actorPostCostHasKilled = actorCard.hasKilled;
+    gameState.targetingMode.actorPostCostMaxHex = actorCard.maxHex;
 
     if (baseMove === 'jinn_block') {
         enemy.blockedCounter = 4; 
@@ -8636,6 +8688,16 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
             let executedAction = true;
             let isDirectKill = false;
             let wasPoisonedState = targetPlayer.poisoned;
+            // Chronos needs to be able to undo not just what the bot's move did
+            // to the player's team, but any Hex/state the bot's OWN acting card
+            // gained from that same move (e.g. a kill-bonus, or a Sorcerer
+            // hijack's stolen kill bonus) — captured after the flat activation
+            // cost above so rewinding never refunds that cost, only the gain.
+            let preActorHex = aiActor.hex;
+            let preActorHasKilled = aiActor.hasKilled;
+            let preActorMaxHex = aiActor.maxHex;
+            let hijackFeedbackCardId = null;
+            let hijackFeedbackDamage = 0;
 
             if (targetPlayer.isHeroic) {
                 writeLog(`🤖 Bot ${aiActor.name} tried to attack your Heroic ${targetPlayer.name}, but Sacred Souls cannot be harmed by enemy cards!`);
@@ -8863,8 +8925,11 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
                                 wasPoisonedState = before.poisoned;
                             }
                         }
+                        let preFeedbackHex = hijacked.hex;
                         applyShieldedDamage(hijacked, 1);
                         writeLog(`⚠️ Control Loop Feedback: your ${hijacked.name} lost 1 Hex.`);
+                        hijackFeedbackCardId = hijacked.id;
+                        hijackFeedbackDamage = preFeedbackHex - hijacked.hex;
                         if (!didSomething) executedAction = false;
                     } else {
                         writeLog(`🔮 Bot Sorcerer found no valid card to hijack.`);
@@ -9005,6 +9070,25 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
                                 ? `⏳ Chronoshift Overturn: Imprisonment of ${affectedCard.name} has been erased.`
                                 : `⏳ Chronoshift Overturn: Restored ${record.damageDealt} Hex and state modifiers to ${affectedCard.name}.`);
                             executedAction = true;
+                        }
+                        if (record.actorId !== undefined && record.actorId !== null) {
+                            let attackerCard = gameState.p1.find(c => c.id === record.actorId) || gameState.p2.find(c => c.id === record.actorId);
+                            if (attackerCard && record.actorPreHex !== undefined && attackerCard.hex > record.actorPreHex) {
+                                writeLog(`⏳ Chronoshift Overturn: Reversed ${attackerCard.name}'s +${attackerCard.hex - record.actorPreHex} Hex gained from that move.`);
+                                attackerCard.hex = record.actorPreHex;
+                                attackerCard.hasKilled = record.actorPreHasKilled;
+                                attackerCard.maxHex = record.actorPreMaxHex;
+                                executedAction = true;
+                            }
+                        }
+                        if (record.hijackFeedbackCardId && record.hijackFeedbackDamage > 0) {
+                            let feedbackCard = gameState.p2.find(c => c.id === record.hijackFeedbackCardId);
+                            if (feedbackCard) {
+                                feedbackCard.hex += record.hijackFeedbackDamage;
+                                if (feedbackCard.maxHex !== Infinity && feedbackCard.hex > feedbackCard.maxHex) feedbackCard.hex = feedbackCard.maxHex;
+                                writeLog(`⏳ Chronoshift Overturn: Restored ${record.hijackFeedbackDamage} Hex to hijacked ${feedbackCard.name}.`);
+                                executedAction = true;
+                            }
                         }
                     }
                 } else if (aiActor.name === 'Bartender') {
@@ -9191,6 +9275,12 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
             if (executedAction) {
                 gameState.botLastAttackRecord = {
                     actorName: aiActor.name,
+                    actorId: aiActor.id,
+                    actorPreHex: preActorHex,
+                    actorPreHasKilled: preActorHasKilled,
+                    actorPreMaxHex: preActorMaxHex,
+                    hijackFeedbackCardId: hijackFeedbackCardId,
+                    hijackFeedbackDamage: hijackFeedbackDamage,
                     targetId: targetPlayer.id,
                     damageDealt: preAttackHex - targetPlayer.hex,
                     wasImprisoned: actionType === 'imprison',
