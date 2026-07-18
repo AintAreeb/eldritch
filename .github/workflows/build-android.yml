@@ -38,6 +38,7 @@ jobs:
 
           MANIFEST=android/app/src/main/AndroidManifest.xml
           sed -i 's#android:name=".MainActivity"#android:name=".MainActivity"\n            android:windowLayoutInDisplayCutoutMode="shortEdges"#' "$MANIFEST"
+          sed -i 's#<application#<uses-permission android:name="android.permission.RECORD_AUDIO" />\n\n    <application#' "$MANIFEST"
           cat "$MANIFEST"
       - name: Build adaptive icon layers (foreground, background, monochrome)
         run: |
@@ -99,23 +100,3 @@ jobs:
           name: "Build ${{ github.sha }}"
           body: "Commit: ${{ github.sha }}"
           files: ${{ env.APK_NAME }}
-      - name: Patch native theme for transparent status bar (Realme UI / ColorOS etc.)
-        run: |
-          STYLES=android/app/src/main/res/values/styles.xml
-          sed -i 's#<style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">#<style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">\n        <item name="android:windowDrawsSystemBarBackgrounds">true</item>\n        <item name="android:statusBarColor">@android:color/transparent</item>\n        <item name="android:windowLightStatusBar">false</item>\n        <item name="android:navigationBarColor">@android:color/transparent</item>#' "$STYLES"
-          cat "$STYLES"
-
-          MANIFEST=android/app/src/main/AndroidManifest.xml
-          sed -i 's#android:name=".MainActivity"#android:name=".MainActivity"\n            android:windowLayoutInDisplayCutoutMode="shortEdges"#' "$MANIFEST"
-          sed -i 's#<application#<uses-permission android:name="android.permission.RECORD_AUDIO" />\n\n    <application#' "$MANIFEST"
-          cat "$MANIFEST"
-     - name: Patch native theme for transparent status bar (Realme UI / ColorOS etc.)
-        run: |
-          STYLES=android/app/src/main/res/values/styles.xml
-          sed -i 's#<style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">#<style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">\n        <item name="android:windowDrawsSystemBarBackgrounds">true</item>\n        <item name="android:statusBarColor">@android:color/transparent</item>\n        <item name="android:windowLightStatusBar">false</item>\n        <item name="android:navigationBarColor">@android:color/transparent</item>#' "$STYLES"
-          cat "$STYLES"
-
-          MANIFEST=android/app/src/main/AndroidManifest.xml
-          sed -i 's#android:name=".MainActivity"#android:name=".MainActivity"\n            android:windowLayoutInDisplayCutoutMode="shortEdges"#' "$MANIFEST"
-          sed -i 's#<application#<uses-permission android:name="android.permission.RECORD_AUDIO" />\n\n    <application#' "$MANIFEST"
-          cat "$MANIFEST"
