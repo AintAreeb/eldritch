@@ -5023,7 +5023,7 @@ async function ensureMicStream() {
         voice.localStream.getAudioTracks().forEach(t => t.enabled = false);
         if (mp.room && mp.room.addStream) mp.room.addStream(voice.localStream);
     } catch (e) {
-        writeLog('⚠️ Mic access denied or unavailable.');
+        writeLog(`⚠️ Mic access denied or unavailable: ${e && e.name ? e.name : 'Unknown'} — ${e && e.message ? e.message : String(e)}`);
         voice.localStream = null;
     }
     return voice.localStream;
