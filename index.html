@@ -3413,6 +3413,17 @@ function cosmeticIsOwned(def, ownedList) {
     return !!(ownedList && ownedList.includes(def.id));
 }
 
+// Board theme rows in the Skins modal don't have their own scoped preview
+// CSS (board-theme-* is scoped to #gameView only, so it wouldn't paint
+// anything on a .guide-card-entry row). Every non-default board theme has
+// a same-named pbanner-* class already defined for the Banners section
+// (e.g. 'blood_moon' -> 'pbanner-bloodmoon'), so reuse that here — it's
+// exactly the color the matching profile banner already shows.
+function boardThemePreviewClass(def) {
+    if (def.always) return '';
+    return 'pbanner-' + def.id.replace(/_/g, '');
+}
+
 // Total career wins across every character in a given CARD_POOL category
 // (Bloodbane / Bloodborne / Heroic), read from the same charWins map Titles
 // already use. Still used by the (unrelated) Titles system's squadWins
@@ -3661,7 +3672,7 @@ function renderProfileCosmetics() {
     // pbanner-* class the profile banner uses for that theme, so what you see
     // here is exactly what equipping it will look like elsewhere.
     const skinRows = CARD_SKIN_DEFS.map(s => row(s, cosmeticIsOwned(s, earnedSkins), equippedSkin === s.id, 'equipSkin', 'buyCardSkin', s.cssClass)).join('');
-    const themeRows = BOARD_THEME_DEFS.map(t => row(t, cosmeticIsOwned(t, earnedThemes), equippedTheme === t.id, 'equipTheme', 'buyBoardTheme', '')).join('');
+    const themeRows = BOARD_THEME_DEFS.map(t => row(t, cosmeticIsOwned(t, earnedThemes), equippedTheme === t.id, 'equipTheme', 'buyBoardTheme', boardThemePreviewClass(t))).join('');
     const bannerRows = BANNER_DEFS.map(b => row(b, cosmeticIsOwned(b, earnedBanners), equippedBanner === b.id, 'equipBanner', 'buyBanner', b.cssClass)).join('');
     view.innerHTML = `<div class="guide-section-label">Card Skins — ${earnedSkins.length} / ${CARD_SKIN_DEFS.length} Owned${blProfileIsSelf ? ` · 🎟️ ${balance}` : ''}</div>${skinRows}`
         + `<div class="guide-section-label">Board Themes — ${earnedThemes.length} / ${BOARD_THEME_DEFS.length} Owned${blProfileIsSelf ? ` · 🎟️ ${balance}` : ''}</div>${themeRows}`
