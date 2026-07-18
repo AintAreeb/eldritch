@@ -4216,6 +4216,17 @@ function captureUndoSnapshot() {
     undoState.awaitingResponse = false;
 }
 
+// Captures the exact board state at the moment the BOT's turn begins,
+// before it's made its move. This is what Chronos's full rewind reverts
+// to — "undo the opponent's entire last move," not just repair one card.
+// Simply overwriting this at the start of every bot turn means it always
+// holds "state right before the bot's most recent move" once that move
+// has landed, which is exactly what Chronos should target.
+let chronosSnapshot = null;
+function captureChronosSnapshot() {
+    chronosSnapshot = deepCloneGameState(gameState);
+}
+
 // Starts the countdown for whichever side (1 = player, 2 = bot) is about to
 // move. Duration = 2 seconds * total characters still alive right now.
 function startMoveTimer(side) {
@@ -4224,6 +4235,9 @@ function startMoveTimer(side) {
     // side === 1 fires exactly when a fresh player turn begins (nothing
     // acted on yet) — the correct moment to snapshot for a later Undo.
     if (side === 1) captureUndoSnapshot();
+    // side === 2 fires exactly when a fresh bot turn begins (nothing acted
+    // on yet) — the correct moment to snapshot for Chronos's full rewind.
+    if (side === 2) captureChronosSnapshot();
     let duration = aliveCharacterCount() * 2;
     if (duration <= 8) gameState.lowTimeAnimationsOff = true;
     gameState.moveTimer.secondsLeft = duration;
@@ -7007,48 +7021,74 @@ function restoreFromRecord(record, affectedCard) {
     queueRecap('rewind', affectedCard);
 }
 
+// Chronos now works exactly like the Undo button: instead of patching up
+// just the one card the bot's last move hit, it rolls the ENTIRE board
+// back to chronosSnapshot — the state captured the instant the bot's turn
+// began, before it acted. That means any move (a kill, an imprisonment, a
+// Sorcerer hijack, a Mage/Warlock revive, anything) is undone completely,
+// not just the subset the old record-based logic knew how to repair.
+//
+// The one thing that does NOT come back: whatever Hex the bot's card
+// itself spent to activate that move. A plain rollback would refund that
+// too (since the pre-move snapshot still has it), so we work out how much
+// was spent and subtract it right back off afterward.
 function executeChronosTimeTravel(actorId) {
     let actor = gameState.p1.find(c => c.id === actorId);
     actor.hex -= 1;
     actor.hasActivity = true;
-    actor.lastUsedRound = gameState.roundCount;
+    let chronosLastUsedRound = gameState.roundCount;
+    actor.lastUsedRound = chronosLastUsedRound;
 
     writeLog(`⏳ Chronos initiates localized chronoshift protocol.`);
     let statDeltas = { tactical: 1, moves: 1 };
-    if (gameState.botLastAttackRecord) {
+
+    if (chronosSnapshot) {
         let record = gameState.botLastAttackRecord;
-        let affectedCard = gameState.p1.find(c => c.id === record.targetId);
-        restoreFromRecord(record, affectedCard);
-        if (affectedCard) {
-            writeLog(record.wasImprisoned
-                ? `⏳ Chronoshift Overturn: Imprisonment of ${affectedCard.name} has been erased.`
-                : `⏳ Chronoshift Overturn: Restored ${record.damageDealt} Hex and state modifiers to ${affectedCard.name}.`);
-            if (!record.wasImprisoned && record.damageDealt > 0) statDeltas.healAmt = record.damageDealt;
+        let botActorId = record ? record.actorId : null;
+
+        // Cost paid = the bot actor's Hex right before its turn started,
+        // minus its Hex right after paying that cost (but before any gain
+        // from the move itself) — the exact gap the existing record already
+        // tracks as actorPreHex.
+        let spentHex = 0;
+        let botActorName = record ? record.actorName : null;
+        if (botActorId !== null && botActorId !== undefined && record.actorPreHex !== undefined) {
+            let snapshotBotActor = chronosSnapshot.p2.find(c => c.id === botActorId);
+            if (snapshotBotActor) spentHex = Math.max(0, snapshotBotActor.hex - record.actorPreHex);
         }
-        // Fully nullify the move: also strip any Hex/state the bot's OWN
-        // acting card gained from it (e.g. a Sorcerer hijack's stolen +2
-        // hex kill-bonus), and restore any secondary card the move hit as
-        // Control Loop Feedback (a Sorcerer hijack damages the hijacked
-        // ally too, separately from whichever card its stolen move hit).
-        if (record.actorId !== undefined && record.actorId !== null) {
-            let attackerCard = gameState.p2.find(c => c.id === record.actorId) || gameState.p1.find(c => c.id === record.actorId);
-            if (attackerCard && record.actorPreHex !== undefined && attackerCard.hex > record.actorPreHex) {
-                writeLog(`⏳ Chronoshift Overturn: Reversed ${attackerCard.name}'s +${attackerCard.hex - record.actorPreHex} Hex gained from that move.`);
-                attackerCard.hex = record.actorPreHex;
-                attackerCard.hasKilled = record.actorPreHasKilled;
-                attackerCard.maxHex = record.actorPreMaxHex;
+
+        // Chronos's own just-spent Hex/cooldown belongs to THIS move, not
+        // the older snapshot — hold onto it so it survives the rollback.
+        let chronosActorId = actor.id;
+        let chronosHexAfterCost = actor.hex;
+
+        Object.assign(gameState, deepCloneGameState(chronosSnapshot));
+
+        let restoredChronos = gameState.p1.find(c => c.id === chronosActorId);
+        if (restoredChronos) {
+            restoredChronos.hex = chronosHexAfterCost;
+            restoredChronos.hasActivity = true;
+            restoredChronos.lastUsedRound = chronosLastUsedRound;
+        }
+
+        writeLog(`⏳ Chronoshift Overturn: the opponent's last move has been completely undone.`);
+        if (record && !record.wasImprisoned && record.damageDealt > 0) statDeltas.healAmt = record.damageDealt;
+
+        if (botActorId !== null && botActorId !== undefined && spentHex > 0) {
+            let restoredBotActor = gameState.p2.find(c => c.id === botActorId);
+            if (restoredBotActor) {
+                restoredBotActor.hex = Math.max(0, restoredBotActor.hex - spentHex);
+                writeLog(`⏳ Chronoshift Overturn: ${botActorName || restoredBotActor.name}'s spent ${spentHex} Hex from that move remains lost.`);
             }
         }
-        if (record.hijackFeedbackCardId && record.hijackFeedbackDamage > 0) {
-            let feedbackCard = gameState.p1.find(c => c.id === record.hijackFeedbackCardId);
-            if (feedbackCard) {
-                feedbackCard.hex += record.hijackFeedbackDamage;
-                if (feedbackCard.maxHex !== Infinity && feedbackCard.hex > feedbackCard.maxHex) feedbackCard.hex = feedbackCard.maxHex;
-                writeLog(`⏳ Chronoshift Overturn: Restored ${record.hijackFeedbackDamage} Hex to hijacked ${feedbackCard.name}.`);
-                queueRecap('rewind', feedbackCard);
-            }
-        }
+
+        gameState.botLastAttackRecord = null;
+        chronosSnapshot = null;
+        actor = gameState.p1.find(c => c.id === chronosActorId);
+    } else {
+        writeLog(`⏳ No opposing move was found to reverse.`);
     }
+
     statsBump(actor, 'p1', statDeltas);
     if (actor.hex <= 0) actor.hex = 0;
     gameState.p1LastMoveRole = null;
