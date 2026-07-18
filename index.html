@@ -3134,12 +3134,14 @@ async function loadLeaderboard() {
         view.innerHTML = `<p class="guide-card-desc" style="text-align:center; padding:14px 0;">No ranked matches recorded yet — be the first.</p>`;
         return;
     }
-    view.innerHTML = rows.map(r => {
+    view.innerHTML = rows.map((r, i) => {
         let tier = getTierForPoints(r.ranking_points);
         let isMe = blAccount && r.username === blAccount.username;
         let medal = r.world_rank === 1 ? '🥇' : r.world_rank === 2 ? '🥈' : r.world_rank === 3 ? '🥉' : `#${r.world_rank}`;
-        return `<div class="mhist-entry" style="border-left-color:${tier.color}; ${isMe ? `background:${tier.color}18;` : ''}">
+        return `<div class="pbanner-strip" id="rankRow-${i}" style="padding:2px; margin-bottom:6px; border-radius:8px;">
+        <div class="mhist-entry" style="border-left-color:${tier.color}; background:transparent; border:none; margin-bottom:0; ${isMe ? `background:${tier.color}18;` : ''}">
             <div style="width:30px; flex-shrink:0; font-size:11px; font-weight:700; color:#c7c9cf;">${medal}</div>
+            <div class="profile-avatar-circle" id="rankAvatar-${i}" style="width:30px; height:30px; font-size:15px; flex-shrink:0; margin-right:8px;">🧙</div>
             <div style="flex:1; min-width:0;">
                 <div style="font-size:12px; font-weight:700; color:#e8e0c9;">${blEscapeHtml(r.username)}${isMe ? ' (you)' : ''}</div>
                 <div style="font-size:9.5px; color:${tier.color};">${tier.icon} ${tier.name}</div>
@@ -3151,8 +3153,16 @@ async function loadLeaderboard() {
                 </div>
                 <button class="account-btn account-btn-alt" style="flex:none; padding:6px 8px; font-size:10px;" onclick="openProfileModal('${blEscapeJs(r.username)}')">👤</button>
             </div>
-        </div>`;
+        </div></div>`;
     }).join('');
+    rows.forEach((r, i) => {
+        blFetchUserMini(r.username).then(mini => {
+            const avEl = document.getElementById(`rankAvatar-${i}`);
+            if (avEl) avEl.textContent = mini.avatar;
+            const rowEl = document.getElementById(`rankRow-${i}`);
+            if (rowEl) blApplyBannerToEl(rowEl, mini.bannerId);
+        });
+    });
 }
 
 // ============================================================================
@@ -3542,6 +3552,24 @@ function blApplyBannerToEl(el, bannerId) {
 }
 function blApplyLobbyBanner() {
     blApplyBannerToEl(document.getElementById('accountBannerStrip'), blCosmetics ? blCosmetics.equippedBanner : null);
+}
+
+// Lightweight cache of {avatar, bannerId} per username, used to decorate
+// list rows (friends, leaderboard, friend search) with the player's avatar
+// and equipped profile banner without re-fetching on every re-render.
+const blUserMiniCache = {};
+async function blFetchUserMini(username) {
+    if (blUserMiniCache[username]) return blUserMiniCache[username];
+    const [profResult, cosmeticsResult] = await Promise.all([
+        blCallAccountRpc('get_player_profile', { p_username: username }),
+        blCallAccountRpc('get_player_cosmetics', { p_username: username })
+    ]);
+    const mini = {
+        avatar: (profResult && profResult.ok && profResult.avatar) || '🧙',
+        bannerId: (cosmeticsResult && cosmeticsResult.ok && cosmeticsResult.equipped_banner) || null
+    };
+    blUserMiniCache[username] = mini;
+    return mini;
 }
 
 async function blRefreshCosmetics() {
@@ -4981,13 +5009,16 @@ function blRenderFriendsList() {
         return;
     }
     el.innerHTML = friends.map((name, i) => `
-        <div class="guide-card-entry">
-            <div style="display:flex; align-items:center; justify-content:space-between;">
-                <span class="guide-card-name">${blEscapeHtml(name)}</span>
-                <div style="display:flex; gap:4px; flex-wrap:wrap;">
+        <div class="guide-card-entry pbanner-strip" id="friendRow-${i}" style="margin-bottom:8px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                <div style="display:flex; align-items:center; gap:8px; min-width:0;">
+                    <div class="profile-avatar-circle" id="friendAvatar-${i}" style="width:30px; height:30px; font-size:15px; flex-shrink:0;">🧙</div>
+                    <span class="guide-card-name" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${blEscapeHtml(name)}</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:4px; flex-wrap:wrap; flex-shrink:0;">
                     <button class="account-btn" style="flex:none; padding:6px 8px; font-size:10px;" onclick="blToggleInviteChooser(${i})">🎮 Invite</button>
                     <button class="account-btn account-btn-alt" style="flex:none; padding:6px 8px; font-size:10px;" onclick="openProfileModal('${blEscapeJs(name)}')">👤</button>
-                    <button class="account-btn account-btn-alt" style="flex:none; padding:6px 8px; font-size:10px;" onclick="blRemoveFriend('${blEscapeJs(name)}')">Remove</button>
+                    <button class="account-btn account-btn-alt" style="flex:none; padding:4px 5px; font-size:9px; line-height:1;" onclick="blRemoveFriend('${blEscapeJs(name)}')" title="Remove friend">✕</button>
                 </div>
             </div>
             <div id="inviteChooser-${i}" class="invite-chooser-row" style="display:none; gap:6px; margin-top:8px;">
@@ -4996,6 +5027,14 @@ function blRenderFriendsList() {
             </div>
         </div>
     `).join('');
+    friends.forEach((name, i) => {
+        blFetchUserMini(name).then(mini => {
+            const avEl = document.getElementById(`friendAvatar-${i}`);
+            if (avEl) avEl.textContent = mini.avatar;
+            const rowEl = document.getElementById(`friendRow-${i}`);
+            if (rowEl) blApplyBannerToEl(rowEl, mini.bannerId);
+        });
+    });
 }
 
 function blToggleInviteChooser(i) {
@@ -5091,9 +5130,10 @@ async function blSearchFriendAccount() {
     previewEl.innerHTML = '';
     if (!target) { statusEl.innerText = 'Enter a username first.'; return; }
     statusEl.innerText = 'Searching...';
-    const [profResult, titlesResult] = await Promise.all([
+    const [profResult, titlesResult, cosmeticsResult] = await Promise.all([
         blCallAccountRpc('get_player_profile', { p_username: target }),
-        blCallAccountRpc('get_player_titles', { p_username: target })
+        blCallAccountRpc('get_player_titles', { p_username: target }),
+        blCallAccountRpc('get_player_cosmetics', { p_username: target })
     ]);
     if (!profResult.ok) {
         statusEl.innerText = profResult.error || 'Could not find that player.';
@@ -5102,20 +5142,23 @@ async function blSearchFriendAccount() {
     statusEl.innerText = '';
     blFriendSearchTarget = profResult.username;
     const equippedTitle = (titlesResult && titlesResult.ok && titlesResult.equipped_title) ? TITLE_BY_ID_MAP[titlesResult.equipped_title] : null;
+    const equippedBanner = (cosmeticsResult && cosmeticsResult.ok && cosmeticsResult.equipped_banner) || null;
     previewEl.style.display = 'block';
     previewEl.innerHTML = `
-        <div class="friend-preview-card">
+        <div class="pbanner-strip" id="friendPreviewBanner" style="padding:2px; border-radius:11px;">
+        <div class="friend-preview-card" style="background:transparent; border:none; margin-top:0;">
             <div class="profile-avatar-circle" style="width:44px; height:44px; font-size:22px;">${profResult.avatar || '🧙'}</div>
             <div class="friend-preview-main">
                 <div class="friend-preview-name">${blEscapeHtml(profResult.username)}</div>
                 ${equippedTitle ? `<div class="title-badge">🏅 ${blEscapeHtml(equippedTitle.name)}</div>` : ''}
             </div>
-        </div>
+        </div></div>
         <div class="friend-preview-actions">
             <button class="account-btn" style="flex:1;" onclick="blSendFriendRequest()">Send Request</button>
             <button class="account-btn account-btn-alt" style="flex:none;" onclick="openProfileModal('${blEscapeJs(profResult.username)}')">👤 Full Profile</button>
         </div>
     `;
+    blApplyBannerToEl(document.getElementById('friendPreviewBanner'), equippedBanner);
 }
 
 async function blSendFriendRequest() {
