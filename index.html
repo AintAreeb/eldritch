@@ -646,46 +646,129 @@
             box-shadow: 0 6px 30px rgba(255, 255, 255, 0.15);
         }
         
-        .reset-btn { 
-            background: rgba(255, 204, 0, 0.1); 
-            color: #ffcc00; 
-            font-size: 11px; 
-            font-weight: 600; 
-            padding: 8px; 
-            border: 1px solid rgba(255, 204, 0, 0.2); 
-            border-radius: 6px; 
-            display: block; 
-            margin: 8px auto 4px auto; 
-            width: 100%; 
-            text-transform: uppercase; 
-            cursor: pointer; 
-            letter-spacing: 0.04em;
-            transition: background 0.2s, border-color 0.2s;
+        /* resetButton/rematchButton are kept in the DOM purely as state flags
+           (blConfirmBackFromMatch reads resetButton's display style to know
+           the match ended) but are no longer shown — the new full-screen
+           #gameOverOverlay below replaces them visually. */
+        .reset-btn, .rematch-btn {
+            position: absolute; left: -9999px; top: -9999px;
+            width: 1px; height: 1px; overflow: hidden;
+            opacity: 0; pointer-events: none;
         }
-        .reset-btn:hover {
-            background: rgba(255, 204, 0, 0.2);
-            border-color: rgba(255, 204, 0, 0.4);
+
+        /* ============================================================
+           GAME OVER OVERLAY — full-screen dramatic result screen
+           ============================================================ */
+        .gameover-overlay {
+            position: fixed; inset: 0; z-index: 1100;
+            display: none; align-items: center; justify-content: center;
+            padding: 24px; box-sizing: border-box;
+            background: rgba(4, 3, 10, 0.55);
+            backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px);
+            opacity: 0; transition: opacity 0.5s ease;
+            overflow: hidden;
         }
-        
-        .rematch-btn { 
-            background: rgba(0, 170, 0, 0.1); 
-            color: #00ff00; 
-            font-size: 11px; 
-            font-weight: 600; 
-            padding: 8px; 
-            border: 1px solid rgba(0, 170, 0, 0.2); 
-            border-radius: 6px; 
-            display: block; 
-            margin: 4px auto 8px auto; 
-            width: 100%; 
-            text-transform: uppercase; 
-            cursor: pointer; 
-            letter-spacing: 0.04em;
-            transition: background 0.2s, border-color 0.2s;
+        .gameover-overlay.gameover-show { opacity: 1; }
+        .gameover-overlay.gameover-win { --og-color: #ffcc00; --og-color-soft: rgba(255,204,0,0.35); --og-bg-a: #1a1406; --og-bg-b: #0a0710; }
+        .gameover-overlay.gameover-loss { --og-color: #ff3333; --og-color-soft: rgba(255,51,51,0.35); --og-bg-a: #1a0808; --og-bg-b: #0a0710; }
+        .gameover-overlay.gameover-draw { --og-color: #c98bff; --og-color-soft: rgba(201,139,255,0.35); --og-bg-a: #130a1a; --og-bg-b: #0a0710; }
+        .gameover-overlay::before {
+            content: ''; position: absolute; inset: -10%;
+            background: radial-gradient(ellipse at 50% 35%, var(--og-bg-a), var(--og-bg-b) 70%);
+            animation: gameoverPulseBg 5s ease-in-out infinite;
+            z-index: 0;
         }
-        .rematch-btn:hover {
-            background: rgba(0, 170, 0, 0.2);
-            border-color: rgba(0, 170, 0, 0.4);
+        @keyframes gameoverPulseBg {
+            0%, 100% { opacity: 0.85; }
+            50% { opacity: 1; }
+        }
+        .gameover-bg-fx { position: absolute; inset: 0; z-index: 1; overflow: hidden; }
+        .ember {
+            position: absolute; bottom: -10px; border-radius: 50%;
+            background: radial-gradient(circle, #fff6d8, var(--og-color));
+            box-shadow: 0 0 8px 2px var(--og-color-soft);
+            animation-name: emberRise; animation-timing-function: ease-in;
+            animation-iteration-count: infinite;
+        }
+        @keyframes emberRise {
+            0% { transform: translate(0, 0) scale(1); opacity: 0; }
+            8% { opacity: 1; }
+            100% { transform: translate(var(--drift, 0px), -110vh) scale(0.25); opacity: 0; }
+        }
+        .gameover-content {
+            position: relative; z-index: 2;
+            text-align: center; max-width: 340px; width: 100%;
+            transform: scale(0.92) translateY(14px); opacity: 0;
+            transition: transform 0.55s cubic-bezier(.17,.89,.32,1.35), opacity 0.5s ease;
+        }
+        .gameover-overlay.gameover-show .gameover-content { transform: scale(1) translateY(0); opacity: 1; }
+        .gameover-result {
+            font-family: Georgia, 'Times New Roman', serif;
+            font-weight: 700; font-size: 44px; letter-spacing: 0.04em;
+            text-transform: uppercase;
+            background: linear-gradient(100deg, var(--og-color) 20%, #fff8e0 50%, var(--og-color) 80%);
+            background-size: 220% 100%;
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+            animation: gameoverShimmer 3.2s linear infinite;
+            filter: drop-shadow(0 0 22px var(--og-color-soft));
+            margin-bottom: 6px;
+        }
+        @keyframes gameoverShimmer {
+            0% { background-position: 220% 0; }
+            100% { background-position: -220% 0; }
+        }
+        .gameover-subtitle {
+            font-size: 12px; color: #c8c2d8; letter-spacing: 0.03em;
+            margin-bottom: 22px; line-height: 1.4;
+        }
+        .gameover-mvp {
+            display: none; margin: 0 auto 18px auto; padding: 10px 16px;
+            border: 1px solid var(--og-color-soft); border-radius: 10px;
+            background: rgba(255,255,255,0.03);
+        }
+        .gameover-mvp-label {
+            font-size: 10px; letter-spacing: 0.14em; color: var(--og-color);
+            text-transform: uppercase; font-weight: 700; margin-bottom: 4px;
+        }
+        .gameover-mvp-name { font-size: 18px; font-weight: 700; color: #f7f4ea; }
+        .gameover-mvp-side {
+            font-size: 10px; color: #8a8f98; text-transform: uppercase;
+            letter-spacing: 0.08em; margin-top: 2px;
+        }
+        .gameover-stats {
+            display: flex; justify-content: center; gap: 10px;
+            margin-bottom: 26px; flex-wrap: wrap;
+        }
+        .gameover-stat {
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px; padding: 8px 14px; min-width: 62px;
+        }
+        .gameover-stat-val {
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+            font-size: 17px; font-weight: 700; color: var(--og-color);
+        }
+        .gameover-stat-label {
+            font-size: 9px; color: #8a8f98; text-transform: uppercase;
+            letter-spacing: 0.08em; margin-top: 2px;
+        }
+        .gameover-actions { display: flex; flex-direction: column; gap: 8px; }
+        .gameover-btn {
+            padding: 13px; border-radius: 8px; font-size: 12px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer;
+            background: rgba(255,255,255,0.06); color: #e8e0c9;
+            border: 1px solid rgba(255,255,255,0.15);
+            transition: background 0.2s, border-color 0.2s, transform 0.15s;
+        }
+        .gameover-btn:active { transform: scale(0.97); }
+        .gameover-btn-primary {
+            background: var(--og-color-soft); color: var(--og-color);
+            border: 1px solid var(--og-color);
+            box-shadow: 0 0 18px var(--og-color-soft);
+        }
+        .gameover-link-btn {
+            margin-top: 14px; background: none; border: none; cursor: pointer;
+            color: #8a8f98; font-size: 11px; text-decoration: underline;
+            letter-spacing: 0.02em;
         }
 
         .undo-btn {
@@ -1867,6 +1950,21 @@
         </div>
     </div>
 
+    <div id="gameOverOverlay" class="gameover-overlay">
+        <div class="gameover-bg-fx" id="gameoverBgFx"></div>
+        <div class="gameover-content">
+            <div class="gameover-result" id="gameoverResult">VICTORY</div>
+            <div class="gameover-subtitle" id="gameoverSubtitle"></div>
+            <div class="gameover-mvp" id="gameoverMvp"></div>
+            <div class="gameover-stats" id="gameoverStats"></div>
+            <div class="gameover-actions">
+                <button class="gameover-btn gameover-btn-primary" onclick="handleRematchClick()">🔁 Instant Rematch</button>
+                <button class="gameover-btn" onclick="resetToSetup()">Return to Root</button>
+            </div>
+            <button class="gameover-link-btn" onclick="showMatchSummaryModal()">View Full Match Summary →</button>
+        </div>
+    </div>
+
     <div id="chatModal" class="chat-modal">
         <h3>💬 Quick Chat</h3>
         <div class="chat-preset-grid" id="chatPresetGrid"></div>
@@ -2352,6 +2450,88 @@ function playDefeatFX() {
 }
 
 // ============================================================================
+// GAME OVER OVERLAY — full-screen dramatic result screen shown once a match
+// ends. Replaces the old inline resetButton/rematchButton pairing sitting on
+// top of the frozen board. Reuses the same matchStats/statsFindMVP machinery
+// that already powers the Match Summary modal, so the numbers always agree.
+// ============================================================================
+function buildGameOverStatsHTML() {
+    let mine = Object.values(matchStats).filter(s => s.side === 'p1');
+    let sum = (key) => mine.reduce((a, s) => a + (s[key] || 0), 0);
+    let stats = [
+        { val: gameState.roundCount || 0, label: 'Rounds' },
+        { val: sum('kills'), label: 'Kills' },
+        { val: sum('attackDmg'), label: 'Damage' },
+    ];
+    if (lastGrimsAwarded !== null) stats.push({ val: `+${lastGrimsAwarded}`, label: 'Grims' });
+    return stats.map(s => `<div class="gameover-stat"><div class="gameover-stat-val">${s.val}</div><div class="gameover-stat-label">${s.label}</div></div>`).join('');
+}
+// Called after the async Grims award RPC resolves — patches the stat strip
+// in place if the overlay is already on screen, without a full re-render.
+function refreshGameOverStatsIfShown() {
+    const overlay = document.getElementById('gameOverOverlay');
+    if (overlay && overlay.classList.contains('gameover-show')) {
+        document.getElementById('gameoverStats').innerHTML = buildGameOverStatsHTML();
+    }
+}
+function showGameOverOverlay() {
+    let p1Alive = gameState.p1.some(c => c.hex > 0 && !c.imprisoned);
+    let p2Alive = gameState.p2.some(c => c.hex > 0 && !c.imprisoned);
+    let isWin = p1Alive && !p2Alive;
+    let isLoss = !p1Alive && p2Alive;
+
+    const overlay = document.getElementById('gameOverOverlay');
+    overlay.classList.remove('gameover-win', 'gameover-loss', 'gameover-draw');
+    overlay.classList.add(isWin ? 'gameover-win' : (isLoss ? 'gameover-loss' : 'gameover-draw'));
+
+    document.getElementById('gameoverResult').innerText = isWin ? 'Victory' : (isLoss ? 'Defeat' : 'Stalemate');
+    document.getElementById('gameoverSubtitle').innerText = isWin
+        ? 'Your squad stands alone over the wreckage.'
+        : (isLoss ? 'Your squad has been wiped from the board.' : 'Both squads fell together. Nothing survived.');
+
+    let mvp = statsFindMVP();
+    const mvpEl = document.getElementById('gameoverMvp');
+    if (mvp) {
+        let sc = statsComputeScores(mvp);
+        mvpEl.innerHTML = `<div class="gameover-mvp-label">⭐ Match MVP</div>
+            <div class="gameover-mvp-name">${mvp.name}</div>
+            <div class="gameover-mvp-side">${mvp.side === 'p1' ? 'Your Squad' : 'Enemy Squad'} · Atk ${sc.attackScore} · Heal ${sc.healScore} · Tac ${sc.tacticalScore}</div>`;
+        mvpEl.style.display = 'block';
+    } else {
+        mvpEl.style.display = 'none';
+    }
+
+    document.getElementById('gameoverStats').innerHTML = buildGameOverStatsHTML();
+
+    // Spawn a fresh batch of rising embers, colored via the .gameover-win/
+    // -loss/-draw class above through the --og-color CSS variable.
+    const fx = document.getElementById('gameoverBgFx');
+    fx.innerHTML = '';
+    const emberCount = 24;
+    for (let i = 0; i < emberCount; i++) {
+        const e = document.createElement('span');
+        e.className = 'ember';
+        const size = 2 + Math.random() * 3;
+        e.style.width = size + 'px';
+        e.style.height = size + 'px';
+        e.style.left = (Math.random() * 100) + '%';
+        e.style.setProperty('--drift', (Math.random() * 70 - 35) + 'px');
+        e.style.animationDuration = (5 + Math.random() * 4) + 's';
+        e.style.animationDelay = (Math.random() * 6) + 's';
+        fx.appendChild(e);
+    }
+
+    overlay.style.display = 'flex';
+    requestAnimationFrame(() => overlay.classList.add('gameover-show'));
+}
+function hideGameOverOverlay() {
+    const overlay = document.getElementById('gameOverOverlay');
+    overlay.classList.remove('gameover-show', 'gameover-win', 'gameover-loss', 'gameover-draw');
+    overlay.style.display = 'none';
+    document.getElementById('gameoverBgFx').innerHTML = '';
+}
+
+// ============================================================================
 // MATCH STATISTICS TRACKER
 // Builds a per-card performance record for the post-match "Match Summary"
 // screen (Attack / Heal / Tactical scores + MVP + overall rating). Rather
@@ -2366,6 +2546,10 @@ function playDefeatFX() {
 // opponent alike) without needing a bespoke hook in every ability.
 // ============================================================================
 let matchStats = {};
+// Grims awarded for the just-finished match (if the player is logged in),
+// shown on the new game-over overlay's stat strip. Reset to null whenever
+// a fresh match starts.
+let lastGrimsAwarded = null;
 let matchSummaryShown = false;
 let matchRecorded = false; // guards against recording the same multiplayer match twice to history
 
@@ -3296,6 +3480,8 @@ async function awardMatchCurrencyIfNeeded() {
         blCurrency = { balance: rpcResult.balance };
         writeLog(`🎟️ +${amount} Grims earned`);
         renderCurrencyUI();
+        lastGrimsAwarded = amount;
+        refreshGameOverStatsIfShown();
     }
 }
 
@@ -5242,6 +5428,7 @@ function resetToSetup(fromPopstate) {
     undoState = { snapshot: null, pendingSnapshot: null, awaitingResponse: false, incomingRequest: false, waitingForSync: false };
     gameOverVibrated = false;
     gameOverFXPlayed = false;
+    hideGameOverOverlay();
     document.getElementById('gameView').style.display = 'none';
     document.getElementById('draftView').style.display = 'none';
     document.getElementById('setupView').style.display = 'block';
@@ -5362,7 +5549,9 @@ function startBattleWithSquads(p1Squad, p2Squad, p1Tier, p2Tier, opts = {}) {
     gameOverVibrated = false;
     gameOverFXPlayed = false;
     gameState.lowTimeAnimationsOff = false;
+    hideGameOverOverlay();
     matchStats = {};
+    lastGrimsAwarded = null;
     matchSummaryShown = false;
     matchRecorded = false;
     lastRankingDelta = null;
@@ -9699,6 +9888,7 @@ function renderScene() {
         document.getElementById('turnIndicator').innerText = "🏁 SIMULATION CONCLUDED";
         document.getElementById('resetButton').style.display = 'block';
         document.getElementById('rematchButton').style.display = 'block';
+        showGameOverOverlay();
         if (!gameOverVibrated) {
             gameOverVibrated = true;
             let p1Alive = gameState.p1.some(c => c.hex > 0 && !c.imprisoned);
