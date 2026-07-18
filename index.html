@@ -1329,14 +1329,14 @@
         .music-player-controls { display: flex; align-items: center; gap: 8px; margin-top: 2px; }
         .music-play-btn, .music-skip-btn {
             flex-shrink: 0; background: #1a1922; border: 1px solid rgba(255,255,255,0.12);
-            color: #e8e0c9; font-size: 14px; border-radius: 50%; width: 34px; height: 34px; cursor: pointer;
+            color: #e8e0c9; font-size: 12px; border-radius: 50%; width: 29px; height: 29px; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
         }
         .music-volume-row { display: flex; align-items: center; gap: 6px; flex: 1; }
         .music-volume-row input[type="range"] { flex: 1; accent-color: #ff3333; }
         .music-shuffle-btn {
             flex-shrink: 0; background: #1a1922; border: 1px solid rgba(255,255,255,0.12);
-            color: #8a8f98; font-size: 13px; border-radius: 50%; width: 28px; height: 28px; cursor: pointer;
+            color: #8a8f98; font-size: 11px; border-radius: 50%; width: 24px; height: 24px; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
         }
         .music-shuffle-btn.music-shuffle-active { border-color: #ff3333; color: #ff5555; background: rgba(255,51,51,0.12); }
@@ -1998,10 +1998,10 @@
             <div class="guide-section-label">Playlist (checked = plays on repeat)</div>
             <div class="music-playlist-list" id="musicPlaylistList"></div>
             <div class="music-player-controls">
-                <button class="music-skip-btn" onclick="musicPrev()"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M6 6h2v12H6V6zm3.5 6L18 18V6l-8.5 6z"/></svg></button>
-                <button class="music-play-btn" id="musicPlayBtn" onclick="musicTogglePlay()"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
-                <button class="music-skip-btn" onclick="musicSkip()"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg></button>
-                <button class="music-shuffle-btn" id="musicShuffleBtn" onclick="musicToggleShuffle()" title="Shuffle"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg></button>
+                <button class="music-skip-btn" onclick="musicPrev()"><svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M6 6h2v12H6V6zm3.5 6L18 18V6l-8.5 6z"/></svg></button>
+                <button class="music-play-btn" id="musicPlayBtn" onclick="musicTogglePlay()"><svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
+                <button class="music-skip-btn" onclick="musicSkip()"><svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg></button>
+                <button class="music-shuffle-btn" id="musicShuffleBtn" onclick="musicToggleShuffle()" title="Shuffle"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg></button>
                 <div class="music-volume-row">
                     <span style="font-size:11px;">🔉</span>
                     <input type="range" id="musicVolumeSlider" min="0" max="100" value="50" oninput="musicSetVolume(this.value)">
@@ -3126,6 +3126,7 @@ function titleCurrentProgress(t, stats) {
 
 // ============================================================================
 // COSMETICS — CARD SKINS & BOARD THEMES
+// (Profile banners are a separate cosmetic slot — see BANNER_DEFS below.)
 // 19 card skins + 19 board themes, purchased directly with Grims instead of
 // earned through lifetime-stat achievements. Card skins cost 999 Grims each,
 // board themes cost 1999 Grims each; the default Classic Ink / Classic
@@ -3182,6 +3183,39 @@ const BOARD_THEME_DEFS = [
     { id: 'starlit_sanctum', name: 'Starlit Sanctum', cssClass: 'board-theme-starlitsanctum', cost: 1999, desc: 'Pale starlit white-blue sanctum.' }
 ];
 
+// Profile banners — now their OWN cosmetic slot, purchased and equipped
+// independently of board themes (previously a banner was just whatever
+// board theme you had equipped — see blBannerClassForTheme, now replaced
+// by blBannerClassForBanner below). Reuses the 19 existing pbanner-* CSS
+// classes already defined near the top of the stylesheet, so no new CSS is
+// needed here. 19 unlockable banners + 1 free default, 1499 Grims each.
+// Backed by an additive extension of the cosmetics setup — see
+// grimoire_banners_setup.sql for the one-time database setup (adds
+// earned_banners / equipped_banner columns + purchase_banner / equip_banner
+// RPCs, and updates get_player_cosmetics to return the new fields).
+const BANNER_DEFS = [
+    { id: 'classic_grimoire_banner', name: 'Classic Grimoire', cssClass: '', always: true, desc: 'The default banner. Always owned.' },
+    { id: 'blood_moon_banner', name: 'Blood Moon', cssClass: 'pbanner-bloodmoon', cost: 1499, desc: 'Deep crimson skies banner.' },
+    { id: 'obsidian_rift_banner', name: 'Obsidian Rift', cssClass: 'pbanner-obsidianrift', cost: 1499, desc: 'Violet fracture lines banner.' },
+    { id: 'parchment_noir_banner', name: 'Parchment Noir', cssClass: 'pbanner-parchmentnoir', cost: 1499, desc: 'Aged parchment tones banner.' },
+    { id: 'verdant_hex_banner', name: 'Verdant Hex', cssClass: 'pbanner-verdanthex', cost: 1499, desc: 'Mossy emerald hex-glow banner.' },
+    { id: 'static_bloom_banner', name: 'Static Bloom', cssClass: 'pbanner-staticbloom', cost: 1499, desc: 'Golden static-bloom banner.' },
+    { id: 'ashen_vigil_banner', name: 'Ashen Vigil', cssClass: 'pbanner-ashenvigil', cost: 1499, desc: 'Muted ash-grey vigil banner.' },
+    { id: 'frostbound_ledger_banner', name: 'Frostbound Ledger', cssClass: 'pbanner-frostboundledger', cost: 1499, desc: 'Icy teal frostbound banner.' },
+    { id: 'neon_underworld_banner', name: 'Neon Underworld', cssClass: 'pbanner-neonunderworld', cost: 1499, desc: 'Electric magenta neon banner.' },
+    { id: 'aurum_sanctum_banner', name: 'Aurum Sanctum', cssClass: 'pbanner-aurumsanctum', cost: 1499, desc: 'Radiant gold sanctuary banner.' },
+    { id: 'crimson_abyss_banner', name: 'Crimson Abyss', cssClass: 'pbanner-crimsonabyss', cost: 1499, desc: 'Blood-red abyssal banner.' },
+    { id: 'lunar_hollow_banner', name: 'Lunar Hollow', cssClass: 'pbanner-lunarhollow', cost: 1499, desc: 'Cool lunar blue-silver banner.' },
+    { id: 'ember_wastes_banner', name: 'Ember Wastes', cssClass: 'pbanner-emberwastes', cost: 1499, desc: 'Scorched orange ember banner.' },
+    { id: 'glacial_expanse_banner', name: 'Glacial Expanse', cssClass: 'pbanner-glacialexpanse', cost: 1499, desc: 'Pale icy-blue glacial banner.' },
+    { id: 'royal_court_banner', name: 'Royal Court', cssClass: 'pbanner-royalcourt', cost: 1499, desc: 'Regal violet and gold banner.' },
+    { id: 'plague_ward_banner', name: 'Plague Ward', cssClass: 'pbanner-plagueward', cost: 1499, desc: 'Sickly green plague-ward banner.' },
+    { id: 'thunderscar_banner', name: 'Thunderscar', cssClass: 'pbanner-thunderscar', cost: 1499, desc: 'Electric blue thunderscar banner.' },
+    { id: 'coral_ruin_banner', name: 'Coral Ruin', cssClass: 'pbanner-coralruin', cost: 1499, desc: 'Coral-pink ruin banner.' },
+    { id: 'ashfall_basin_banner', name: 'Ashfall Basin', cssClass: 'pbanner-ashfallbasin', cost: 1499, desc: 'Smoky grey ashfall banner.' },
+    { id: 'starlit_sanctum_banner', name: 'Starlit Sanctum', cssClass: 'pbanner-starlitsanctum', cost: 1499, desc: 'Pale starlit white-blue banner.' }
+];
+
 // Cost of a single avatar purchase, in Grims. The very first option in
 // PROFILE_AVATAR_OPTIONS (the default wizard) is always owned for free.
 const AVATAR_COST = 499;
@@ -3211,7 +3245,7 @@ function cosmeticCategoryWinCount(stats, category) {
 // blProfileCosmetics (which reflects whatever profile is currently open in
 // the modal, self or otherwise) so gameplay rendering never waits on the
 // profile modal being opened.
-let blCosmetics = null; // { earnedSkins, equippedSkin, earnedThemes, equippedTheme, ownedAvatars } | null
+let blCosmetics = null; // { earnedSkins, equippedSkin, earnedThemes, equippedTheme, earnedBanners, equippedBanner, ownedAvatars } | null
 let blProfileCosmetics = null; // cosmetics for whichever profile is open in the modal
 
 // ============================================================================
@@ -3296,24 +3330,21 @@ function applyEquippedBoardTheme() {
     if (cls) gv.classList.add(cls);
 }
 
-// Profile banners piggyback on the same 20 board-theme definitions (1
-// default + 19 unlockable) — whichever board theme a player has equipped
-// automatically becomes their profile banner everywhere a profile is shown,
-// with no separate banner-picker needed.
-function blBannerClassForTheme(themeId) {
-    if (!themeId) return '';
-    const def = BOARD_THEME_DEFS.find(t => t.id === themeId);
-    if (!def || !def.cssClass) return '';
-    return 'pbanner-' + def.cssClass.replace('board-theme-', '');
+// Profile banners are now their own cosmetic slot (see BANNER_DEFS above) —
+// equipped and purchased independently of the board theme.
+function blBannerClassForBanner(bannerId) {
+    if (!bannerId) return '';
+    const def = BANNER_DEFS.find(b => b.id === bannerId);
+    return def ? def.cssClass : '';
 }
-function blApplyBannerToEl(el, themeId) {
+function blApplyBannerToEl(el, bannerId) {
     if (!el) return;
-    BOARD_THEME_DEFS.forEach(t => { if (t.cssClass) el.classList.remove('pbanner-' + t.cssClass.replace('board-theme-', '')); });
-    const cls = blBannerClassForTheme(themeId);
+    BANNER_DEFS.forEach(b => { if (b.cssClass) el.classList.remove(b.cssClass); });
+    const cls = blBannerClassForBanner(bannerId);
     if (cls) el.classList.add(cls);
 }
 function blApplyLobbyBanner() {
-    blApplyBannerToEl(document.getElementById('accountBannerStrip'), blCosmetics ? blCosmetics.equippedTheme : null);
+    blApplyBannerToEl(document.getElementById('accountBannerStrip'), blCosmetics ? blCosmetics.equippedBanner : null);
 }
 
 async function blRefreshCosmetics() {
@@ -3325,10 +3356,12 @@ async function blRefreshCosmetics() {
             equippedSkin: result.equipped_skin || null,
             earnedThemes: result.earned_themes || ['classic_grimoire'],
             equippedTheme: result.equipped_theme || null,
+            earnedBanners: result.earned_banners || ['classic_grimoire_banner'],
+            equippedBanner: result.equipped_banner || null,
             ownedAvatars: result.owned_avatars || [DEFAULT_FREE_AVATAR]
         };
     } else {
-        blCosmetics = { earnedSkins: ['classic_ink'], equippedSkin: null, earnedThemes: ['classic_grimoire'], equippedTheme: null, ownedAvatars: [DEFAULT_FREE_AVATAR] };
+        blCosmetics = { earnedSkins: ['classic_ink'], equippedSkin: null, earnedThemes: ['classic_grimoire'], equippedTheme: null, earnedBanners: ['classic_grimoire_banner'], equippedBanner: null, ownedAvatars: [DEFAULT_FREE_AVATAR] };
     }
     applyEquippedBoardTheme();
     blApplyLobbyBanner();
@@ -3341,19 +3374,21 @@ async function blRefreshCosmetics() {
 // versa — see grimoire_cosmetics_setup.sql / grimoire_currency_setup.sql.
 async function buyCosmetic(kind, def) {
     if (!blAccount || !blCosmetics || !def || def.always) return;
-    const ownedList = kind === 'skin' ? blCosmetics.earnedSkins : blCosmetics.earnedThemes;
+    const ownedList = kind === 'skin' ? blCosmetics.earnedSkins : (kind === 'theme' ? blCosmetics.earnedThemes : blCosmetics.earnedBanners);
     if (ownedList.includes(def.id)) return;
     if (!blCurrency || blCurrency.balance < def.cost) {
         writeLog(`🎟️ Not enough Grims — need ${def.cost}, have ${blCurrency ? blCurrency.balance : 0}.`);
         return;
     }
-    const rpcName = kind === 'skin' ? 'purchase_card_skin' : 'purchase_board_theme';
-    const idParam = kind === 'skin' ? { p_skin_id: def.id } : { p_theme_id: def.id };
+    const rpcName = kind === 'skin' ? 'purchase_card_skin' : (kind === 'theme' ? 'purchase_board_theme' : 'purchase_banner');
+    const idParam = kind === 'skin' ? { p_skin_id: def.id } : (kind === 'theme' ? { p_theme_id: def.id } : { p_banner_id: def.id });
     const result = await blCallAccountRpc(rpcName, Object.assign({ p_username: blAccount.username, p_cost: def.cost }, idParam));
     if (result && result.ok) {
         blCurrency = { balance: result.balance };
         renderCurrencyUI();
-        writeLog(`${kind === 'skin' ? '🎴' : '🗺️'} ${kind === 'skin' ? 'Card skin' : 'Board theme'} purchased: ${def.name} (-${def.cost} Grims)`);
+        const kindLabel = kind === 'skin' ? 'Card skin' : (kind === 'theme' ? 'Board theme' : 'Banner');
+        const kindIcon = kind === 'skin' ? '🎴' : (kind === 'theme' ? '🗺️' : '🚩');
+        writeLog(`${kindIcon} ${kindLabel} purchased: ${def.name} (-${def.cost} Grims)`);
         await blRefreshCosmetics();
         renderProfileCosmetics();
         if (blProfileTargetUsername) blLoadProfile(blProfileTargetUsername);
@@ -3367,9 +3402,12 @@ function buyCardSkin(skinId) {
 function buyBoardTheme(themeId) {
     buyCosmetic('theme', BOARD_THEME_DEFS.find(t => t.id === themeId));
 }
+function buyBanner(bannerId) {
+    buyCosmetic('banner', BANNER_DEFS.find(b => b.id === bannerId));
+}
 
-// Only owned skins/themes can be equipped; passing null un-equips (falls
-// back to Classic Ink / Classic Grimoire).
+// Only owned skins/themes/banners can be equipped; passing null un-equips
+// (falls back to Classic Ink / Classic Grimoire / Classic Grimoire banner).
 async function equipSkin(skinId) {
     if (!blAccount || !blCosmetics) return;
     if (skinId && !blCosmetics.earnedSkins.includes(skinId)) return;
@@ -3388,6 +3426,15 @@ async function equipTheme(themeId) {
         if (blProfileTargetUsername) blLoadProfile(blProfileTargetUsername);
     }
 }
+async function equipBanner(bannerId) {
+    if (!blAccount || !blCosmetics) return;
+    if (bannerId && !blCosmetics.earnedBanners.includes(bannerId)) return;
+    const result = await blCallAccountRpc('equip_banner', { p_username: blAccount.username, p_banner_id: bannerId || null });
+    if (result && result.ok) {
+        await blRefreshCosmetics();
+        if (blProfileTargetUsername) blLoadProfile(blProfileTargetUsername);
+    }
+}
 
 function renderProfileCosmetics() {
     const view = document.getElementById('profileCosmeticsView');
@@ -3400,6 +3447,8 @@ function renderProfileCosmetics() {
     const equippedSkin = blProfileCosmetics.equippedSkin || 'classic_ink';
     const earnedThemes = blProfileCosmetics.earnedThemes || ['classic_grimoire'];
     const equippedTheme = blProfileCosmetics.equippedTheme || 'classic_grimoire';
+    const earnedBanners = blProfileCosmetics.earnedBanners || ['classic_grimoire_banner'];
+    const equippedBanner = blProfileCosmetics.equippedBanner || 'classic_grimoire_banner';
     const balance = blCurrency ? blCurrency.balance : 0;
 
     function row(def, isOwned, isEquipped, equipFn, buyFn, previewClass) {
@@ -3426,9 +3475,11 @@ function renderProfileCosmetics() {
     // pbanner-* class the profile banner uses for that theme, so what you see
     // here is exactly what equipping it will look like elsewhere.
     const skinRows = CARD_SKIN_DEFS.map(s => row(s, cosmeticIsOwned(s, earnedSkins), equippedSkin === s.id, 'equipSkin', 'buyCardSkin', s.cssClass)).join('');
-    const themeRows = BOARD_THEME_DEFS.map(t => row(t, cosmeticIsOwned(t, earnedThemes), equippedTheme === t.id, 'equipTheme', 'buyBoardTheme', blBannerClassForTheme(t.id))).join('');
+    const themeRows = BOARD_THEME_DEFS.map(t => row(t, cosmeticIsOwned(t, earnedThemes), equippedTheme === t.id, 'equipTheme', 'buyBoardTheme', '')).join('');
+    const bannerRows = BANNER_DEFS.map(b => row(b, cosmeticIsOwned(b, earnedBanners), equippedBanner === b.id, 'equipBanner', 'buyBanner', b.cssClass)).join('');
     view.innerHTML = `<div class="guide-section-label">Card Skins — ${earnedSkins.length} / ${CARD_SKIN_DEFS.length} Owned${blProfileIsSelf ? ` · 🎟️ ${balance}` : ''}</div>${skinRows}`
-        + `<div class="guide-section-label">Board Themes — ${earnedThemes.length} / ${BOARD_THEME_DEFS.length} Owned${blProfileIsSelf ? ` · 🎟️ ${balance}` : ''}</div>${themeRows}`;
+        + `<div class="guide-section-label">Board Themes — ${earnedThemes.length} / ${BOARD_THEME_DEFS.length} Owned${blProfileIsSelf ? ` · 🎟️ ${balance}` : ''}</div>${themeRows}`
+        + `<div class="guide-section-label">Banners — ${earnedBanners.length} / ${BANNER_DEFS.length} Owned${blProfileIsSelf ? ` · 🎟️ ${balance}` : ''}</div>${bannerRows}`;
 }
 
 // Called once per finished match (solo, vs-bot, or multiplayer alike — this
@@ -3576,6 +3627,8 @@ async function blLoadProfile(username) {
         equippedSkin: cosmeticsResult.equipped_skin || null,
         earnedThemes: cosmeticsResult.earned_themes || ['classic_grimoire'],
         equippedTheme: cosmeticsResult.equipped_theme || null,
+        earnedBanners: cosmeticsResult.earned_banners || ['classic_grimoire_banner'],
+        equippedBanner: cosmeticsResult.equipped_banner || null,
         ownedAvatars: cosmeticsResult.owned_avatars || [DEFAULT_FREE_AVATAR]
     } : null;
     if (blProfileIsSelf) {
@@ -3653,7 +3706,7 @@ function renderProfileInfo() {
             <span class="profile-stats-legend-item"><span class="profile-legend-dot" style="background:#3388ff;"></span>Win Rate ${p.win_rate}</span>
         </div>`;
     document.getElementById('profileInfoView').innerHTML = html;
-    blApplyBannerToEl(document.getElementById('profileBannerStrip'), blProfileCosmetics ? blProfileCosmetics.equippedTheme : null);
+    blApplyBannerToEl(document.getElementById('profileBannerStrip'), blProfileCosmetics ? blProfileCosmetics.equippedBanner : null);
     drawStatsRadar('profileRadarCanvas', [p.avg_attack, p.avg_heal, p.avg_tactical, p.win_rate], ['Attack', 'Heal', 'Tactical', 'Win Rate'], ['#ff5555', '#4af7a7', '#ffcc00', '#3388ff']);
 }
 
