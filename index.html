@@ -1324,6 +1324,33 @@
             background: #ff3333; color: #e8e0c9; border: none; border-radius: 8px;
             padding: 9px 12px; font-size: 11px; font-weight: 600; cursor: pointer;
         }
+        /* Lobby Chat modal (Universal / Guild / Friends) */
+        .lobby-chat-messages {
+            overflow-y: auto; flex: 1; min-height: 220px; max-height: 46vh;
+            display: flex; flex-direction: column; gap: 8px; padding: 2px 2px 4px 2px;
+        }
+        .lchat-msg { display: flex; flex-direction: column; max-width: 88%; }
+        .lchat-msg.lchat-msg-mine { align-self: flex-end; align-items: flex-end; }
+        .lchat-msg-meta { font-size: 9px; color: #5a5f68; margin-bottom: 2px; display: flex; gap: 6px; align-items: center; }
+        .lchat-msg-name { font-weight: 700; color: #8a8f98; }
+        .lchat-msg.lchat-msg-mine .lchat-msg-name { color: #4af7a7; }
+        .lchat-msg-bubble {
+            background: #1a1922; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px;
+            padding: 7px 10px; font-size: 12px; color: #e8e0c9; line-height: 1.4; word-break: break-word;
+        }
+        .lchat-msg.lchat-msg-mine .lchat-msg-bubble { background: rgba(255,51,51,0.15); border-color: rgba(255,51,51,0.3); }
+        .lchat-empty { text-align: center; font-size: 11px; color: #8a8f98; padding: 30px 10px; line-height: 1.5; }
+        .lchat-input-row { display: flex; gap: 6px; margin-top: 10px; }
+        .lchat-input {
+            flex: 1; background: #0d0c14; color: #e8e0c9; border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px; padding: 9px 8px; font-size: 12px; min-width: 0;
+        }
+        .lchat-input::placeholder { color: #5a5f68; }
+        .lchat-send-btn {
+            background: #ff3333; color: #e8e0c9; border: none; border-radius: 8px;
+            padding: 9px 12px; font-size: 11px; font-weight: 600; cursor: pointer;
+        }
+        .lchat-send-btn:disabled { opacity: 0.5; cursor: default; }
         /* Voice chat controls (now buttons inside .comms-buttons-row) */
         .voice-btn {
             flex-shrink: 1;
@@ -1820,6 +1847,7 @@
                         🏯 Guild
                         <span id="guildReqBadge" style="display:none; position:absolute; top:-6px; right:-6px; background:#ff3333; color:#e8e0c9; border-radius:50%; width:16px; height:16px; font-size:9px; line-height:16px; text-align:center; font-weight:700;"></span>
                     </button>
+                    <button class="account-btn account-btn-alt" onclick="openLobbyChatModal()">💬 Lobby Chat</button>
                     <button class="account-btn account-btn-alt" onclick="blLogout()">Log Out</button>
                 </div>
             </div>
@@ -2089,6 +2117,22 @@
             <div id="guildBoardView" style="display:none;"></div>
         </div>
         <button class="guide-close-btn" onclick="closeGuildModal()">Close</button>
+    </div>
+
+    <div id="lobbyChatModal" class="guide-modal" style="max-width:320px;">
+        <h3>💬 Lobby Chat</h3>
+        <div class="guide-tabs">
+            <button class="guide-tab-btn guide-tab-active" id="lchatTabUniversalBtn" onclick="switchLobbyChatTab('universal')">🌐 Universal</button>
+            <button class="guide-tab-btn" id="lchatTabGuildBtn" onclick="switchLobbyChatTab('guild')">🏯 Guild</button>
+            <button class="guide-tab-btn" id="lchatTabFriendsBtn" onclick="switchLobbyChatTab('friends')">👥 Friends</button>
+        </div>
+        <div class="lobby-chat-messages" id="lobbyChatMessages"></div>
+        <div class="lchat-input-row">
+            <input type="text" id="lobbyChatInput" class="lchat-input" placeholder="Say something..." maxlength="240" autocomplete="off" onkeydown="if(event.key==='Enter') sendLobbyChatMessage()">
+            <button class="lchat-send-btn" id="lobbyChatSendBtn" onclick="sendLobbyChatMessage()">Send</button>
+        </div>
+        <div style="font-size:8.5px; color:#5a5f68; text-align:center; margin-top:6px;">Messages are visible for 3 days.</div>
+        <button class="guide-close-btn" onclick="closeLobbyChatModal()">Close</button>
     </div>
 
     <div id="settingsModal" class="guide-modal" style="max-width:300px;">
@@ -4787,9 +4831,10 @@ function bl_bootIntoGameScreen() {
     bl_pushState({ screen: 'game', modal: null });
 }
 function bl_hideModalUI(name) {
-    const ids = { guide: 'guideModal', chat: 'chatModal', friends: 'friendsModal', guild: 'guildModal', settings: 'settingsModal', summary: 'matchSummaryModal', profile: 'profileModal', favcard: 'favCardModal', ranking: 'rankingModal', replay: 'replayModal' };
+    const ids = { guide: 'guideModal', chat: 'chatModal', friends: 'friendsModal', guild: 'guildModal', settings: 'settingsModal', summary: 'matchSummaryModal', profile: 'profileModal', favcard: 'favCardModal', ranking: 'rankingModal', replay: 'replayModal', lobbychat: 'lobbyChatModal' };
     const el = document.getElementById(ids[name]);
     if (el) el.style.display = 'none';
+    if (name === 'lobbychat') blStopLobbyChatPolling();
 }
 window.addEventListener('popstate', (e) => {
     const state = e.state || { screen: 'setup', modal: null };
@@ -4995,6 +5040,7 @@ async function blLogin() {
 
 function blLogout() {
     blStopSessionPolling();
+    blStopLobbyChatPolling();
     blAccount = null;
     try { localStorage.removeItem(BL_ACCOUNT_KEY); } catch (e) {}
     document.getElementById('acctUsername').value = '';
@@ -5330,6 +5376,138 @@ function blRenderLevelBadge() {
     el.style.color = '#4af7a7';
     el.style.borderColor = '#4af7a755';
     el.innerHTML = `⭐ Lv. ${info.level}`;
+}
+
+// ============================================================================
+// LOBBY CHAT — backed by the same Supabase project as everything else; see
+// grimoire_lobby_chat_setup.sql for the one-time database setup (adds 1 new
+// table + 2 RPC functions, nothing existing is touched). Three channels:
+//   universal — everyone currently logged in
+//   guild     — only your current guild (falls back to a hint if you're guildless)
+//   friends   — messages from you and anyone on your friends list
+// Messages older than 3 days are purged server-side on every send, so the
+// table never needs a cron job to stay small.
+// ============================================================================
+let lobbyChatChannel = 'universal';
+let lobbyChatMessages = { universal: [], guild: [], friends: [] };
+let lobbyChatPollTimer = null;
+let lobbyChatSending = false;
+
+function openLobbyChatModal() {
+    if (!blAccount) return;
+    bl_pushState({ modal: 'lobbychat' });
+    document.getElementById('lobbyChatModal').style.display = 'flex';
+    switchLobbyChatTab('universal');
+    blStartLobbyChatPolling();
+}
+function closeLobbyChatModal() {
+    document.getElementById('lobbyChatModal').style.display = 'none';
+    blStopLobbyChatPolling();
+    if (bl_hist.modal === 'lobbychat') history.back();
+}
+
+function switchLobbyChatTab(channel) {
+    lobbyChatChannel = channel;
+    document.getElementById('lchatTabUniversalBtn').classList.toggle('guide-tab-active', channel === 'universal');
+    document.getElementById('lchatTabGuildBtn').classList.toggle('guide-tab-active', channel === 'guild');
+    document.getElementById('lchatTabFriendsBtn').classList.toggle('guide-tab-active', channel === 'friends');
+    renderLobbyChatMessages();
+    blFetchLobbyChatMessages();
+}
+
+function blStartLobbyChatPolling() {
+    if (lobbyChatPollTimer) return;
+    lobbyChatPollTimer = setInterval(blFetchLobbyChatMessages, 4000);
+}
+function blStopLobbyChatPolling() {
+    if (lobbyChatPollTimer) { clearInterval(lobbyChatPollTimer); lobbyChatPollTimer = null; }
+}
+
+async function blFetchLobbyChatMessages() {
+    if (!blAccount) return;
+    if (document.getElementById('lobbyChatModal').style.display === 'none') return;
+    const channel = lobbyChatChannel;
+
+    if (channel === 'guild' && !(blGuild && blGuild.in_guild)) {
+        lobbyChatMessages.guild = [];
+        if (lobbyChatChannel === channel) renderLobbyChatMessages();
+        return;
+    }
+
+    const payload = { p_channel: channel, p_username: blAccount.username };
+    if (channel === 'guild') payload.p_guild_id = String(blGuild.guild.id);
+    if (channel === 'friends') payload.p_friend_usernames = blFriendsData.friends || [];
+
+    const result = await blCallAccountRpc('get_lobby_chat_messages', payload);
+    if (!result.ok) return;
+    lobbyChatMessages[channel] = result.messages || [];
+    if (lobbyChatChannel === channel) renderLobbyChatMessages();
+}
+
+function renderLobbyChatMessages() {
+    const el = document.getElementById('lobbyChatMessages');
+    const channel = lobbyChatChannel;
+
+    if (channel === 'guild' && !(blGuild && blGuild.in_guild)) {
+        el.innerHTML = '<div class="lchat-empty">Join or create a guild to chat here — see the 🏯 Guild tab.</div>';
+        return;
+    }
+
+    const msgs = lobbyChatMessages[channel] || [];
+    if (msgs.length === 0) {
+        const label = channel === 'friends' ? 'No messages yet. Say hi to your friends!' : 'No messages yet — be the first to say something.';
+        el.innerHTML = `<div class="lchat-empty">${label}</div>`;
+        return;
+    }
+
+    const wasNearBottom = (el.scrollTop + el.clientHeight) >= (el.scrollHeight - 40);
+    el.innerHTML = msgs.map(m => {
+        const mine = m.username === blAccount.username;
+        return `
+            <div class="lchat-msg${mine ? ' lchat-msg-mine' : ''}">
+                <div class="lchat-msg-meta">
+                    <span class="lchat-msg-name">${blEscapeHtml(m.username)}</span>
+                    <span>${blLobbyChatTimeAgo(m.created_at)}</span>
+                </div>
+                <div class="lchat-msg-bubble">${blEscapeHtml(m.message)}</div>
+            </div>
+        `;
+    }).join('');
+    if (wasNearBottom || msgs.length <= 1) el.scrollTop = el.scrollHeight;
+}
+
+function blLobbyChatTimeAgo(iso) {
+    const diffMs = Date.now() - new Date(iso).getTime();
+    const mins = Math.floor(diffMs / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    return `${Math.floor(hrs / 24)}d ago`;
+}
+
+async function sendLobbyChatMessage() {
+    if (!blAccount || lobbyChatSending) return;
+    const input = document.getElementById('lobbyChatInput');
+    const message = input.value.trim();
+    if (!message) return;
+    const channel = lobbyChatChannel;
+    if (channel === 'guild' && !(blGuild && blGuild.in_guild)) return;
+
+    lobbyChatSending = true;
+    document.getElementById('lobbyChatSendBtn').disabled = true;
+    const payload = { p_username: blAccount.username, p_channel: channel, p_message: message.slice(0, 240) };
+    if (channel === 'guild') payload.p_guild_id = String(blGuild.guild.id);
+
+    const result = await blCallAccountRpc('send_lobby_chat_message', payload);
+    lobbyChatSending = false;
+    document.getElementById('lobbyChatSendBtn').disabled = false;
+    if (!result.ok) {
+        alert(result.error || 'Could not send that message.');
+        return;
+    }
+    input.value = '';
+    blFetchLobbyChatMessages();
 }
 
 // ============================================================================
