@@ -17,6 +17,17 @@
             -webkit-font-smoothing: antialiased;
         }
         
+        /* Vertically centers the match board (wordmark, both squads, log) in
+           the viewport on tall/portrait screens, instead of it hugging the
+           top with empty space below. The back button and comms bar are both
+           position:fixed so they're unaffected and stay pinned to their
+           corners regardless. */
+        .game-view-centered {
+            flex-direction: column;
+            justify-content: center;
+            min-height: calc(100dvh - 48px - env(safe-area-inset-top, 0px));
+        }
+
         h1 { 
             font-family: Georgia, 'Times New Roman', serif; 
             font-weight: 700;
@@ -1961,7 +1972,7 @@
         </div>
     </div>
 
-    <div id="gameView" style="display: none;">
+    <div id="gameView" style="display: none;" class="game-view-centered">
         <button class="back-fab-btn" onclick="blConfirmBackFromMatch()" title="Back">←</button>
         <div id="battleFlipWrap">
         <h1 class="wordmark"><span>g</span><span>r</span><span>i</span><span>m</span><span>o</span><span>i</span><span>r</span><span>e</span></h1>
@@ -2981,6 +2992,8 @@ async function recordMultiplayerMatchIfNeeded() {
         if (!rpcResult || !rpcResult.ok) {
             console.error('record_match_result failed, queueing for retry:', rpcResult && rpcResult.error);
             blQueuePendingMatch(payload);
+        } else {
+            console.log('record_match_result ok:', rpcResult);
         }
     } catch (e) {
         console.error('record_match_result threw, queueing for retry:', e);
@@ -3910,6 +3923,7 @@ let blProfileTargetUsername = null; // whose profile is currently open in the mo
 let blProfileIsSelf = true;
 let blProfileData = null;   // last-loaded profile payload for the open modal
 let blProfileMatches = [];  // last-loaded match history for the open modal
+let blProfileHistoryError = null; // set when get_match_history itself failed, vs. genuinely empty
 let blProfileRanking = null; // last-loaded World Ranking data for the open modal
 let blProfileTitles = null; // last-loaded titles/mastery payload for the open modal
 let blMyFavouriteCard = null; // cached so the account badge can show without opening the modal
@@ -3958,7 +3972,20 @@ async function blLoadProfile(username) {
         return;
     }
     blProfileData = profResult;
-    blProfileMatches = (historyResult.ok && historyResult.matches) ? historyResult.matches : [];
+    if (!historyResult || !historyResult.ok) {
+        // Was silently swallowed before, which made a broken/misnamed RPC
+        // look identical to "no matches yet" in the UI. Log it so a failure
+        // here is actually visible instead of indistinguishable from an
+        // empty-but-healthy history.
+        console.error('get_match_history failed:', historyResult && historyResult.error);
+        blProfileHistoryError = (historyResult && historyResult.error) || 'Could not load match history.';
+        blProfileMatches = [];
+    } else {
+        blProfileHistoryError = null;
+        // Tolerate a couple of plausible field names in case the RPC's
+        // response shape doesn't exactly match what this client expects.
+        blProfileMatches = historyResult.matches || historyResult.history || historyResult.data || [];
+    }
     blProfileRanking = rankResult && rankResult.ok ? rankResult : null;
     blProfileTitles = titlesResult && titlesResult.ok ? titlesResult : null;
     blProfileCosmetics = (cosmeticsResult && cosmeticsResult.ok) ? {
@@ -4106,6 +4133,10 @@ async function saveProfileBio() {
 
 function renderProfileHistory() {
     const el = document.getElementById('profileHistoryView');
+    if (blProfileHistoryError) {
+        el.innerHTML = `<div class="guide-card-desc" style="text-align:center; padding:14px 0; color:#ff8888;">Couldn't load match history: ${blEscapeHtml(blProfileHistoryError)}</div>`;
+        return;
+    }
     if (!blProfileMatches || blProfileMatches.length === 0) {
         el.innerHTML = '<div class="guide-card-desc" style="text-align:center; padding:14px 0;">No multiplayer matches recorded yet.</div>';
         return;
@@ -6516,7 +6547,7 @@ function startBattleWithSquads(p1Squad, p2Squad, p1Tier, p2Tier, opts = {}) {
 
     document.getElementById('setupView').style.display = 'none';
     document.getElementById('draftView').style.display = 'none';
-    document.getElementById('gameView').style.display = 'block';
+    document.getElementById('gameView').style.display = 'flex';
     document.getElementById('resetButton').style.display = 'none';
     document.getElementById('rematchButton').style.display = 'none';
     document.getElementById('combatLog').innerHTML = '';
@@ -6792,7 +6823,7 @@ function attemptSoloRestoreOnLoad() {
         Object.assign(gameState, mpRestoreFromWire(snap.gameState));
         document.getElementById('setupView').style.display = 'none';
         document.getElementById('draftView').style.display = 'none';
-        document.getElementById('gameView').style.display = 'block';
+        document.getElementById('gameView').style.display = 'flex';
         bl_bootIntoGameScreen();
         abortTargetingSequence();
         renderScene();
@@ -6940,7 +6971,7 @@ function mpAttemptReconnectOnLoad() {
                 Object.assign(gameState, mpRestoreFromWire(snap.gameState));
                 document.getElementById('setupView').style.display = 'none';
                 document.getElementById('draftView').style.display = 'none';
-                document.getElementById('gameView').style.display = 'block';
+                document.getElementById('gameView').style.display = 'flex';
                 renderScene();
             }
         }
@@ -7732,7 +7763,7 @@ function mpHandleMessage(data, peerId) {
         abortTargetingSequence();
         document.getElementById('setupView').style.display = 'none';
         document.getElementById('draftView').style.display = 'none';
-        document.getElementById('gameView').style.display = 'block';
+        document.getElementById('gameView').style.display = 'flex';
         renderScene();
         if (!gameState.isGameOver) {
             if (gameState.currentTurn === 1) startMoveTimer(1);
