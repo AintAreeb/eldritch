@@ -4946,7 +4946,19 @@ async function blCallAccountRpc(fnName, payload) {
             },
             body: JSON.stringify(payload)
         });
-        if (!res.ok) return { ok: false, error: `Server error (${res.status}).` };
+        if (!res.ok) {
+            // PostgREST returns a JSON body with message/details/hint/code on
+            // failure — surface that instead of just the bare status code,
+            // since "Server error (400)" gives no way to diagnose what
+            // actually went wrong (bad grant, bad column, bad arg type, etc).
+            let detail = '';
+            try {
+                const errBody = await res.json();
+                detail = errBody.message || errBody.error || errBody.hint || JSON.stringify(errBody);
+            } catch (e) {}
+            console.error(`${fnName} failed (${res.status}):`, detail);
+            return { ok: false, error: detail ? `${detail}` : `Server error (${res.status}).` };
+        }
         const data = await res.json();
         return data;
     } catch (e) {
