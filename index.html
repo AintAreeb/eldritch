@@ -1879,7 +1879,7 @@
                         <span id="friendsReqBadge" style="display:none; position:absolute; top:-6px; right:-6px; background:#ff3333; color:#e8e0c9; border-radius:50%; width:16px; height:16px; font-size:9px; line-height:16px; text-align:center; font-weight:700;"></span>
                     </button>
                     <button class="account-btn account-btn-alt" style="position:relative;" onclick="openGuildModal()">
-                        🏯 Guild
+                        🏯 Clan
                         <span id="guildReqBadge" style="display:none; position:absolute; top:-6px; right:-6px; background:#ff3333; color:#e8e0c9; border-radius:50%; width:16px; height:16px; font-size:9px; line-height:16px; text-align:center; font-weight:700;"></span>
                     </button>
                     <button class="account-btn account-btn-alt" style="position:relative;" onclick="openLobbyChatModal()">
@@ -2137,17 +2137,17 @@
     </div>
 
     <div id="guildModal" class="guide-modal" style="max-width:320px;">
-        <h3>🏯 Guild</h3>
+        <h3>🏯 Clan</h3>
         <div class="guide-tabs">
-            <button class="guide-tab-btn guide-tab-active" id="guildTabMineBtn" onclick="switchGuildTab('mine')">My Guild</button>
+            <button class="guide-tab-btn guide-tab-active" id="guildTabMineBtn" onclick="switchGuildTab('mine')">My Clan</button>
             <button class="guide-tab-btn" id="guildTabSearchBtn" onclick="switchGuildTab('search')">Search</button>
-            <button class="guide-tab-btn" id="guildTabBoardBtn" onclick="switchGuildTab('board')">Top Guilds</button>
+            <button class="guide-tab-btn" id="guildTabBoardBtn" onclick="switchGuildTab('board')">Top Clans</button>
         </div>
         <div class="guide-body">
             <div id="guildMineView"></div>
             <div id="guildSearchView" style="display:none;">
                 <div style="display:flex; gap:6px; margin-bottom:10px;">
-                    <input type="text" id="guildSearchInput" class="account-input" placeholder="Search guild name..." maxlength="24" autocomplete="off" style="flex:1; margin-bottom:0;" onkeydown="if(event.key==='Enter') blSearchGuilds();">
+                    <input type="text" id="guildSearchInput" class="account-input" placeholder="Search clan name..." maxlength="24" autocomplete="off" style="flex:1; margin-bottom:0;" onkeydown="if(event.key==='Enter') blSearchGuilds();">
                     <button class="account-btn" style="flex:none; padding:8px 12px; margin-bottom:0;" onclick="blSearchGuilds()">Go</button>
                 </div>
                 <div id="guildSearchResults"></div>
@@ -2161,7 +2161,7 @@
         <h3>💬 Lobby Chat</h3>
         <div class="guide-tabs">
             <button class="guide-tab-btn guide-tab-active" id="lchatTabUniversalBtn" onclick="switchLobbyChatTab('universal')">🌐 Universal</button>
-            <button class="guide-tab-btn" id="lchatTabGuildBtn" onclick="switchLobbyChatTab('guild')">🏯 Guild</button>
+            <button class="guide-tab-btn" id="lchatTabGuildBtn" onclick="switchLobbyChatTab('guild')">🏯 Clan</button>
             <button class="guide-tab-btn" id="lchatTabFriendsBtn" onclick="switchLobbyChatTab('friends')">👥 Friends</button>
         </div>
         <div id="lchatFriendHeader" class="lchat-friend-header">
@@ -5659,7 +5659,7 @@ function renderLobbyChatMessages() {
         return;
     }
     if (channel === 'guild' && !(blGuild && blGuild.in_guild)) {
-        el.innerHTML = '<div class="lchat-empty">Join or create a guild to chat here — see the 🏯 Guild tab.</div>';
+        el.innerHTML = '<div class="lchat-empty">Join or create a clan to chat here — see the 🏯 Clan tab.</div>';
         return;
     }
 
@@ -5826,12 +5826,12 @@ function renderGuildMineView() {
                 </div>`).join('');
         }
         view.innerHTML = `${invitesHtml}
-            <div class="guide-section-label">Create a Guild</div>
+            <div class="guide-section-label">Create a Clan</div>
             <div class="guide-card-desc" style="margin-bottom:8px;">Costs ${GUILD_CREATE_COST} Grims · capacity ${GUILD_CAPACITY} · Balance: 🎟️ ${blCurrency ? blCurrency.balance : 0}</div>
-            <input type="text" id="guildCreateName" class="account-input" placeholder="Guild name" maxlength="24" autocomplete="off">
+            <input type="text" id="guildCreateName" class="account-input" placeholder="Clan name" maxlength="24" autocomplete="off">
             <input type="text" id="guildCreateAvatar" class="account-input" placeholder="Avatar (an emoji)" maxlength="4" value="🏯" autocomplete="off">
-            <textarea id="guildCreateBio" class="profile-bio-textarea" maxlength="140" placeholder="Guild bio..."></textarea>
-            <button class="account-btn" style="width:100%;" onclick="blCreateGuild()">Found Guild — ${GUILD_CREATE_COST} Grims</button>
+            <textarea id="guildCreateBio" class="profile-bio-textarea" maxlength="140" placeholder="Clan bio..."></textarea>
+            <button class="account-btn" style="width:100%;" onclick="blCreateGuild()">Found Clan — ${GUILD_CREATE_COST} Grims</button>
             <div id="guildCreateStatus" class="account-status"></div>`;
         return;
     }
@@ -5883,7 +5883,7 @@ function renderGuildMineView() {
                 <div class="profile-avatar-circle">${g.avatar || '🏯'}</div>
                 <div class="profile-header-main">
                     <div class="profile-username">${blEscapeHtml(g.name)}</div>
-                    ${g.is_currently_top ? `<div class="title-badge">👑 Reigning Guild</div>` : ''}
+                    ${g.is_currently_top ? `<div class="title-badge">👑 Reigning Clan</div>` : ''}
                     <div style="font-size:10px; color:#8a8f98; margin-top:2px;">${(blGuild.members || []).length} / ${GUILD_CAPACITY} members · ${g.total_rp} total RP</div>
                 </div>
             </div>
@@ -5899,8 +5899,8 @@ function renderGuildMineView() {
         <div class="guide-section-label">Members</div>
         ${membersHtml}
         <div style="display:flex; gap:6px; margin-top:10px;">
-            ${isArchon ? `<button class="account-btn account-btn-alt" style="flex:1;" onclick="blOpenEditGuildForm()">Edit Guild Info</button>` : ''}
-            <button class="account-btn account-btn-alt" style="flex:1;" onclick="blLeaveGuild()">${isArchon ? 'Disband / Leave' : 'Leave Guild'}</button>
+            ${isArchon ? `<button class="account-btn account-btn-alt" style="flex:1;" onclick="blOpenEditGuildForm()">Edit Clan Info</button>` : ''}
+            <button class="account-btn account-btn-alt" style="flex:1;" onclick="blLeaveGuild()">${isArchon ? 'Disband / Leave' : 'Leave Clan'}</button>
         </div>
         <div id="guildEditFormWrap"></div>`;
     blApplyBannerToEl(document.getElementById('guildBannerStrip'), g.banner_id);
@@ -5912,18 +5912,18 @@ async function blCreateGuild() {
     const avatar = document.getElementById('guildCreateAvatar').value.trim() || '🏯';
     const bio = document.getElementById('guildCreateBio').value.trim().slice(0, 140);
     const statusEl = document.getElementById('guildCreateStatus');
-    if (!name) { statusEl.innerText = 'Enter a guild name.'; return; }
+    if (!name) { statusEl.innerText = 'Enter a clan name.'; return; }
     if (!blCurrency || blCurrency.balance < GUILD_CREATE_COST) {
         statusEl.innerText = `Not enough Grims — need ${GUILD_CREATE_COST}, have ${blCurrency ? blCurrency.balance : 0}.`;
         return;
     }
     if (!confirm(`Found "${name}" for ${GUILD_CREATE_COST} Grims?`)) return;
-    statusEl.innerText = 'Founding guild...';
+    statusEl.innerText = 'Founding clan...';
     const result = await blCallAccountRpc('create_guild', { p_username: blAccount.username, p_name: name, p_avatar: avatar, p_bio: bio });
-    if (!result || !result.ok) { statusEl.innerText = (result && result.error) || 'Could not create guild.'; return; }
+    if (!result || !result.ok) { statusEl.innerText = (result && result.error) || 'Could not create clan.'; return; }
     blCurrency = { balance: result.balance };
     renderCurrencyUI();
-    writeLog(`🏯 Guild founded: ${name}`);
+    writeLog(`🏯 Clan founded: ${name}`);
     await blRefreshMyGuild();
 }
 
@@ -5934,7 +5934,7 @@ async function blSearchGuilds() {
     const result = await blCallAccountRpc('search_guilds', { p_query: q });
     blGuildSearchResults = (result && result.ok) ? (result.guilds || []) : [];
     if (blGuildSearchResults.length === 0) {
-        resultsEl.innerHTML = '<div class="guide-card-desc" style="text-align:center; padding:14px 0;">No guilds found.</div>';
+        resultsEl.innerHTML = '<div class="guide-card-desc" style="text-align:center; padding:14px 0;">No clans found.</div>';
         return;
     }
     resultsEl.innerHTML = blGuildSearchResults.map(gd => {
@@ -5958,8 +5958,8 @@ async function blJoinGuildAuto(guildId) {
     const level = blMyLevelStats ? blComputeLevelInfo(blMyLevelStats).level : 1;
     const rp = blRanking ? blRanking.points : 0;
     const result = await blCallAccountRpc('auto_join_guild', { p_username: blAccount.username, p_guild_id: guildId, p_level: level, p_ranking_points: rp });
-    if (!result || !result.ok) { alert((result && result.error) || 'Could not join guild.'); return; }
-    writeLog('🏯 Joined guild!');
+    if (!result || !result.ok) { alert((result && result.error) || 'Could not join clan.'); return; }
+    writeLog('🏯 Joined clan!');
     switchGuildTab('mine');
     await blRefreshMyGuild();
 }
@@ -5982,7 +5982,7 @@ async function blInviteToGuild() {
 async function blRespondGuildInvite(inviteId, accept) {
     const result = await blCallAccountRpc('respond_guild_invite', { p_username: blAccount.username, p_invite_id: inviteId, p_accept: accept });
     if (!result || !result.ok) { if (result && result.error) alert(result.error); }
-    if (accept) writeLog('🏯 Joined guild!');
+    if (accept) writeLog('🏯 Joined clan!');
     await blRefreshMyGuild();
 }
 async function blRespondJoinRequest(requestId, accept) {
@@ -5991,7 +5991,7 @@ async function blRespondJoinRequest(requestId, accept) {
     await blRefreshMyGuild();
 }
 async function blKickGuildMember(target) {
-    if (!confirm(`Kick ${target} from the guild?`)) return;
+    if (!confirm(`Kick ${target} from the clan?`)) return;
     const result = await blCallAccountRpc('kick_member', { p_username: blAccount.username, p_guild_id: blGuild.guild.id, p_target_username: target });
     if (!result || !result.ok) alert((result && result.error) || 'Could not kick member.');
     await blRefreshMyGuild();
@@ -6014,11 +6014,11 @@ async function blClaimArchon() {
     await blRefreshMyGuild();
 }
 async function blLeaveGuild() {
-    const msg = (blGuild.my_role === 'archon') ? 'Leave the guild? Leadership will pass to the next-ranking officer (or the guild disbands if you are the last member).' : 'Leave this guild?';
+    const msg = (blGuild.my_role === 'archon') ? 'Leave the clan? Leadership will pass to the next-ranking officer (or the clan disbands if you are the last member).' : 'Leave this clan?';
     if (!confirm(msg)) return;
     const result = await blCallAccountRpc('leave_guild', { p_username: blAccount.username, p_guild_id: blGuild.guild.id });
-    if (!result || !result.ok) { alert((result && result.error) || 'Could not leave guild.'); return; }
-    writeLog('🏯 Left the guild.');
+    if (!result || !result.ok) { alert((result && result.error) || 'Could not leave clan.'); return; }
+    writeLog('🏯 Left the clan.');
     await blRefreshMyGuild();
 }
 
@@ -6029,7 +6029,7 @@ function blOpenEditGuildForm() {
     if (wrap.innerHTML) { wrap.innerHTML = ''; return; } // toggle closed
     const bannerOpts = BANNER_DEFS.map(b => `<option value="${b.id}" ${b.id === g.banner_id ? 'selected' : ''}>${blEscapeHtml(b.name)}</option>`).join('');
     wrap.innerHTML = `
-        <div class="guide-section-label">Edit Guild Info</div>
+        <div class="guide-section-label">Edit Clan Info</div>
         <input type="text" id="guildEditName" class="account-input" maxlength="24" value="${blEscapeHtml(g.name)}">
         <input type="text" id="guildEditAvatar" class="account-input" maxlength="4" value="${blEscapeHtml(g.avatar || '🏯')}">
         <select id="guildEditBanner" class="account-input">${bannerOpts}</select>
@@ -6062,7 +6062,7 @@ async function blSaveGuildInfo() {
         p_banner_id: banner, p_bio: bio, p_join_mode: joinMode, p_min_level: minLevel, p_min_rank_points: minRp
     });
     if (!result || !result.ok) { alert((result && result.error) || 'Could not save changes.'); return; }
-    writeLog('🏯 Guild info updated.');
+    writeLog('🏯 Clan info updated.');
     await blRefreshMyGuild();
 }
 
@@ -6074,18 +6074,18 @@ async function blSyncGuildRpIfNeeded() {
 
 async function blLoadGuildLeaderboard() {
     const view = document.getElementById('guildBoardView');
-    view.innerHTML = '<div class="guide-card-desc" style="text-align:center; padding:14px 0;">Loading top guilds…</div>';
+    view.innerHTML = '<div class="guide-card-desc" style="text-align:center; padding:14px 0;">Loading top clans…</div>';
     const result = await blCallAccountRpc('get_guild_leaderboard', {});
     if (!result || !result.ok) { view.innerHTML = '<div class="guide-card-desc" style="text-align:center; padding:14px 0; color:#ff8888;">Could not load leaderboard.</div>'; return; }
     const rows = result.guilds || [];
-    if (rows.length === 0) { view.innerHTML = '<div class="guide-card-desc" style="text-align:center; padding:14px 0;">No guilds founded yet — be the first.</div>'; return; }
+    if (rows.length === 0) { view.innerHTML = '<div class="guide-card-desc" style="text-align:center; padding:14px 0;">No clans founded yet — be the first.</div>'; return; }
     view.innerHTML = rows.map(g => {
         const medal = g.rank === 1 ? '👑' : g.rank === 2 ? '🥈' : g.rank === 3 ? '🥉' : `#${g.rank}`;
         return `<div class="mhist-entry" style="background:transparent;">
             <div style="width:30px; flex-shrink:0; font-size:14px; font-weight:700; color:#c7c9cf;">${medal}</div>
             <div class="profile-avatar-circle" style="width:30px; height:30px; font-size:15px; flex-shrink:0; margin-right:8px;">${g.avatar || '🏯'}</div>
             <div style="flex:1; min-width:0;">
-                <div style="font-size:12px; font-weight:700; color:#e8e0c9;">${blEscapeHtml(g.name)}${g.rank === 1 ? ' — Reigning Guild' : ''}</div>
+                <div style="font-size:12px; font-weight:700; color:#e8e0c9;">${blEscapeHtml(g.name)}${g.rank === 1 ? ' — Reigning Clan' : ''}</div>
                 <div style="font-size:9.5px; color:#5a5f68;">${g.member_count}/${GUILD_CAPACITY} members</div>
             </div>
             <div style="font-size:12px; font-weight:700; color:#e8e0c9; text-align:right;">${g.total_rp} RP</div>
