@@ -10361,6 +10361,14 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
             let preActorMaxHex = aiActor.maxHex;
             let hijackFeedbackCardId = null;
             let hijackFeedbackDamage = 0;
+            // Tracks which role's ability actually fired this turn. For a direct
+            // play this is just aiActor.name, but Actor/Dementor/Bartender act by
+            // MIMICKING another role's ability — aiActor.name stays 'Dementor'/
+            // 'Actor'/'Bartender' even while it's really executing a Killer kill
+            // or Lawyer imprisonment. Imam/Chronos need to know the real role so
+            // they can recognize (and reverse) a mimicked kill/imprisonment, not
+            // just a directly-played one.
+            let effectiveRoleName = aiActor.name;
 
             if (targetPlayer.isHeroic) {
                 writeLog(`🤖 Bot ${aiActor.name} tried to attack your Heroic ${targetPlayer.name}, but Sacred Souls cannot be harmed by enemy cards!`);
@@ -10767,6 +10775,11 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
                             actionType = hit.actionType;
                             wasPoisonedState = hit.wasPoisonedState;
                             isDirectKill = actionType !== 'imprison' && preAttackHex > 0 && targetPlayer.hex === 0;
+                            // applyMimicRoleEffect('Bartender', ...) recurses internally
+                            // into whichever role it actually copied and sets
+                            // p2LastMoveRole to that real role — use it so Imam/Chronos
+                            // recognize this as (e.g.) a Killer kill, not a "normal" hit.
+                            effectiveRoleName = gameState.p2LastMoveRole || effectiveRoleName;
                         }
                     }
                 } else if (aiActor.name === 'Terrorist') {
@@ -10834,6 +10847,10 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
                             actionType = hit.actionType;
                             wasPoisonedState = hit.wasPoisonedState;
                             isDirectKill = actionType !== 'imprison' && preAttackHex > 0 && targetPlayer.hex === 0;
+                            // The Actor was really executing randomRole's ability
+                            // (a Killer kill, Lawyer imprisonment, etc.) — Imam/Chronos
+                            // need that real role, not 'Actor'.
+                            effectiveRoleName = randomRole;
                         }
                     }
                     aiActor.hex = 0;
@@ -10866,6 +10883,10 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
                                 actionType = hit.actionType;
                                 wasPoisonedState = hit.wasPoisonedState;
                                 isDirectKill = actionType !== 'imprison' && preAttackHex > 0 && targetPlayer.hex === 0;
+                                // The Dementor was really executing the reanimated
+                                // card's ability (e.g. Killer's kill) — Imam/Chronos
+                                // need that real role, not 'Dementor'.
+                                effectiveRoleName = randomDead.name;
                             }
                         }
                     } else {
@@ -10996,7 +11017,7 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
                     isDirectKill: isDirectKill,
                     wasPoisoned: !wasPoisonedState && targetPlayer.poisoned,
                     isSorcererAction: aiActor.name === 'Sorcerer',
-                    isNormalAttack: (aiActor.name !== 'Killer' && aiActor.name !== 'Dictator' && aiActor.name !== 'Lawyer' && aiActor.name !== 'Sorcerer')
+                    isNormalAttack: (effectiveRoleName !== 'Killer' && effectiveRoleName !== 'Dictator' && effectiveRoleName !== 'Lawyer' && effectiveRoleName !== 'Sorcerer')
                 };
             } else {
                 gameState.botLastAttackRecord = null;
