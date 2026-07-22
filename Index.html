@@ -1590,7 +1590,7 @@
         }
         .recap-overlay.recap-show {
             opacity: 1;
-            background: rgba(3, 2, 8, 0.94);
+            background: rgba(3, 2, 8, 1);
         }
         .recap-flash {
             position: absolute;
@@ -10982,6 +10982,21 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
             }
 
             if (executedAction) {
+                // isNormalAttack must describe the ABILITY that actually landed,
+                // not which card happened to perform it. Actor/Dementor/Sorcerer/
+                // Bartender mimic other roles' abilities, so checking aiActor.name
+                // directly here mislabeled e.g. a Dementor-reanimated Killer kill
+                // as a "normal attack" (aiActor.name === 'Dementor', which isn't
+                // Killer/Dictator/Lawyer/Sorcerer) — which made Imam's block
+                // condition (which requires !isNormalAttack) silently no-op even
+                // though isDirectKill was correctly true. applyMimicRoleEffect
+                // already sets gameState.p2LastMoveRole to the real mimicked role
+                // name (e.g. 'Killer') the instant it resolves, so use that for
+                // the four mimic-capable actors instead of the actor's own name.
+                let mimicActors = ['Actor', 'Dementor', 'Sorcerer', 'Bartender'];
+                let effectiveRoleName = mimicActors.includes(aiActor.name)
+                    ? (gameState.p2LastMoveRole || aiActor.name)
+                    : aiActor.name;
                 gameState.botLastAttackRecord = {
                     actorName: aiActor.name,
                     actorId: aiActor.id,
@@ -10996,7 +11011,7 @@ function processBotTurnRoutine(isFollowUpAction = false, freeActionDepth = 0) {
                     isDirectKill: isDirectKill,
                     wasPoisoned: !wasPoisonedState && targetPlayer.poisoned,
                     isSorcererAction: aiActor.name === 'Sorcerer',
-                    isNormalAttack: (aiActor.name !== 'Killer' && aiActor.name !== 'Dictator' && aiActor.name !== 'Lawyer' && aiActor.name !== 'Sorcerer')
+                    isNormalAttack: (effectiveRoleName !== 'Killer' && effectiveRoleName !== 'Dictator' && effectiveRoleName !== 'Lawyer' && effectiveRoleName !== 'Sorcerer')
                 };
             } else {
                 gameState.botLastAttackRecord = null;
