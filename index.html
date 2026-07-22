@@ -2442,7 +2442,7 @@ let gameState = {
     // Per-move countdown: 2 seconds per character still alive (both squads
     // combined) at the moment the move begins. Recalculated fresh at the
     // start of every single move (player's or bot's).
-    moveTimer: { secondsLeft: 0, intervalId: null, forSide: null },
+    moveTimer: { secondsLeft: 0, intervalId: null, forSide: null, deadline: null, pausedSinceMs: null },
     // Local (same-device, pass-and-play) multiplayer. When true, there's no
     // bot AI and no network peer — both squads are played by humans sharing
     // this one screen, taking turns directly with no handoff step. The
@@ -4432,6 +4432,22 @@ function captureChronosSnapshot() {
 
 // Starts the countdown for whichever side (1 = player, 2 = bot) is about to
 // move. Duration = 2 seconds * total characters still alive right now.
+//
+// Bug fix: this used to be a naive "decrement once per 1000ms tick"
+// countdown. setInterval ticks are NOT guaranteed to fire exactly on
+// schedule — if the tab is backgrounded, the screen dims, or the main
+// thread is briefly busy (e.g. a kill-recap animation, a slow re-render),
+// the browser queues up the missed tick(s) and then fires them back-to-back
+// the moment it's free again. Each of those catch-up ticks still only
+// decremented by 1, but several of them landing within the same real
+// second is exactly what made the clock look like it was "counting 2
+// seconds in 1 real second."
+//
+// The fix: stop counting ticks entirely and instead measure real elapsed
+// time against a fixed wall-clock deadline (Date.now()-based). The ticker
+// below just re-reads "how much real time is left until the deadline" on
+// every tick — however delayed, bunched-up, or throttled those ticks are,
+// the displayed number can never advance faster than the actual clock.
 function startMoveTimer(side) {
     stopMoveTimer();
     if (gameState.isGameOver) return;
@@ -4445,28 +4461,54 @@ function startMoveTimer(side) {
     if (duration <= 8) gameState.lowTimeAnimationsOff = true;
     gameState.moveTimer.secondsLeft = duration;
     gameState.moveTimer.forSide = side;
+    // deadline = the real-world timestamp the clock should hit 0 at,
+    // assuming no pauses. pausedSinceMs tracks when the clock most
+    // recently entered a paused (recap-playing) state, so that pause
+    // duration can be added back onto the deadline once it ends —
+    // pausing must never let the deadline arrive early OR let the
+    // display fast-forward once unpaused.
+    gameState.moveTimer.deadline = Date.now() + duration * 1000;
+    gameState.moveTimer.pausedSinceMs = null;
     renderMoveTimerDisplay();
+    // Ticks every 200ms (not 1000ms) purely so the on-screen number updates
+    // promptly — the actual countdown math below is 100% wall-clock based,
+    // so a faster/slower/irregular tick rate cannot change how fast the
+    // displayed time actually elapses.
     gameState.moveTimer.intervalId = setInterval(() => {
         // Freeze the clock while a kill/move recap animation is on screen —
         // it's a full-screen overlay the player can't act during, so the
-        // countdown shouldn't burn away behind it. Ticking just stalls here
-        // until recapPlaying drops back to false, then resumes normally.
-        if (recapPlaying) return;
-        gameState.moveTimer.secondsLeft--;
-        if (gameState.moveTimer.secondsLeft <= 0) {
+        // countdown shouldn't burn away behind it.
+        if (recapPlaying) {
+            if (gameState.moveTimer.pausedSinceMs === null) {
+                gameState.moveTimer.pausedSinceMs = Date.now();
+            }
+            return;
+        }
+        if (gameState.moveTimer.pausedSinceMs !== null) {
+            // Coming out of a pause: push the deadline out by exactly how
+            // long the pause lasted, so paused time is never counted
+            // against the player.
+            gameState.moveTimer.deadline += Date.now() - gameState.moveTimer.pausedSinceMs;
+            gameState.moveTimer.pausedSinceMs = null;
+        }
+
+        let remaining = Math.ceil((gameState.moveTimer.deadline - Date.now()) / 1000);
+        if (remaining <= 0) {
             stopMoveTimer();
             handleMoveTimeout(side);
             return;
         }
-        renderMoveTimerDisplay();
-        // Only for the player's own clock (side 1) — the bot's countdown
-        // isn't something the person holding the phone needs to feel.
-        // Re-firing a ~1s buzz every tick keeps it going almost seamlessly
-        // for the last 5 seconds (each new call replaces the tail end of
-        // the previous one), and stopMoveTimer() cuts it off the instant
-        // the player acts or the clock is otherwise stopped.
-        if (side === 1 && gameState.moveTimer.secondsLeft <= 5) blVibrate(950);
-    }, 1000);
+        if (remaining !== gameState.moveTimer.secondsLeft) {
+            gameState.moveTimer.secondsLeft = remaining;
+            renderMoveTimerDisplay();
+            // Only for the player's own clock (side 1) — the bot's countdown
+            // isn't something the person holding the phone needs to feel.
+            // Re-firing a ~1s buzz whenever the displayed second actually
+            // changes keeps it going for the last 5 seconds without ever
+            // firing more than once per real second.
+            if (side === 1 && remaining <= 5) blVibrate(950);
+        }
+    }, 200);
 }
 
 // Penalty for letting the clock run out: one randomly-chosen alive,
