@@ -28,6 +28,20 @@
             min-height: calc(100dvh - 48px - env(safe-area-inset-top, 0px));
         }
 
+        /* #gameView's colored background (Game Theme) was starting below the
+           body's top safe-area padding, leaving a strip of the page's dark
+           background (#080710) visibly "cutting off" the theme color at the
+           very top of the screen (behind the status bar / notch). Pulling
+           the element up by exactly that padding, then re-adding it as
+           padding-top on the same element, keeps all the inner content
+           (wordmark-less board, YOUR TURN label, squads, etc.) in the same
+           visual position while letting the theme background paint all the
+           way to the top edge instead of being cut off by it. */
+        #gameView.game-view-centered {
+            margin-top: calc(-24px - env(safe-area-inset-top, 24px));
+            padding-top: calc(24px + env(safe-area-inset-top, 24px));
+        }
+
         h1 { 
             font-family: Georgia, 'Times New Roman', serif; 
             font-weight: 700;
