@@ -7922,26 +7922,6 @@ function openTargetingOverlay(actorId, actionKey, overlayInstruction, metadata =
 }
 
 function abortTargetingSequence() {
-    // A Sorcerer hijack is a two-step pick: first which enemy card to
-    // hijack (handleSorcererSelection), then what that hijacked card
-    // targets. The Hex cost and "move used" flag are charged to the
-    // Sorcerer right at step one, before step two's target is even chosen
-    // — so if the player backs out with "ABORT ADVANCED MANEUVER" while
-    // still on step two, the abort used to just clear targetingMode and
-    // leave that already-charged cost in place, silently wasting a Hex
-    // and the whole turn for nothing. Restore the Sorcerer (or whichever
-    // actor) back to its pre-hijack snapshot in that case so aborting is
-    // truly free, exactly like any other wasted-move refund in this file.
-    let type = gameState.targetingMode.type;
-    if (type === 'sorcerer_hijacked_action' || type === 'sorcerer_hijacked_singer_step2') {
-        let snap = gameState.targetingMode.preEffectSnapshot;
-        let actorId = gameState.targetingMode.actorId;
-        let actor = actorId ? (gameState.p1.find(c => c.id === actorId) || gameState.p2.find(c => c.id === actorId)) : null;
-        if (actor && snap && snap.actor) {
-            Object.assign(actor, snap.actor);
-            writeLog(`🔮 Hijack aborted — Hex and turn refunded.`);
-        }
-    }
     gameState.targetingMode.isActive = false;
     gameState.targetingMode.type = null;
     gameState.targetingMode.actorId = null;
