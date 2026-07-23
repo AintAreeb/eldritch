@@ -472,6 +472,37 @@
         #gameView.board-theme-starlitsanctum { background: radial-gradient(ellipse at 50% -10%, rgba(230,230,255,0.12) 0%, rgba(8,7,16,0) 60%); }
         #gameView.board-theme-starlitsanctum .log { background: #0c0c14; border-color: rgba(230,230,255,0.26); color: #e8e8ff; }
 
+        /* ====================================================================
+           GAME THEMES — a separate cosmetic slot from Board Themes above.
+           Also applied as a class on #gameView, but placed later in the
+           cascade so it wins the #gameView `background` property outright —
+           this is the actual visible battlefield backdrop. Board Theme,
+           equipped alongside it, keeps doing what it already does (the
+           combat log's palette) since Game Theme never touches .log.
+           Colors mirror the matching Board Theme/Banner family so the same
+           name means the same palette everywhere, just applied stronger
+           here since this IS the background players actually see.
+           ==================================================================== */
+        #gameView.game-theme-bloodmoon { background: linear-gradient(160deg, rgba(140,10,20,0.5) 0%, rgba(8,7,16,1) 70%); }
+        #gameView.game-theme-obsidianrift { background: linear-gradient(160deg, rgba(80,0,120,0.45) 0%, rgba(8,7,16,1) 70%); }
+        #gameView.game-theme-parchmentnoir { background: linear-gradient(160deg, rgba(180,160,110,0.35) 0%, rgba(8,7,16,1) 70%); }
+        #gameView.game-theme-verdanthex { background: linear-gradient(160deg, rgba(30,140,90,0.45) 0%, rgba(8,7,16,1) 70%); }
+        #gameView.game-theme-staticbloom { background: linear-gradient(160deg, rgba(255,204,0,0.35) 0%, rgba(8,7,16,1) 70%); }
+        #gameView.game-theme-ashenvigil { background: linear-gradient(160deg, rgba(150,150,160,0.4) 0%, rgba(8,7,16,1) 70%); }
+        #gameView.game-theme-frostboundledger { background: linear-gradient(160deg, rgba(94,200,216,0.45) 0%, rgba(8,7,16,1) 70%); }
+        #gameView.game-theme-neonunderworld { background: linear-gradient(160deg, rgba(255,0,180,0.45) 0%, rgba(8,7,16,1) 70%); }
+        #gameView.game-theme-aurumsanctum { background: linear-gradient(160deg, rgba(212,175,55,0.5) 0%, rgba(8,7,16,1) 70%); }
+        #gameView.game-theme-crimsonabyss { background: linear-gradient(160deg, rgba(150,10,10,0.55) 0%, rgba(8,7,16,1) 70%); }
+        #gameView.game-theme-lunarhollow { background: linear-gradient(160deg, rgba(150,180,220,0.4) 0%, rgba(8,7,16,1) 70%); }
+        #gameView.game-theme-emberwastes { background: linear-gradient(160deg, rgba(255,110,20,0.45) 0%, rgba(8,7,16,1) 70%); }
+        #gameView.game-theme-glacialexpanse { background: linear-gradient(160deg, rgba(150,220,255,0.45) 0%, rgba(8,7,16,1) 70%); }
+        #gameView.game-theme-royalcourt { background: linear-gradient(160deg, rgba(160,100,220,0.5) 0%, rgba(8,7,16,1) 70%); }
+        #gameView.game-theme-plagueward { background: linear-gradient(160deg, rgba(120,160,80,0.4) 0%, rgba(8,7,16,1) 70%); }
+        #gameView.game-theme-thunderscar { background: linear-gradient(160deg, rgba(120,170,255,0.45) 0%, rgba(8,7,16,1) 70%); }
+        #gameView.game-theme-coralruin { background: linear-gradient(160deg, rgba(255,120,140,0.45) 0%, rgba(8,7,16,1) 70%); }
+        #gameView.game-theme-ashfallbasin { background: linear-gradient(160deg, rgba(140,130,120,0.4) 0%, rgba(8,7,16,1) 70%); }
+        #gameView.game-theme-starlitsanctum { background: linear-gradient(160deg, rgba(230,230,255,0.4) 0%, rgba(8,7,16,1) 70%); }
+
         /* Profile banners — one per board theme (20 total incl. default),
            so equipping a board theme also re-skins every profile view
            (lobby account card + profile modal) with the matching banner. */
@@ -523,6 +554,29 @@
         .guide-card-entry.pbanner-coralruin { background: linear-gradient(135deg, rgba(255,120,140,0.45) 0%, rgba(255,120,140,0.06) 100%); border-color: rgba(255,176,190,0.4); }
         .guide-card-entry.pbanner-ashfallbasin { background: linear-gradient(135deg, rgba(140,130,120,0.4) 0%, rgba(140,130,120,0.05) 100%); border-color: rgba(208,200,188,0.35); }
         .guide-card-entry.pbanner-starlitsanctum { background: linear-gradient(135deg, rgba(230,230,255,0.4) 0%, rgba(230,230,255,0.06) 100%); border-color: rgba(232,232,255,0.4); }
+
+        /* Game Theme row previews in the Skins modal — same treatment as the
+           pbanner preview trick above, just under a gametheme-preview-* name
+           since Game Theme is its own cosmetic slot, independent of Banners. */
+        .guide-card-entry.gametheme-preview-bloodmoon { background: linear-gradient(135deg, rgba(140,10,20,0.5) 0%, rgba(140,10,20,0.06) 100%); border-color: rgba(255,107,107,0.4); }
+        .guide-card-entry.gametheme-preview-obsidianrift { background: linear-gradient(135deg, rgba(80,0,120,0.45) 0%, rgba(80,0,120,0.06) 100%); border-color: rgba(201,139,255,0.4); }
+        .guide-card-entry.gametheme-preview-parchmentnoir { background: linear-gradient(135deg, rgba(180,160,110,0.35) 0%, rgba(180,160,110,0.05) 100%); border-color: rgba(232,217,171,0.4); }
+        .guide-card-entry.gametheme-preview-verdanthex { background: linear-gradient(135deg, rgba(30,140,90,0.45) 0%, rgba(30,140,90,0.06) 100%); border-color: rgba(107,232,166,0.4); }
+        .guide-card-entry.gametheme-preview-staticbloom { background: linear-gradient(135deg, rgba(255,204,0,0.35) 0%, rgba(255,204,0,0.05) 100%); border-color: rgba(255,224,122,0.4); }
+        .guide-card-entry.gametheme-preview-ashenvigil { background: linear-gradient(135deg, rgba(150,150,160,0.4) 0%, rgba(150,150,160,0.05) 100%); border-color: rgba(216,216,222,0.35); }
+        .guide-card-entry.gametheme-preview-frostboundledger { background: linear-gradient(135deg, rgba(94,200,216,0.45) 0%, rgba(94,200,216,0.06) 100%); border-color: rgba(159,232,242,0.4); }
+        .guide-card-entry.gametheme-preview-neonunderworld { background: linear-gradient(135deg, rgba(255,0,180,0.45) 0%, rgba(255,0,180,0.06) 100%); border-color: rgba(255,122,240,0.45); }
+        .guide-card-entry.gametheme-preview-aurumsanctum { background: linear-gradient(135deg, rgba(212,175,55,0.5) 0%, rgba(212,175,55,0.06) 100%); border-color: rgba(240,220,154,0.45); }
+        .guide-card-entry.gametheme-preview-crimsonabyss { background: linear-gradient(135deg, rgba(150,10,10,0.55) 0%, rgba(150,10,10,0.06) 100%); border-color: rgba(255,128,128,0.45); }
+        .guide-card-entry.gametheme-preview-lunarhollow { background: linear-gradient(135deg, rgba(150,180,220,0.4) 0%, rgba(150,180,220,0.05) 100%); border-color: rgba(200,216,238,0.4); }
+        .guide-card-entry.gametheme-preview-emberwastes { background: linear-gradient(135deg, rgba(255,110,20,0.45) 0%, rgba(255,110,20,0.06) 100%); border-color: rgba(255,176,102,0.4); }
+        .guide-card-entry.gametheme-preview-glacialexpanse { background: linear-gradient(135deg, rgba(150,220,255,0.45) 0%, rgba(150,220,255,0.06) 100%); border-color: rgba(168,232,255,0.45); }
+        .guide-card-entry.gametheme-preview-royalcourt { background: linear-gradient(135deg, rgba(160,100,220,0.5) 0%, rgba(160,100,220,0.06) 100%); border-color: rgba(216,184,255,0.45); }
+        .guide-card-entry.gametheme-preview-plagueward { background: linear-gradient(135deg, rgba(120,160,80,0.4) 0%, rgba(120,160,80,0.05) 100%); border-color: rgba(192,216,144,0.4); }
+        .guide-card-entry.gametheme-preview-thunderscar { background: linear-gradient(135deg, rgba(120,170,255,0.45) 0%, rgba(120,170,255,0.06) 100%); border-color: rgba(168,200,255,0.4); }
+        .guide-card-entry.gametheme-preview-coralruin { background: linear-gradient(135deg, rgba(255,120,140,0.45) 0%, rgba(255,120,140,0.06) 100%); border-color: rgba(255,176,190,0.4); }
+        .guide-card-entry.gametheme-preview-ashfallbasin { background: linear-gradient(135deg, rgba(140,130,120,0.4) 0%, rgba(140,130,120,0.05) 100%); border-color: rgba(208,200,188,0.35); }
+        .guide-card-entry.gametheme-preview-starlitsanctum { background: linear-gradient(135deg, rgba(230,230,255,0.4) 0%, rgba(230,230,255,0.06) 100%); border-color: rgba(232,232,255,0.4); }
 
         .cooldown-badge { 
             position: absolute; 
@@ -3541,6 +3595,38 @@ const BOARD_THEME_DEFS = [
     { id: 'starlit_sanctum', name: 'Starlit Sanctum', cssClass: 'board-theme-starlitsanctum', cost: 1999, desc: 'Pale starlit white-blue sanctum.' }
 ];
 
+// GAME THEMES — its own cosmetic slot, independent of Board Themes above.
+// A copy of the same 20 theme concepts, but this is the one that controls
+// the actual visible battlefield background; Board Theme (equippable at
+// the same time) keeps doing what it already does — the combat log's
+// palette. Same price as Board Themes (1999 Grims), same "always owned"
+// free default. Backed by the same Supabase project — see
+// grimoire_game_themes_setup.sql for the one-time database setup (adds
+// earned_game_themes / equipped_game_theme columns + purchase_game_theme /
+// equip_game_theme RPCs, and updates get_player_cosmetics to return them).
+const GAME_THEME_DEFS = [
+    { id: 'classic_battlefield', name: 'Classic Battlefield', cssClass: '', always: true, desc: 'The default battlefield. Always owned.' },
+    { id: 'blood_moon_game', name: 'Blood Moon', cssClass: 'game-theme-bloodmoon', cost: 1999, desc: 'Deep crimson skies over the board.' },
+    { id: 'obsidian_rift_game', name: 'Obsidian Rift', cssClass: 'game-theme-obsidianrift', cost: 1999, desc: 'Violet fracture lines across a void board.' },
+    { id: 'parchment_noir_game', name: 'Parchment Noir', cssClass: 'game-theme-parchmentnoir', cost: 1999, desc: 'Aged parchment tones with inked borders.' },
+    { id: 'verdant_hex_game', name: 'Verdant Hex', cssClass: 'game-theme-verdanthex', cost: 1999, desc: 'Mossy emerald hex-glow across the board.' },
+    { id: 'static_bloom_game', name: 'Static Bloom', cssClass: 'game-theme-staticbloom', cost: 1999, desc: 'Golden static-bloom pattern.' },
+    { id: 'ashen_vigil_game', name: 'Ashen Vigil', cssClass: 'game-theme-ashenvigil', cost: 1999, desc: 'Muted ash-grey vigil tones.' },
+    { id: 'frostbound_ledger_game', name: 'Frostbound Ledger', cssClass: 'game-theme-frostboundledger', cost: 1999, desc: 'Icy teal frostbound finish.' },
+    { id: 'neon_underworld_game', name: 'Neon Underworld', cssClass: 'game-theme-neonunderworld', cost: 1999, desc: 'Electric magenta neon-underworld glow.' },
+    { id: 'aurum_sanctum_game', name: 'Aurum Sanctum', cssClass: 'game-theme-aurumsanctum', cost: 1999, desc: 'Radiant gold sanctuary finish.' },
+    { id: 'crimson_abyss_game', name: 'Crimson Abyss', cssClass: 'game-theme-crimsonabyss', cost: 1999, desc: 'Blood-red abyssal depths.' },
+    { id: 'lunar_hollow_game', name: 'Lunar Hollow', cssClass: 'game-theme-lunarhollow', cost: 1999, desc: 'Cool lunar blue-silver glow.' },
+    { id: 'ember_wastes_game', name: 'Ember Wastes', cssClass: 'game-theme-emberwastes', cost: 1999, desc: 'Scorched orange ember wastes.' },
+    { id: 'glacial_expanse_game', name: 'Glacial Expanse', cssClass: 'game-theme-glacialexpanse', cost: 1999, desc: 'Pale icy-blue glacial expanse.' },
+    { id: 'royal_court_game', name: 'Royal Court', cssClass: 'game-theme-royalcourt', cost: 1999, desc: 'Regal violet and gold court finish.' },
+    { id: 'plague_ward_game', name: 'Plague Ward', cssClass: 'game-theme-plagueward', cost: 1999, desc: 'Sickly green plague-ward tones.' },
+    { id: 'thunderscar_game', name: 'Thunderscar', cssClass: 'game-theme-thunderscar', cost: 1999, desc: 'Electric blue thunderscar streaks.' },
+    { id: 'coral_ruin_game', name: 'Coral Ruin', cssClass: 'game-theme-coralruin', cost: 1999, desc: 'Coral-pink ruin tones.' },
+    { id: 'ashfall_basin_game', name: 'Ashfall Basin', cssClass: 'game-theme-ashfallbasin', cost: 1999, desc: 'Smoky grey ashfall basin.' },
+    { id: 'starlit_sanctum_game', name: 'Starlit Sanctum', cssClass: 'game-theme-starlitsanctum', cost: 1999, desc: 'Pale starlit white-blue sanctum.' }
+];
+
 // Profile banners — now their OWN cosmetic slot, purchased and equipped
 // independently of board themes (previously a banner was just whatever
 // board theme you had equipped — see blBannerClassForTheme, now replaced
@@ -3598,6 +3684,15 @@ function boardThemePreviewClass(def) {
     return 'pbanner-' + def.id.replace(/_/g, '');
 }
 
+// Same trick, for Game Theme rows in the Skins modal — game-theme-* is
+// scoped to #gameView only, so it wouldn't paint anything on a
+// .guide-card-entry row. Strip the '_game' id suffix and use the matching
+// gametheme-preview-* class defined alongside the pbanner previews above.
+function gameThemePreviewClass(def) {
+    if (def.always) return '';
+    return 'gametheme-preview-' + def.id.replace(/_game$/, '').replace(/_/g, '');
+}
+
 // Total career wins across every character in a given CARD_POOL category
 // (Bloodbane / Bloodborne / Heroic), read from the same charWins map Titles
 // already use. Still used by the (unrelated) Titles system's squadWins
@@ -3614,7 +3709,7 @@ function cosmeticCategoryWinCount(stats, category) {
 // blProfileCosmetics (which reflects whatever profile is currently open in
 // the modal, self or otherwise) so gameplay rendering never waits on the
 // profile modal being opened.
-let blCosmetics = null; // { earnedSkins, equippedSkin, earnedThemes, equippedTheme, earnedBanners, equippedBanner, ownedAvatars } | null
+let blCosmetics = null; // { earnedSkins, equippedSkin, earnedThemes, equippedTheme, earnedGameThemes, equippedGameTheme, earnedBanners, equippedBanner, ownedAvatars } | null
 let blProfileCosmetics = null; // cosmetics for whichever profile is open in the modal
 
 // ============================================================================
@@ -3701,6 +3796,24 @@ function applyEquippedBoardTheme() {
     if (cls) gv.classList.add(cls);
 }
 
+// Game Theme — independent cosmetic slot, own equip/apply pair. Applied as
+// a second class alongside whatever Board Theme is equipped; the CSS order
+// (Game Theme rules declared after Board Theme rules) is what makes Game
+// Theme win the #gameView background while Board Theme still controls the
+// log.
+function blCosmeticGameThemeClass() {
+    if (!blCosmetics || !blCosmetics.equippedGameTheme) return '';
+    const def = GAME_THEME_DEFS.find(t => t.id === blCosmetics.equippedGameTheme);
+    return def ? def.cssClass : '';
+}
+function applyEquippedGameTheme() {
+    const gv = document.getElementById('gameView');
+    if (!gv) return;
+    GAME_THEME_DEFS.forEach(t => { if (t.cssClass) gv.classList.remove(t.cssClass); });
+    const cls = blCosmeticGameThemeClass();
+    if (cls) gv.classList.add(cls);
+}
+
 // Profile banners are now their own cosmetic slot (see BANNER_DEFS above) —
 // equipped and purchased independently of the board theme.
 function blBannerClassForBanner(bannerId) {
@@ -3745,14 +3858,17 @@ async function blRefreshCosmetics() {
             equippedSkin: result.equipped_skin || null,
             earnedThemes: result.earned_themes || ['classic_grimoire'],
             equippedTheme: result.equipped_theme || null,
+            earnedGameThemes: result.earned_game_themes || ['classic_battlefield'],
+            equippedGameTheme: result.equipped_game_theme || null,
             earnedBanners: result.earned_banners || ['classic_grimoire_banner'],
             equippedBanner: result.equipped_banner || null,
             ownedAvatars: result.owned_avatars || [DEFAULT_FREE_AVATAR]
         };
     } else {
-        blCosmetics = { earnedSkins: ['classic_ink'], equippedSkin: null, earnedThemes: ['classic_grimoire'], equippedTheme: null, earnedBanners: ['classic_grimoire_banner'], equippedBanner: null, ownedAvatars: [DEFAULT_FREE_AVATAR] };
+        blCosmetics = { earnedSkins: ['classic_ink'], equippedSkin: null, earnedThemes: ['classic_grimoire'], equippedTheme: null, earnedGameThemes: ['classic_battlefield'], equippedGameTheme: null, earnedBanners: ['classic_grimoire_banner'], equippedBanner: null, ownedAvatars: [DEFAULT_FREE_AVATAR] };
     }
     applyEquippedBoardTheme();
+    applyEquippedGameTheme();
     blApplyLobbyBanner();
 }
 
@@ -3763,20 +3879,20 @@ async function blRefreshCosmetics() {
 // versa — see grimoire_cosmetics_setup.sql / grimoire_currency_setup.sql.
 async function buyCosmetic(kind, def) {
     if (!blAccount || !blCosmetics || !def || def.always) return;
-    const ownedList = kind === 'skin' ? blCosmetics.earnedSkins : (kind === 'theme' ? blCosmetics.earnedThemes : blCosmetics.earnedBanners);
+    const ownedList = kind === 'skin' ? blCosmetics.earnedSkins : (kind === 'theme' ? blCosmetics.earnedThemes : (kind === 'gametheme' ? blCosmetics.earnedGameThemes : blCosmetics.earnedBanners));
     if (ownedList.includes(def.id)) return;
     if (!blCurrency || blCurrency.balance < def.cost) {
         writeLog(`🎟️ Not enough Grims — need ${def.cost}, have ${blCurrency ? blCurrency.balance : 0}.`);
         return;
     }
-    const rpcName = kind === 'skin' ? 'purchase_card_skin' : (kind === 'theme' ? 'purchase_board_theme' : 'purchase_banner');
-    const idParam = kind === 'skin' ? { p_skin_id: def.id } : (kind === 'theme' ? { p_theme_id: def.id } : { p_banner_id: def.id });
+    const rpcName = kind === 'skin' ? 'purchase_card_skin' : (kind === 'theme' ? 'purchase_board_theme' : (kind === 'gametheme' ? 'purchase_game_theme' : 'purchase_banner'));
+    const idParam = kind === 'skin' ? { p_skin_id: def.id } : (kind === 'theme' ? { p_theme_id: def.id } : (kind === 'gametheme' ? { p_game_theme_id: def.id } : { p_banner_id: def.id }));
     const result = await blCallAccountRpc(rpcName, Object.assign({ p_username: blAccount.username, p_cost: def.cost }, idParam));
     if (result && result.ok) {
         blCurrency = { balance: result.balance };
         renderCurrencyUI();
-        const kindLabel = kind === 'skin' ? 'Card skin' : (kind === 'theme' ? 'Board theme' : 'Banner');
-        const kindIcon = kind === 'skin' ? '🎴' : (kind === 'theme' ? '🗺️' : '🚩');
+        const kindLabel = kind === 'skin' ? 'Card skin' : (kind === 'theme' ? 'Board theme' : (kind === 'gametheme' ? 'Game theme' : 'Banner'));
+        const kindIcon = kind === 'skin' ? '🎴' : (kind === 'theme' ? '🗺️' : (kind === 'gametheme' ? '🖼️' : '🚩'));
         writeLog(`${kindIcon} ${kindLabel} purchased: ${def.name} (-${def.cost} Grims)`);
         await blRefreshCosmetics();
         renderProfileCosmetics();
@@ -3790,6 +3906,9 @@ function buyCardSkin(skinId) {
 }
 function buyBoardTheme(themeId) {
     buyCosmetic('theme', BOARD_THEME_DEFS.find(t => t.id === themeId));
+}
+function buyGameTheme(themeId) {
+    buyCosmetic('gametheme', GAME_THEME_DEFS.find(t => t.id === themeId));
 }
 function buyBanner(bannerId) {
     buyCosmetic('banner', BANNER_DEFS.find(b => b.id === bannerId));
@@ -3810,6 +3929,15 @@ async function equipTheme(themeId) {
     if (!blAccount || !blCosmetics) return;
     if (themeId && !blCosmetics.earnedThemes.includes(themeId)) return;
     const result = await blCallAccountRpc('equip_board_theme', { p_username: blAccount.username, p_theme_id: themeId || null });
+    if (result && result.ok) {
+        await blRefreshCosmetics();
+        if (blProfileTargetUsername) blLoadProfile(blProfileTargetUsername);
+    }
+}
+async function equipGameTheme(themeId) {
+    if (!blAccount || !blCosmetics) return;
+    if (themeId && !blCosmetics.earnedGameThemes.includes(themeId)) return;
+    const result = await blCallAccountRpc('equip_game_theme', { p_username: blAccount.username, p_game_theme_id: themeId || null });
     if (result && result.ok) {
         await blRefreshCosmetics();
         if (blProfileTargetUsername) blLoadProfile(blProfileTargetUsername);
@@ -3836,6 +3964,8 @@ function renderProfileCosmetics() {
     const equippedSkin = blProfileCosmetics.equippedSkin || 'classic_ink';
     const earnedThemes = blProfileCosmetics.earnedThemes || ['classic_grimoire'];
     const equippedTheme = blProfileCosmetics.equippedTheme || 'classic_grimoire';
+    const earnedGameThemes = blProfileCosmetics.earnedGameThemes || ['classic_battlefield'];
+    const equippedGameTheme = blProfileCosmetics.equippedGameTheme || 'classic_battlefield';
     const earnedBanners = blProfileCosmetics.earnedBanners || ['classic_grimoire_banner'];
     const equippedBanner = blProfileCosmetics.equippedBanner || 'classic_grimoire_banner';
     const balance = blCurrency ? blCurrency.balance : 0;
@@ -3865,9 +3995,11 @@ function renderProfileCosmetics() {
     // here is exactly what equipping it will look like elsewhere.
     const skinRows = CARD_SKIN_DEFS.map(s => row(s, cosmeticIsOwned(s, earnedSkins), equippedSkin === s.id, 'equipSkin', 'buyCardSkin', s.cssClass)).join('');
     const themeRows = BOARD_THEME_DEFS.map(t => row(t, cosmeticIsOwned(t, earnedThemes), equippedTheme === t.id, 'equipTheme', 'buyBoardTheme', boardThemePreviewClass(t))).join('');
+    const gameThemeRows = GAME_THEME_DEFS.map(t => row(t, cosmeticIsOwned(t, earnedGameThemes), equippedGameTheme === t.id, 'equipGameTheme', 'buyGameTheme', gameThemePreviewClass(t))).join('');
     const bannerRows = BANNER_DEFS.map(b => row(b, cosmeticIsOwned(b, earnedBanners), equippedBanner === b.id, 'equipBanner', 'buyBanner', b.cssClass)).join('');
     view.innerHTML = `<div class="guide-section-label">Card Skins — ${earnedSkins.length} / ${CARD_SKIN_DEFS.length} Owned${blProfileIsSelf ? ` · 🎟️ ${balance}` : ''}</div>${skinRows}`
         + `<div class="guide-section-label">Board Themes — ${earnedThemes.length} / ${BOARD_THEME_DEFS.length} Owned${blProfileIsSelf ? ` · 🎟️ ${balance}` : ''}</div>${themeRows}`
+        + `<div class="guide-section-label">Game Themes — ${earnedGameThemes.length} / ${GAME_THEME_DEFS.length} Owned${blProfileIsSelf ? ` · 🎟️ ${balance}` : ''}</div>${gameThemeRows}`
         + `<div class="guide-section-label">Banners — ${earnedBanners.length} / ${BANNER_DEFS.length} Owned${blProfileIsSelf ? ` · 🎟️ ${balance}` : ''}</div>${bannerRows}`;
 }
 
@@ -4037,6 +4169,8 @@ async function blLoadProfile(username) {
         equippedSkin: cosmeticsResult.equipped_skin || null,
         earnedThemes: cosmeticsResult.earned_themes || ['classic_grimoire'],
         equippedTheme: cosmeticsResult.equipped_theme || null,
+        earnedGameThemes: cosmeticsResult.earned_game_themes || ['classic_battlefield'],
+        equippedGameTheme: cosmeticsResult.equipped_game_theme || null,
         earnedBanners: cosmeticsResult.earned_banners || ['classic_grimoire_banner'],
         equippedBanner: cosmeticsResult.equipped_banner || null,
         ownedAvatars: cosmeticsResult.owned_avatars || [DEFAULT_FREE_AVATAR]
@@ -5111,6 +5245,7 @@ function blRenderAccountUI() {
         blGuild = null;
         renderCurrencyUI();
         applyEquippedBoardTheme();
+        applyEquippedGameTheme();
         blRenderRankBadge();
         blRenderLevelBadge();
         blUpdateGuildReqBadge();
@@ -11296,6 +11431,7 @@ function renderScene() {
     });
     document.getElementById('p1Field').innerHTML = p1Html;
     applyEquippedBoardTheme();
+    applyEquippedGameTheme();
 
     let p2Html = '';
     gameState.p2.forEach(card => {
