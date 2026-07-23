@@ -430,78 +430,56 @@
         .card-skin-phantomveil .card-title { text-shadow: 0 0 5px rgba(230,230,240,0.75), 0 0 12px rgba(255,255,255,0.35); }
 
         /* ====================================================================
-           BOARD THEMES — applied as a class on #gameView. Restyles the board
-           backdrop and the combat log's palette to match.
+           BOARD THEMES — applied as a class on #gameView. ONLY restyles the
+           combat log's palette. Does not touch the board background at all
+           — that's Game Theme's job (below).
            ==================================================================== */
-        #gameView.board-theme-bloodmoon { background: radial-gradient(ellipse at 50% -10%, rgba(140,10,20,0.16) 0%, rgba(8,7,16,0) 60%); }
         #gameView.board-theme-bloodmoon .log { background: #150a0c; border-color: rgba(200,30,40,0.25); color: #ff6b6b; }
-        #gameView.board-theme-obsidianrift { background: radial-gradient(ellipse at 50% -10%, rgba(80,0,120,0.14) 0%, rgba(8,7,16,0) 60%); }
         #gameView.board-theme-obsidianrift .log { background: #0a0710; border-color: rgba(140,60,220,0.25); color: #c98bff; }
-        #gameView.board-theme-parchmentnoir { background: radial-gradient(ellipse at 50% -10%, rgba(180,160,110,0.10) 0%, rgba(8,7,16,0) 60%); }
         #gameView.board-theme-parchmentnoir .log { background: #14120c; border-color: rgba(200,180,130,0.25); color: #e8d9ab; }
-        #gameView.board-theme-verdanthex { background: radial-gradient(ellipse at 50% -10%, rgba(30,140,90,0.14) 0%, rgba(8,7,16,0) 60%); }
         #gameView.board-theme-verdanthex .log { background: #0a1410; border-color: rgba(60,200,130,0.25); color: #6be8a6; }
-        #gameView.board-theme-staticbloom { background: radial-gradient(ellipse at 50% -10%, rgba(255,204,0,0.10) 0%, rgba(8,7,16,0) 60%); }
         #gameView.board-theme-staticbloom .log { background: #14130a; border-color: rgba(255,204,0,0.25); color: #ffe07a; }
-        #gameView.board-theme-ashenvigil { background: radial-gradient(ellipse at 50% -10%, rgba(150,150,160,0.12) 0%, rgba(8,7,16,0) 60%); }
         #gameView.board-theme-ashenvigil .log { background: #101012; border-color: rgba(180,180,190,0.22); color: #d8d8de; }
-        #gameView.board-theme-frostboundledger { background: radial-gradient(ellipse at 50% -10%, rgba(94,200,216,0.14) 0%, rgba(8,7,16,0) 60%); }
         #gameView.board-theme-frostboundledger .log { background: #0a1214; border-color: rgba(94,200,216,0.28); color: #9fe8f2; }
-        #gameView.board-theme-neonunderworld { background: radial-gradient(ellipse at 50% -10%, rgba(255,0,180,0.14) 0%, rgba(8,7,16,0) 60%); }
         #gameView.board-theme-neonunderworld .log { background: #12081a; border-color: rgba(255,0,200,0.3); color: #ff7af0; }
-        #gameView.board-theme-aurumsanctum { background: radial-gradient(ellipse at 50% -10%, rgba(212,175,55,0.16) 0%, rgba(8,7,16,0) 60%); }
         #gameView.board-theme-aurumsanctum .log { background: #14110a; border-color: rgba(212,175,55,0.32); color: #f0dc9a; }
-        #gameView.board-theme-crimsonabyss { background: radial-gradient(ellipse at 50% -10%, rgba(150,10,10,0.18) 0%, rgba(8,7,16,0) 60%); }
         #gameView.board-theme-crimsonabyss .log { background: #150808; border-color: rgba(200,20,20,0.3); color: #ff8080; }
-        #gameView.board-theme-lunarhollow { background: radial-gradient(ellipse at 50% -10%, rgba(150,180,220,0.12) 0%, rgba(8,7,16,0) 60%); }
         #gameView.board-theme-lunarhollow .log { background: #0c0e14; border-color: rgba(150,180,220,0.25); color: #c8d8ee; }
-        #gameView.board-theme-emberwastes { background: radial-gradient(ellipse at 50% -10%, rgba(255,110,20,0.14) 0%, rgba(8,7,16,0) 60%); }
         #gameView.board-theme-emberwastes .log { background: #150e08; border-color: rgba(255,110,20,0.28); color: #ffb066; }
-        #gameView.board-theme-glacialexpanse { background: radial-gradient(ellipse at 50% -10%, rgba(150,220,255,0.14) 0%, rgba(8,7,16,0) 60%); }
         #gameView.board-theme-glacialexpanse .log { background: #0a1216; border-color: rgba(150,220,255,0.3); color: #a8e8ff; }
-        #gameView.board-theme-royalcourt { background: radial-gradient(ellipse at 50% -10%, rgba(160,100,220,0.16) 0%, rgba(8,7,16,0) 60%); }
         #gameView.board-theme-royalcourt .log { background: #120c16; border-color: rgba(160,100,220,0.3); color: #d8b8ff; }
-        #gameView.board-theme-plagueward { background: radial-gradient(ellipse at 50% -10%, rgba(120,160,80,0.12) 0%, rgba(8,7,16,0) 60%); }
         #gameView.board-theme-plagueward .log { background: #0e1208; border-color: rgba(120,160,80,0.25); color: #c0d890; }
-        #gameView.board-theme-thunderscar { background: radial-gradient(ellipse at 50% -10%, rgba(120,170,255,0.14) 0%, rgba(8,7,16,0) 60%); }
         #gameView.board-theme-thunderscar .log { background: #0a0e16; border-color: rgba(120,170,255,0.28); color: #a8c8ff; }
-        #gameView.board-theme-coralruin { background: radial-gradient(ellipse at 50% -10%, rgba(255,120,140,0.14) 0%, rgba(8,7,16,0) 60%); }
         #gameView.board-theme-coralruin .log { background: #160a0e; border-color: rgba(255,120,140,0.28); color: #ffb0be; }
-        #gameView.board-theme-ashfallbasin { background: radial-gradient(ellipse at 50% -10%, rgba(140,130,120,0.12) 0%, rgba(8,7,16,0) 60%); }
         #gameView.board-theme-ashfallbasin .log { background: #100f0e; border-color: rgba(140,130,120,0.24); color: #d0c8bc; }
-        #gameView.board-theme-starlitsanctum { background: radial-gradient(ellipse at 50% -10%, rgba(230,230,255,0.12) 0%, rgba(8,7,16,0) 60%); }
         #gameView.board-theme-starlitsanctum .log { background: #0c0c14; border-color: rgba(230,230,255,0.26); color: #e8e8ff; }
 
         /* ====================================================================
            GAME THEMES — a separate cosmetic slot from Board Themes above.
-           Also applied as a class on #gameView, but placed later in the
-           cascade so it wins the #gameView `background` property outright —
-           this is the actual visible battlefield backdrop. Board Theme,
-           equipped alongside it, keeps doing what it already does (the
-           combat log's palette) since Game Theme never touches .log.
-           Colors mirror the matching Board Theme/Banner family so the same
-           name means the same palette everywhere, just applied stronger
-           here since this IS the background players actually see.
+           Solid, fully opaque flat color across the ENTIRE #gameView — no
+           gradient, no fade, no cutout edge. This is the whole battlefield
+           background players actually see. Board Theme never touches this
+           property, so the two never fight over the cascade.
            ==================================================================== */
-        #gameView.game-theme-bloodmoon { background: linear-gradient(160deg, rgba(140,10,20,0.5) 0%, rgba(8,7,16,1) 70%); }
-        #gameView.game-theme-obsidianrift { background: linear-gradient(160deg, rgba(80,0,120,0.45) 0%, rgba(8,7,16,1) 70%); }
-        #gameView.game-theme-parchmentnoir { background: linear-gradient(160deg, rgba(180,160,110,0.35) 0%, rgba(8,7,16,1) 70%); }
-        #gameView.game-theme-verdanthex { background: linear-gradient(160deg, rgba(30,140,90,0.45) 0%, rgba(8,7,16,1) 70%); }
-        #gameView.game-theme-staticbloom { background: linear-gradient(160deg, rgba(255,204,0,0.35) 0%, rgba(8,7,16,1) 70%); }
-        #gameView.game-theme-ashenvigil { background: linear-gradient(160deg, rgba(150,150,160,0.4) 0%, rgba(8,7,16,1) 70%); }
-        #gameView.game-theme-frostboundledger { background: linear-gradient(160deg, rgba(94,200,216,0.45) 0%, rgba(8,7,16,1) 70%); }
-        #gameView.game-theme-neonunderworld { background: linear-gradient(160deg, rgba(255,0,180,0.45) 0%, rgba(8,7,16,1) 70%); }
-        #gameView.game-theme-aurumsanctum { background: linear-gradient(160deg, rgba(212,175,55,0.5) 0%, rgba(8,7,16,1) 70%); }
-        #gameView.game-theme-crimsonabyss { background: linear-gradient(160deg, rgba(150,10,10,0.55) 0%, rgba(8,7,16,1) 70%); }
-        #gameView.game-theme-lunarhollow { background: linear-gradient(160deg, rgba(150,180,220,0.4) 0%, rgba(8,7,16,1) 70%); }
-        #gameView.game-theme-emberwastes { background: linear-gradient(160deg, rgba(255,110,20,0.45) 0%, rgba(8,7,16,1) 70%); }
-        #gameView.game-theme-glacialexpanse { background: linear-gradient(160deg, rgba(150,220,255,0.45) 0%, rgba(8,7,16,1) 70%); }
-        #gameView.game-theme-royalcourt { background: linear-gradient(160deg, rgba(160,100,220,0.5) 0%, rgba(8,7,16,1) 70%); }
-        #gameView.game-theme-plagueward { background: linear-gradient(160deg, rgba(120,160,80,0.4) 0%, rgba(8,7,16,1) 70%); }
-        #gameView.game-theme-thunderscar { background: linear-gradient(160deg, rgba(120,170,255,0.45) 0%, rgba(8,7,16,1) 70%); }
-        #gameView.game-theme-coralruin { background: linear-gradient(160deg, rgba(255,120,140,0.45) 0%, rgba(8,7,16,1) 70%); }
-        #gameView.game-theme-ashfallbasin { background: linear-gradient(160deg, rgba(140,130,120,0.4) 0%, rgba(8,7,16,1) 70%); }
-        #gameView.game-theme-starlitsanctum { background: linear-gradient(160deg, rgba(230,230,255,0.4) 0%, rgba(8,7,16,1) 70%); }
+        #gameView.game-theme-bloodmoon { background: #8c0a14; }
+        #gameView.game-theme-obsidianrift { background: #500078; }
+        #gameView.game-theme-parchmentnoir { background: #b4a06e; }
+        #gameView.game-theme-verdanthex { background: #1e8c5a; }
+        #gameView.game-theme-staticbloom { background: #ffcc00; }
+        #gameView.game-theme-ashenvigil { background: #9696a0; }
+        #gameView.game-theme-frostboundledger { background: #5ec8d8; }
+        #gameView.game-theme-neonunderworld { background: #ff00b4; }
+        #gameView.game-theme-aurumsanctum { background: #d4af37; }
+        #gameView.game-theme-crimsonabyss { background: #960a0a; }
+        #gameView.game-theme-lunarhollow { background: #96b4dc; }
+        #gameView.game-theme-emberwastes { background: #ff6e14; }
+        #gameView.game-theme-glacialexpanse { background: #96dcff; }
+        #gameView.game-theme-royalcourt { background: #a064dc; }
+        #gameView.game-theme-plagueward { background: #78a050; }
+        #gameView.game-theme-thunderscar { background: #78aaff; }
+        #gameView.game-theme-coralruin { background: #ff788c; }
+        #gameView.game-theme-ashfallbasin { background: #8c8278; }
+        #gameView.game-theme-starlitsanctum { background: #e6e6ff; }
 
         /* Profile banners — one per board theme (20 total incl. default),
            so equipping a board theme also re-skins every profile view
